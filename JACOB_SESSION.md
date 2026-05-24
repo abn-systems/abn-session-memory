@@ -36,7 +36,7 @@ what has been built, what prompts were given, and what is next.
 -->
 
 # ABN — Session Memory
-Last updated: 2026-05-24 (after Batch 5)
+Last updated: 2026-05-24 (after Batch 6)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md
@@ -46,7 +46,7 @@ In any new Claude chat, paste this URL and say "read this":
 https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 
 ## What is built (as of 2026-05-24)
-- Backend: **990 tests passing** (939 V1 baseline + 23 Batch 1 + 20 Batch 2 + 8 Batch 5), V1 feature-complete
+- Backend: **1010 tests passing** (939 V1 baseline + 23 Batch 1 + 20 Batch 2 + 8 Batch 5 + 20 Batch 6), V1 feature-complete
 - Frontend: Tauri desktop dashboard live, Swedish UI, NSIS installer built (`ABN_1.0.0_x64-setup.exe`)
 - Landing: 33 prerendered static pages live on Vercel (abn-nine.vercel.app), full dark theme
 - Auth: Clerk + RBAC (NODE_ADMIN / AGENT_MANAGER / VIEWER / AUDITOR) + named-employee invite flow live
@@ -60,6 +60,7 @@ https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 - **Batch 3 (DONE 2026-05-24)** — Production CI/CD pipeline (3 required gates + 80 % coverage)
 - **Batch 4 (DONE 2026-05-24)** — Multi-platform Tauri build workflow + download page redesign
 - **Batch 5 (DONE 2026-05-24)** — ConnectorsPage live-feed (real-time Observer-Layer events)
+- **Batch 6 (DONE 2026-05-24)** — Stripe payments (Subscription + InvoiceLog + billing API + BillingPage)
 
 ## Batch 1 — Finding model + API endpoints (DONE 2026-05-24)
 **Prompt given:** Add Finding model, Alembic migration, wire into OPERA, GET /api/agents/{id}/findings, /trend, /runs/{run_id}/verification, surface tools_used + insight_layer on GET /api/agents/{id}. 15+ tests. All 939 existing must pass.
@@ -143,17 +144,48 @@ https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 - 8 new backend tests in `tests/test_live_feed_api.py`: empty list, newest-first ordering, default-limit 10, explicit-limit, 50-row cap, strict tenant scoping, literal-path-vs-int-param regression check, response shape.
 - Full backend suite: **990 passed** (982 + 8). Frontend: typecheck clean, **60 tests green**, Vite build green.
 
-## Batch 6 — NEXT
-Stripe payments — Professional plan (€299/month).
+## Batch 6 — Stripe payments (DONE 2026-05-24)
+**Prompt given:** Add Stripe billing — `Subscription` + `InvoiceLog` models, Alembic migration, billing API (`/checkout-session`, `/portal-session`, `/subscription`, `/webhook`), BillingPage on the dashboard, wire route + nav, `stripe==8.7.0` in requirements, 15+ tests. Webhook signature ALWAYS verified (fail-closed). All 990 baseline tests still green.
 
-## Batch 7
-www.abnplatform.com DNS + real public API endpoint (currently the API is described on `/api` but no real api.abnplatform.com host exists yet).
+**Result:**
+- Five spec bugs fixed during the build (Engineering rule #6, fail-closed > spec-literal):
+  1. `from core.database import get_db` → `from database.session import get_db` (the spec path doesn't exist).
+  2. `from core.logging import get_logger` → stdlib `logging.getLogger` (no such module).
+  3. `STRIPE_*` UPPER_CASE field names → lowercase to match existing Settings convention (`case_sensitive=False` handles UPPER_CASE env vars on the `.env` side).
+  4. `stripe.error.SignatureVerificationError` → `stripe.SignatureVerificationError` (the alias namespace was removed in stripe-python 8.x).
+  5. `invoice.paid` tenant resolution stored the Stripe customer-id in the `tenant_id` column. Fixed: now looks up the Subscription by `stripe_customer_id` to map back to ABN's tenant_id.
+- New models: `Subscription` (one row per tenant — plan, status, stripe ids, period-end, cancel flag) and `InvoiceLog` (append-only receipts, idempotent on `stripe_invoice_id`). Both in `backend/database/models.py`. No card data, no bank data, no PII — Stripe holds the payment instrument.
+- Alembic revision `e5b8c1f3d29a_add_subscriptions_and_invoice_log.py` (depends on `d7e2f9b1c3a4`).
+- New `backend/api/routes/billing.py`:
+  - `POST /api/billing/checkout-session` — creates Stripe Checkout, returns `checkout_url`. 503 when Stripe unconfigured (fail-closed safety on fresh installs).
+  - `POST /api/billing/portal-session` — Stripe Customer Portal; 404 when no Subscription.
+  - `GET  /api/billing/subscription` — returns row state, or starter/inactive defaults for new tenants.
+  - `POST /api/billing/webhook` — signature verification FIRST (fail-closed); handles `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`. Idempotent across all four. Unknown events return 200 so Stripe doesn't retry indefinitely.
+- `core/config.py` extended with `stripe_secret_key`, `stripe_webhook_secret`, `stripe_professional_price_id`, `stripe_starter_price_id`. All empty by default → billing routes 503 until real values supplied.
+- `backend/.env.example` extended with the four UPPER_CASE env vars.
+- `backend/requirements.txt` extended with `stripe==8.7.0`.
+- `main.py` registers the new router alongside the others.
+- New frontend `BillingPage.tsx` on the `/billing` route — two plan cards (Starter free / Professional €299/mo), "Uppgradera till Professional" → Stripe Checkout redirect, "Hantera prenumeration" → Stripe Customer Portal redirect, period-end notice + cancel-at-period-end orange flag.
+- `frontend/src/api/client.ts` extended with `SubscriptionStatus` interface + `getSubscription` / `createCheckoutSession` / `createPortalSession` helpers (paths WITHOUT `/api` prefix — the axios baseURL already includes it; spec had double prefix bug).
+- `App.tsx` routes `/billing` → `<BillingPage />` (additive).
+- `Layout.tsx` nav extended with "Fakturering" entry + new IconBilling SVG (additive).
+- 20 new tests in `backend/tests/test_billing_api.py` — 503 fail-closed gates, checkout-session happy path + 422 unknown plan + 404 unknown tenant + starter-price-id selection, portal-session 404 + happy path, webhook signature gate (missing header / invalid sig / unconfigured secret), all four event handlers, idempotency on replay, unknown-event-type 200, tenant lookup via stripe_customer_id (not from payload).
+- Full backend suite: **1010 passed** (990 + 20). Frontend: typecheck clean, **60 tests green**, Vite build green. Every Stripe SDK call mocked — zero real network calls in tests.
+
+## Batch 7 — NEXT
+www.abnplatform.com DNS + real public API endpoint.
 
 ## Batch 8
 Fortnox end-to-end (needs org number + API key from Jacob).
 
 ## Batch 9
 Branch-protection hardening (manual GitHub step — listed in CLAUDE.md under `## Branch Protection`).
+
+## Manual prereqs for Stripe to go live
+1. Stripe Dashboard → create two Products + Price objects (Starter free / Professional €299/mo recurring) and copy their `price_...` ids.
+2. Stripe Dashboard → Developers → API keys → copy the `sk_test_...` (or `sk_live_...`) secret key.
+3. Stripe Dashboard → Developers → Webhooks → add endpoint `https://api.abnplatform.com/api/billing/webhook`, subscribe to `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`. Copy the `whsec_...` signing secret.
+4. Set all four env vars on the Node (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PROFESSIONAL_PRICE_ID`, `STRIPE_STARTER_PRICE_ID`). The billing routes return 503 until they are set.
 
 ## Blockers
 - Fortnox: waiting for org number + API key from Jacob

@@ -11,6 +11,19 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-24 — Batch 6 — Stripe billing
+- Engineering rule #1: greps confirmed zero existing Stripe code (only an unrelated YAML connector name `"stripe"` in `test_delivery.py`). Pure additions.
+- Caught FIVE bugs in the spec before writing any code:
+  1. `from core.database import get_db` — module doesn't exist; real path is `database.session`. Routes throughout the repo use `database.session.get_db`.
+  2. `from core.logging import get_logger` — module doesn't exist; codebase uses stdlib `logging.getLogger` directly.
+  3. `STRIPE_*: str = ""` UPPER_CASE field names — Settings convention is lowercase fields; `case_sensitive=False` already maps UPPER_CASE env vars onto them, so the .env contract still uses `STRIPE_SECRET_KEY=…`.
+  4. `stripe.error.SignatureVerificationError` — alias namespace gone in stripe-python 8.x; canonical name is `stripe.SignatureVerificationError`.
+  5. `invoice.paid` stored `data.get("customer", "")` (the Stripe customer ID) in the `tenant_id` column. Tenant ID must be looked up via the Subscription row's `stripe_customer_id`.
+- One frontend bug too: spec called `api.get('/api/billing/...')` but the axios wrapper's baseURL already contains `/api`. Fixed by dropping the prefix to `'/billing/...'`.
+- All four billing routes refuse to call live Stripe when `stripe_secret_key` is empty (503). Webhook refuses without the signature header or webhook secret. Engineering rule #6 — fail-closed everywhere.
+- `invoice.paid` is idempotent on `stripe_invoice_id`; `checkout.session.completed` is upsert-by-tenant; `customer.subscription.*` is upsert-by-stripe_subscription_id. Stripe retries cannot multiply rows. Engineering rule #7.
+- 20 new backend tests in `tests/test_billing_api.py`, all Stripe SDK calls mocked. Full backend suite: 1010 passed (990 + 20). Frontend: typecheck clean, 60 tests green, Vite build green.
+
 ## 2026-05-24 — Batch 5 — ConnectorsPage live-feed
 - Engineering rule #1: three greps confirmed nothing existed for the new endpoint, model name, or component. Pure additions, no rewrites.
 - Backend: new `GET /api/connectors/live-feed` declared above `/{connector_id}` so FastAPI literal-match wins. Regression test included so a future refactor can't accidentally re-order them and reintroduce the int-parse 422.
