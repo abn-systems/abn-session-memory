@@ -11,6 +11,14 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-24 — Batch 5 — ConnectorsPage live-feed
+- Engineering rule #1: three greps confirmed nothing existed for the new endpoint, model name, or component. Pure additions, no rewrites.
+- Backend: new `GET /api/connectors/live-feed` declared above `/{connector_id}` so FastAPI literal-match wins. Regression test included so a future refactor can't accidentally re-order them and reintroduce the int-parse 422.
+- Frontend: used the existing axios `api` wrapper, not raw `fetch` from the spec — Engineering rule #2 (one HTTP idiom across `client.ts`). `getLiveFeed` returns `[]` on failure so a fresh-install Node never paints a red banner.
+- ConnectorsPage: extended imports + added `<LiveFeed />` invocation. The new component lives as a sibling function in the same file; the existing `ConnectorsPage` body is untouched (rule "do not rewrite").
+- Surface contract: chip + event_type + pseudonymised case_key + relative timestamp. No raw values, no amounts, no PII. The footer reaffirms "Inget data lämnar din miljö".
+- Full backend suite: 990 passed (982 + 8). Frontend: typecheck clean, 60 tests green, Vite build green.
+
 ## 2026-05-24 — Batch 4 — Multi-platform Tauri build + download page redesign
 - Engineering rule #1: ran the user's three greps to confirm zero drift since the audit. `tauri.conf.json` still on `["nsis"]`; no `build-release.yml`; download page still 236 lines. Nothing pre-existing to extend — pure greenfield.
 - Plan A (build workflow): caught two issues in the spec before writing code:

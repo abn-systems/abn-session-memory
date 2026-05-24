@@ -36,7 +36,7 @@ what has been built, what prompts were given, and what is next.
 -->
 
 # ABN — Session Memory
-Last updated: 2026-05-24 (after Batch 4)
+Last updated: 2026-05-24 (after Batch 5)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md
@@ -46,7 +46,7 @@ In any new Claude chat, paste this URL and say "read this":
 https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 
 ## What is built (as of 2026-05-24)
-- Backend: **982 tests passing** (939 V1 baseline + 23 Batch 1 + 20 Batch 2), V1 feature-complete
+- Backend: **990 tests passing** (939 V1 baseline + 23 Batch 1 + 20 Batch 2 + 8 Batch 5), V1 feature-complete
 - Frontend: Tauri desktop dashboard live, Swedish UI, NSIS installer built (`ABN_1.0.0_x64-setup.exe`)
 - Landing: 33 prerendered static pages live on Vercel (abn-nine.vercel.app), full dark theme
 - Auth: Clerk + RBAC (NODE_ADMIN / AGENT_MANAGER / VIEWER / AUDITOR) + named-employee invite flow live
@@ -59,6 +59,7 @@ https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 - **Batch 2 (DONE 2026-05-24)** — AgentSettings + TenantSettings + AgentActivityLog
 - **Batch 3 (DONE 2026-05-24)** — Production CI/CD pipeline (3 required gates + 80 % coverage)
 - **Batch 4 (DONE 2026-05-24)** — Multi-platform Tauri build workflow + download page redesign
+- **Batch 5 (DONE 2026-05-24)** — ConnectorsPage live-feed (real-time Observer-Layer events)
 
 ## Batch 1 — Finding model + API endpoints (DONE 2026-05-24)
 **Prompt given:** Add Finding model, Alembic migration, wire into OPERA, GET /api/agents/{id}/findings, /trend, /runs/{run_id}/verification, surface tools_used + insight_layer on GET /api/agents/{id}. 15+ tests. All 939 existing must pass.
@@ -131,16 +132,27 @@ https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
   - **Restored the `<a` opening tags** that got eaten in the spec's markdown paste — otherwise the file wouldn't parse.
 - `cd landing && npm run build` → ✓ 33 static pages, zero errors / warnings.
 
-## Batch 5 — NEXT
+## Batch 5 — ConnectorsPage live-feed (DONE 2026-05-24)
+**Prompt given:** Add a Live-flöde panel to ConnectorsPage that polls the last 10 Observer-Layer events every 30 s. Build only what's missing — don't rewrite ConnectorsPage.tsx or MarketplacePage.tsx. New backend endpoint `GET /api/connectors/live-feed?tenant_id=&limit=`. New frontend helpers `getLiveFeed` (client.ts) and `formatRelative` (format.ts). 5+ tests. All 982 baseline tests still green.
+
+**Result:**
+- Backend (`backend/api/routes/connectors.py`): new `GET /api/connectors/live-feed` declared BEFORE the int-typed `GET /{connector_id}` so the literal-path match wins (regression test included). Returns `LiveFeedEvent[]` — `id, domain, event_type, case_key, source_system, created_at`. Tenant-scoped; `limit` capped at 50 server-side. Reads existing `Event` rows that already passed Trust-Layer scrubbing — no further redaction needed.
+- Frontend `client.ts`: appended `LiveFeedEvent` interface + `getLiveFeed(tenantId, limit=10)` using the existing axios `api` wrapper (not raw `fetch` — matches the other 20+ helpers in the file). Failure semantics: returns `[]` instead of throwing so a Node with zero events shows an empty panel, not a red error banner.
+- Frontend `lib/format.ts`: added `formatRelative(iso)` — relative time ("Xs sedan", "X min sedan", "X tim sedan") with absolute-date fallback for >24 h. Pure, dependency-free.
+- Frontend `pages/ConnectorsPage.tsx`: extended imports + added `<LiveFeed tenantId={tenantId} />` invocation directly before the closing `</div>` of the existing page body. New `LiveFeed` component is a sibling function in the same file — the existing `ConnectorsPage` function body is unchanged (rule "do not rewrite"). Renders domain-colour-coded chips (Bokföring/Schema/Logistik/Dokument), `event_type · case_key`, relative timestamp + the No-Data footer line.
+- 8 new backend tests in `tests/test_live_feed_api.py`: empty list, newest-first ordering, default-limit 10, explicit-limit, 50-row cap, strict tenant scoping, literal-path-vs-int-param regression check, response shape.
+- Full backend suite: **990 passed** (982 + 8). Frontend: typecheck clean, **60 tests green**, Vite build green.
+
+## Batch 6 — NEXT
 Stripe payments — Professional plan (€299/month).
 
-## Batch 6
+## Batch 7
 www.abnplatform.com DNS + real public API endpoint (currently the API is described on `/api` but no real api.abnplatform.com host exists yet).
 
-## Batch 7
+## Batch 8
 Fortnox end-to-end (needs org number + API key from Jacob).
 
-## Batch 8
+## Batch 9
 Branch-protection hardening (manual GitHub step — listed in CLAUDE.md under `## Branch Protection`).
 
 ## Blockers
