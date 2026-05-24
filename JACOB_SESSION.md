@@ -36,16 +36,17 @@ what has been built, what prompts were given, and what is next.
 -->
 
 # ABN — Session Memory
-Last updated: 2026-05-24
+Last updated: 2026-05-24 (after Batch 2)
 Repo: https://github.com/abn-systems/ABN
-Raw URL: https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
+Raw URL (public mirror — auto-synced from main):
+https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md
 
 ## How Jacob uses this file
 In any new Claude chat, paste this URL and say "read this":
 https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 
 ## What is built (as of 2026-05-24)
-- Backend: **962 tests passing** (939 V1 baseline + 23 added in Batch 1), V1 feature-complete
+- Backend: **982 tests passing** (939 V1 baseline + 23 Batch 1 + 20 Batch 2), V1 feature-complete
 - Frontend: Tauri desktop dashboard live, Swedish UI, NSIS installer built (`ABN_1.0.0_x64-setup.exe`)
 - Landing: 33 prerendered static pages live on Vercel (abn-nine.vercel.app), full dark theme
 - Auth: Clerk + RBAC (NODE_ADMIN / AGENT_MANAGER / VIEWER / AUDITOR) + named-employee invite flow live
@@ -55,6 +56,7 @@ https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 ## Batches done
 - Sessions 1-5: Full backend, auth, landing, Tauri dashboard, legal centre, all solution / company pages, mega-menu nav, dark footer, /api, /transparency, /pricing, /changelog, /status — locked in as of session 5
 - **Batch 1 (DONE 2026-05-24)** — Finding model + AgentDetailPage hydration
+- **Batch 2 (DONE 2026-05-24)** — AgentSettings + TenantSettings + AgentActivityLog
 
 ## Batch 1 — Finding model + API endpoints (DONE 2026-05-24)
 **Prompt given:** Add Finding model, Alembic migration, wire into OPERA, GET /api/agents/{id}/findings, /trend, /runs/{run_id}/verification, surface tools_used + insight_layer on GET /api/agents/{id}. 15+ tests. All 939 existing must pass.
@@ -72,16 +74,34 @@ https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 - Full backend suite: **962 passed**, 0 failed. No regressions.
 - CLAUDE.md "Known issues" entry for the missing `findings` table flipped open → resolved.
 
-## Batch 2 — NEXT
-CI/CD pipeline (GitHub Actions) — automated tests on every push. The repo already has `.github/workflows/ci.yml` from session 1; Batch 2 audits it, adds branch protection, adds the landing build job, wires test coverage reporting.
+## Batch 2 — Customer settings + per-agent activity log (DONE 2026-05-24)
+**Prompt given:** Add AgentSettings, TenantSettings and AgentActivityLog models + Alembic migration; wire AgentActivityLog into OPERA after each run; new endpoints GET/PUT /api/agents/{id}/settings (must NOT regenerate the signed blueprint), GET /api/agents/{id}/activity, GET/PUT /api/tenant/settings; register new router in main.py; 15+ tests; all 962 baseline tests still green.
 
-## Batch 3
-Stripe payments — Professional plan (€299/month).
+**Result:**
+- Three new tables in `backend/database/models.py`:
+  - `agent_settings` — one row per agent, override layer on top of the signed blueprint (schedule, enabled, threshold_pct, output_formats, delivery_emails, notify_on, language, updated_at, updated_by). Override semantics: AgentSettings wins when present, blueprint default otherwise.
+  - `tenant_settings` — one row per tenant (language, timezone, currency, date_format, logo_url, primary_color, notification_emails, slack_webhook, updated_at). Separate from `Tenant.policy` (Blueprint Generator governance) and `Tenant.delivery_config` (Type-2 channel routing).
+  - `agent_activity_log` — append-only per-agent event stream (run_completed, setting_changed, paused, resumed). Indexed on (agent_id, occurred_at) for fast "last N rows".
+- Alembic revision `d7e2f9b1c3a4_add_settings_and_activity_log.py` (depends on `c4f1ad9e8a72`).
+- New single source of truth `backend/agent_runtime/activity_log.py::log_run_completed` + `log_setting_changed`. Idempotent per (agent_id, run_id, event_type) — second call updates the row, never duplicates.
+- `OPERARunner._save_run_record` now calls `log_run_completed` so every OPERA run automatically appends a "run_completed" activity row alongside the AgentRun + Finding persistence (one place, three side effects, no duplication).
+- New endpoints in `backend/api/routes/agents.py`:
+  - `GET /api/agents/{id}/settings` — returns AgentSettings row OR blueprint defaults (`is_override: false` when defaulting).
+  - `PUT /api/agents/{id}/settings` — upsert, validates enum fields (notify_on, output_formats) + threshold_pct range, stamps `updated_at` + `updated_by`, **does NOT regenerate the blueprint** (signature stays unchanged — asserted in test), writes a `setting_changed` activity row.
+  - `GET /api/agents/{id}/activity?limit=N` — newest first, default 30, max 200.
+- New file `backend/api/routes/tenant_settings.py` with `GET /api/tenant/settings?tenant_id=…` and `PUT /api/tenant/settings?tenant_id=…`. Registered in `main.py`.
+- 20 new tests in `backend/tests/test_settings_and_activity_api.py`. Full backend suite: **982 passed**.
+
+## Batch 3 — NEXT
+CI/CD pipeline audit (GitHub Actions). The repo already has `.github/workflows/ci.yml`; Batch 3 audits it, adds branch protection, the landing build job, test coverage reporting.
 
 ## Batch 4
-www.abnplatform.com DNS + real public API endpoint (currently the API is described on `/api` but no real api.abnplatform.com host exists yet).
+Stripe payments — Professional plan (€299/month).
 
 ## Batch 5
+www.abnplatform.com DNS + real public API endpoint (currently the API is described on `/api` but no real api.abnplatform.com host exists yet).
+
+## Batch 6
 Fortnox end-to-end (needs org number + API key from Jacob).
 
 ## Blockers
