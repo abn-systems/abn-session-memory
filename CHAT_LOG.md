@@ -11,6 +11,16 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-24 — Batch 4 — Multi-platform Tauri build + download page redesign
+- Engineering rule #1: ran the user's three greps to confirm zero drift since the audit. `tauri.conf.json` still on `["nsis"]`; no `build-release.yml`; download page still 236 lines. Nothing pre-existing to extend — pure greenfield.
+- Plan A (build workflow): caught two issues in the spec before writing code:
+  (1) `dtolnay/rust-toolchain`'s `targets:` field expects raw triples, but the spec piped `--target X` flag strings into it — every cell would have failed at the toolchain install step. Split the matrix into `target:` (for the action) and `args:` (for tauri-action).
+  (2) macOS Universal needs BOTH `x86_64-apple-darwin` and `aarch64-apple-darwin` installed so Tauri's `--target universal-apple-darwin` can lipo-merge them. Encoded as a space-separated pair in the `target:` field — dtolnay splits on whitespace.
+- Plan B (download page): caught that `'use client'` + `export const metadata` is invalid in App Router. Split into server `page.tsx` (metadata) + client `DownloadView.tsx` (useState + JSX). Also restored the missing `<a` opening tags that the markdown paste had eaten from the spec.
+- Tauri bundle targets extended to `["nsis", "msi", "dmg", "deb", "appimage"]` — Tauri picks the right ones per host OS at build time.
+- ci.yml + sync-session-memory.yml untouched (verified with `git diff --stat`).
+- Landing build green: 33 static pages, 0 errors / warnings. Backend untouched, so the 982-tests baseline is unaffected.
+
 ## 2026-05-24 — Batch 3 — Production CI/CD pipeline
 - Engineering rule #1: read existing `.github/workflows/ci.yml` fully before touching it. It already covered backend, llm-gateway, security-go, dashboard and Docker images — meaningfully more than the new spec.
 - Decision: replace the structure with the new pipeline (three required jobs + `all-green` aggregator) but PRESERVE the unrelated advisory jobs (llm-gateway, security-go, docker). No duplication — the new and old jobs cover disjoint surfaces.

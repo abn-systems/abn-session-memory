@@ -36,7 +36,7 @@ what has been built, what prompts were given, and what is next.
 -->
 
 # ABN — Session Memory
-Last updated: 2026-05-24 (after Batch 3)
+Last updated: 2026-05-24 (after Batch 4)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md
@@ -58,6 +58,7 @@ https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 - **Batch 1 (DONE 2026-05-24)** — Finding model + AgentDetailPage hydration
 - **Batch 2 (DONE 2026-05-24)** — AgentSettings + TenantSettings + AgentActivityLog
 - **Batch 3 (DONE 2026-05-24)** — Production CI/CD pipeline (3 required gates + 80 % coverage)
+- **Batch 4 (DONE 2026-05-24)** — Multi-platform Tauri build workflow + download page redesign
 
 ## Batch 1 — Finding model + API endpoints (DONE 2026-05-24)
 **Prompt given:** Add Finding model, Alembic migration, wire into OPERA, GET /api/agents/{id}/findings, /trend, /runs/{run_id}/verification, surface tools_used + insight_layer on GET /api/agents/{id}. 15+ tests. All 939 existing must pass.
@@ -110,16 +111,36 @@ https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 - Added a `## Branch Protection (set manually in GitHub)` section to CLAUDE.md under `## Session Management`, with the exact required-check names that match the new job names.
 - Full backend suite locally: **982 passed**, coverage 84 %.
 
-## Batch 4 — NEXT
+## Batch 4 — Multi-platform Tauri build + download page redesign (DONE 2026-05-24)
+**Prompt given:** Update `frontend/src-tauri/tauri.conf.json` bundle targets from `["nsis"]` → `["nsis", "msi", "dmg", "deb", "appimage"]`. Create `.github/workflows/build-release.yml` with a 7-cell matrix (Windows x64/ARM64, macOS ARM64/x64/Universal, Linux x64/ARM64) using `tauri-apps/tauri-action@v0`, triggered by `release: created` and `workflow_dispatch`. Rewrite `landing/app/company/download/page.tsx` to a three-column macOS/Windows/Linux layout with per-variant download icons + collapsible older-releases accordion. Don't touch `ci.yml`, `sync-session-memory.yml`, backend, or tests.
+
+**Result:**
+- `tauri.conf.json` bundle targets extended to 5 formats; Tauri auto-selects per OS at build time.
+- New workflow `.github/workflows/build-release.yml`:
+  - 7-cell matrix across `windows-latest`, `macos-latest`, `ubuntu-22.04`.
+  - **Bug fix vs the spec:** the spec passed `--target X` (a flag string) into `dtolnay/rust-toolchain`'s `targets:` input — which expects raw target triples. Split the matrix into `target` (for rust-toolchain) and `args` (for tauri-action) so every cell actually runs.
+  - macOS Universal cell installs BOTH `x86_64-apple-darwin` and `aarch64-apple-darwin` so Tauri's `--target universal-apple-darwin` lipo-merge works.
+  - All Apple signing + Tauri-updater secrets wired via env vars; absent secrets ⇒ unsigned build (Tauri behaviour).
+  - `ci.yml` and `sync-session-memory.yml` left untouched (verified with `git diff --stat`).
+- Download page rewritten:
+  - **Split into two files** (server `page.tsx` + client `DownloadView.tsx`) so `export const metadata` (server-only) and `'use client'` (needed for `useState`) can coexist. The spec collapsed both into one file which Next.js App Router rejects.
+  - Three-column grid per release block: macOS (3 variants), Windows (4), Linux (6).
+  - Each variant: live download icon (only when `coming: false` AND `file: not null`) → `${RELEASE_BASE}/download/v${version}/${file}`, else "Snart" placeholder.
+  - "View release notes →" per release (one English phrase; everything else Swedish).
+  - Older releases collapsed inside `<button>`-driven `useState`-tracked accordions; `OLDER_RELEASES: Release[] = []` ready for v1.1+ entries.
+  - **Restored the `<a` opening tags** that got eaten in the spec's markdown paste — otherwise the file wouldn't parse.
+- `cd landing && npm run build` → ✓ 33 static pages, zero errors / warnings.
+
+## Batch 5 — NEXT
 Stripe payments — Professional plan (€299/month).
 
-## Batch 5
+## Batch 6
 www.abnplatform.com DNS + real public API endpoint (currently the API is described on `/api` but no real api.abnplatform.com host exists yet).
 
-## Batch 6
+## Batch 7
 Fortnox end-to-end (needs org number + API key from Jacob).
 
-## Batch 7
+## Batch 8
 Branch-protection hardening (manual GitHub step — listed in CLAUDE.md under `## Branch Protection`).
 
 ## Blockers
