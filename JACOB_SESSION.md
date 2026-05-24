@@ -36,7 +36,7 @@ what has been built, what prompts were given, and what is next.
 -->
 
 # ABN — Session Memory
-Last updated: 2026-05-24 (after Batch 2)
+Last updated: 2026-05-24 (after Batch 3)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md
@@ -57,6 +57,7 @@ https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 - Sessions 1-5: Full backend, auth, landing, Tauri dashboard, legal centre, all solution / company pages, mega-menu nav, dark footer, /api, /transparency, /pricing, /changelog, /status — locked in as of session 5
 - **Batch 1 (DONE 2026-05-24)** — Finding model + AgentDetailPage hydration
 - **Batch 2 (DONE 2026-05-24)** — AgentSettings + TenantSettings + AgentActivityLog
+- **Batch 3 (DONE 2026-05-24)** — Production CI/CD pipeline (3 required gates + 80 % coverage)
 
 ## Batch 1 — Finding model + API endpoints (DONE 2026-05-24)
 **Prompt given:** Add Finding model, Alembic migration, wire into OPERA, GET /api/agents/{id}/findings, /trend, /runs/{run_id}/verification, surface tools_used + insight_layer on GET /api/agents/{id}. 15+ tests. All 939 existing must pass.
@@ -92,10 +93,24 @@ https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 - New file `backend/api/routes/tenant_settings.py` with `GET /api/tenant/settings?tenant_id=…` and `PUT /api/tenant/settings?tenant_id=…`. Registered in `main.py`.
 - 20 new tests in `backend/tests/test_settings_and_activity_api.py`. Full backend suite: **982 passed**.
 
-## Batch 3 — NEXT
-CI/CD pipeline audit (GitHub Actions). The repo already has `.github/workflows/ci.yml`; Batch 3 audits it, adds branch protection, the landing build job, test coverage reporting.
+## Batch 3 — Production CI/CD pipeline (DONE 2026-05-24)
+**Prompt given:** Replace `.github/workflows/ci.yml` with a production-grade pipeline. Required checks per branch protection: `Backend — 982 tests`, `Frontend — build check`, `Landing — build check`. Backend job runs full pytest with coverage gated at `--cov-fail-under=80`. Target build time under 5 minutes. Do not break `sync-session-memory.yml`. All 982 tests must still pass locally before push.
 
-## Batch 4
+**Result:**
+- Verified local coverage = **84 %** before committing → coverage gate is realistic.
+- Rewrote `.github/workflows/ci.yml`:
+  - **Three required jobs** (referenced by branch protection):
+    - `Backend — 982 tests` — Python 3.12, ruff + mypy (best-effort, `|| true`), pytest with `--cov-fail-under=80`, uploads htmlcov artifact.
+    - `Frontend — build check` — Node 20, `npm ci && npm run build` for the Tauri dashboard.
+    - `Landing — build check` — Node 20, `npm ci && npm run build` for the Next.js public site.
+  - **`all-green` aggregator** depending on the three above — a single status check the branch-protection rule can reference.
+  - **Three advisory jobs preserved** from the prior pipeline (no duplication; they cover services not in the new spec): `abn-llm-gateway — test`, `abn-security — vet, build & test`, `Build & push images`. They run alongside but are not required for merge.
+- Updated `docker` job's `needs:` array to reference the new job names (`backend-tests`, `frontend-build`) instead of the deleted `backend` / `dashboard` job names.
+- `sync-session-memory.yml` untouched.
+- Added a `## Branch Protection (set manually in GitHub)` section to CLAUDE.md under `## Session Management`, with the exact required-check names that match the new job names.
+- Full backend suite locally: **982 passed**, coverage 84 %.
+
+## Batch 4 — NEXT
 Stripe payments — Professional plan (€299/month).
 
 ## Batch 5
@@ -103,6 +118,9 @@ www.abnplatform.com DNS + real public API endpoint (currently the API is describ
 
 ## Batch 6
 Fortnox end-to-end (needs org number + API key from Jacob).
+
+## Batch 7
+Branch-protection hardening (manual GitHub step — listed in CLAUDE.md under `## Branch Protection`).
 
 ## Blockers
 - Fortnox: waiting for org number + API key from Jacob

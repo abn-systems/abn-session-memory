@@ -11,6 +11,15 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-24 — Batch 3 — Production CI/CD pipeline
+- Engineering rule #1: read existing `.github/workflows/ci.yml` fully before touching it. It already covered backend, llm-gateway, security-go, dashboard and Docker images — meaningfully more than the new spec.
+- Decision: replace the structure with the new pipeline (three required jobs + `all-green` aggregator) but PRESERVE the unrelated advisory jobs (llm-gateway, security-go, docker). No duplication — the new and old jobs cover disjoint surfaces.
+- Verified coverage = 84 % locally before committing → `--cov-fail-under=80` will pass.
+- Updated `docker` job's `needs:` to reference the new required-job names (`backend-tests`, `frontend-build`) since the old `backend` / `dashboard` jobs are removed.
+- `sync-session-memory.yml` untouched (verified with `git diff --stat`).
+- Added a `## Branch Protection (set manually in GitHub)` section to CLAUDE.md under `## Session Management`. The required-check names there match the `name:` strings in the new CI exactly so the rule keys match.
+- Full backend suite: 982 passed (unchanged from Batch 2 baseline).
+
 ## 2026-05-24 — Batch 2 — Settings + activity log
 - Confirmed engineering rule #1 with two greps (`AgentSettings|AgentOverrides|TenantSettings|UserPreference|NotificationSetting` in `database/models.py`; `agent_settings|tenant_settings|user_preferences` in `api/routes/`). Both empty — nothing to duplicate.
 - Added three SQLAlchemy models (AgentSettings, TenantSettings, AgentActivityLog) and Alembic revision `d7e2f9b1c3a4`.
