@@ -1,3 +1,40 @@
+<!--
+============================================================
+THIS FILE IS NOT PART OF THE ABN APPLICATION.
+============================================================
+PURPOSE: Session memory for Jacob + Claude (claude.ai chat).
+Used so that when Jacob starts a new Claude chat, he pastes
+the raw URL and Claude instantly knows where we are.
+
+RAW URL (paste in new Claude chat):
+https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md
+
+THIS FILE HAS ZERO IMPACT ON:
+- Backend code or tests
+- Frontend or dashboard
+- Deployments or CI/CD
+- Any ABN system functionality
+
+DO NOT modify this file as part of any feature or bug fix.
+DO NOT mix this with ABN application memory or logic.
+
+CLAUDE CODE RULES FOR THIS FILE:
+1. After every completed batch: update this file with what was built
+2. After every completed batch: update CHAT_LOG.md with decisions made
+3. Then run: git add JACOB_SESSION.md CHAT_LOG.md
+4. Then run: git commit -m "chore: update session memory after [batch name]"
+5. Then run: git push
+6. This triggers auto-sync to public mirror at abn-session-memory repo
+7. Jacob uses the raw URL in new chats — never loses context
+
+WHY THIS EXISTS:
+Claude.ai chat has a file limit. When the chat gets too long,
+Jacob opens a new chat. Without this file, all context is lost.
+This file prevents that. It is the single source of truth for
+what has been built, what prompts were given, and what is next.
+============================================================
+-->
+
 # ABN — Session Memory
 Last updated: 2026-05-24
 Repo: https://github.com/abn-systems/ABN

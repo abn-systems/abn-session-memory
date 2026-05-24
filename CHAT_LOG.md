@@ -1,3 +1,13 @@
+<!--
+============================================================
+THIS FILE IS NOT PART OF THE ABN APPLICATION.
+============================================================
+PURPOSE: Log of decisions made between Jacob and Claude chat.
+Updated manually when Jacob asks Claude to update it.
+Has zero impact on any ABN code, tests, or deployment.
+============================================================
+-->
+
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
