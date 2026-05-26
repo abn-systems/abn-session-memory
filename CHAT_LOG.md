@@ -11,6 +11,39 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-26 — Batch 20 — Email capability (read inbox → draft → human approves → never auto-send)
+Jacob requested the full agents-handle-mail surface: read inbox metadata, draft outbound, get human approval, send via existing deliverers. The audit two turns earlier laid out exactly what was missing.
+
+**Architecture decisions made:**
+- **Agents NEVER auto-send.** Two layers of defence: (a) the API approve endpoint is the only code path that calls `send_approved_draft`, gated on `require_role(NODE_ADMIN|AGENT_MANAGER)` + a status check; (b) `send_approved_draft` itself refuses to run unless `EmailDraft.status == "approved"`. A blueprint that lists `report.send_approved_email` in its action chain is a no-op until a human clicks Godkänn.
+- **Inbound = metadata only — subject/body BLOCKED at the normaliser layer**, not just "filtered in the API". The normalisers' `FIELD_MAP` is a whitelist; anything not in it never reaches the events table in the first place. PII Guardian runs as a defensive second pass on survivors. The dataclass + the events table physically cannot carry mail content.
+- **`from_domain` not `from_address`.** `"Alice Andersson <alice@acme.se>"` → `"acme.se"`. Agents can correlate counterparty *patterns* (this domain talks to us X times a week, X% have attachments) without ever exposing who. The local part is dropped at normaliser-time, not at API-time — so even an internal log query can't recover it.
+- **Recipients stored as SHA-256 fingerprints, never raw addresses.** Cleartext addresses pass through the approve handler at send-time (the operator already knows them under their RBAC) and are cross-checked against the stored fingerprints; mismatch refuses the send. The fingerprint is the tamper-evidence cross-check, not an obfuscation: if a malicious actor edits the DB row to point at a different recipient, the next approve attempt fails because the operator's supplied list won't hash to the same set.
+- **Template validation rejects raw values at draft time.** `_validate_template_no_raw_values` heuristic: any 4+ digit run (amount / invoice number / personnummer pattern), any literal `@domain` string (recipient should already be a fingerprint), 2 KB body length cap (template, not content). Engineering rule #6 fail-closed: when in doubt, raise — real templates use placeholders like `{{count}}` / `{{amount_band}}`.
+- **`ApprovalRecord` reused for the draft audit** (rule #2 — single source of truth for human approvals). The `proposal_id` column carries the `"draft:{id}"` namespace so a single SELECT on `approval_records` covers both proposal approvals and draft approvals. The audit page can render both flows from one table.
+- **YAML `direction: both`** for `gmail.yaml` + `outlook.yaml` — these are now legitimately bidirectional (read metadata + send approved drafts via the same Nango integration). One pre-existing test asserted Gmail was outbound-only; updated to assert `direction: both` since that's now correct.
+- **Capability `(context, adapters) -> context` signature preserved** (rule #1 — every other capability uses this shape). The kwargs come in via `context["draft_email"]` / `context["read_inbox_filters"]` so the existing `run_capability(name, context, adapters)` call site doesn't need to thread additional `**kwargs` through.
+- **`SessionLocal()` inside the capability**, not threaded from the runner. The OPERA runner's session is the run-scope session; the draft writer needs a self-contained transaction (the draft outlives the run). Same pattern as the LLM call log writer from Batch 13B.
+- **Three deliverers stay unchanged — `send_approved_draft` builds an `AgentReport` payload and calls `deliver_report`.** Rule #1: the send mechanics already exist; the email capability just supplies the payload. No new deliverer methods. SendGrid's `_strip_numbers` doesn't break drafts because draft templates already don't carry raw values (validated at draft time).
+- **`asyncio.run` from sync capability with a fallback for nested-loop hosts** — `send_approved_draft` runs synchronously (matches capability signature) but the deliverer methods are async. The function falls back to `loop.run_until_complete` when invoked from inside a running loop (Tauri sidecar, AAEA executor).
+- **`@router` mounts paths individually, not under a single prefix** — `/api/agents/{id}/drafts` lives under `/api/agents`, `/api/drafts/*` under `/api/drafts`. Both surfaces in the same router file means one import in main.py.
+
+**Reviewer caught:**
+- Initial test assertions used a top-level `from database.session import SessionLocal` which captured the production sessionmaker — even after `_override_sessionlocal` monkeypatched `database.session.SessionLocal`, the test's reference was stale. The capability's own late-import `from database.session import SessionLocal` inside the function body picked up the monkeypatch correctly (re-imported every call). Fix: test assertions use the test `factory()` for queries; the capability's writes go to the correct test engine via the monkeypatch.
+- The `_fake_send` monkeypatch needed to use the closed-over test `factory` for its DB writes, not the top-level `SessionLocal`. Same root cause as above.
+- Pre-existing `test_catalogue_endpoint_exposes_inbound_and_outbound_directions` asserted `gmail.direction == "outbound"`; updated to `"both"` since the gmail.yaml extension legitimately makes it bidirectional, and added a positive `slack_delivery.direction == "outbound"` assertion to keep the test's intent (verify direction classification works for the three cases: inbound-only, outbound-only, both).
+
+**Test results:** 13 new tests in `tests/test_email_capability.py`. Full backend: **1161 passed** (1148 + 13), one pre-existing test updated to reflect the YAML change. Frontend: 60 vitest + Vite build + typecheck clean. Landing: 33/33 static pages.
+
+**No-Data invariant audit (rule #6):**
+- Subject + body never reach the events table — blocked at normaliser FIELD_MAP whitelist. Verified by `test_gmail_normaliser_blocks_subject` + `_blocks_body` + `test_outlook_normaliser_blocks_subject`.
+- Full From/To/CC/BCC addresses never reach the events table — only `from_domain` survives.
+- Recipient addresses never reach the email_drafts table — only SHA-256 fingerprints. Verified by `test_draft_email_stores_fingerprint_not_address`.
+- Template strings rejected if they embed raw values (digits, literal @domain). Verified by `test_draft_email_never_stores_raw_values`.
+- API never returns fingerprints — only counts. Verified by `test_drafts_api_returns_recipient_count_not_fingerprints` (asserts no SHA-256 hex pattern in response body).
+- Cleartext recipients live only inside the approve-handler's runtime context for the duration of a send; never persisted. The fingerprint cross-check refuses a mismatched supply.
+- Capability fail-closed: `send_approved_draft` refuses on missing draft_id / draft not approved / unknown channel. Verified by `test_send_approved_draft_requires_approval` + `_rejects_pending`.
+
 ## 2026-05-26 — Batch 19 — Admin Dashboard + ABN Node landing copy
 Jacob requested the admin surface + a landing-copy refresh ("ABN" → "ABN Node" on the download page). The audit revealed that the Admin Dashboard is actually two very different surfaces; only one of them fits ABN's architecture.
 
