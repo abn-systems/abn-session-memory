@@ -38,11 +38,11 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Batch 22B klar — EXECUTOR + Fortnox write-back live
-Senast: EXECUTOR archetype + AVM tier-3 + Fortnox writes + RollbackRecord
-Nästa: Batch 22C — Tier 3 opt-in flow + DPA addendum + dashboard toggle
+Status: Batch 23 klar — Quinyx + Hogia TIER 3 (1214 tester gröna)
+Senast: quinyx_write.py + hogia_write.py + DPA v1.1 + per-connector toggles + AdminPage connector-matris
+Nästa: Batch 24 — TIER 3 telemetry + production outcomes
 
-Last updated: 2026-05-26 (after Batch 22A)
+Last updated: 2026-05-27 (after Batch 23)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md

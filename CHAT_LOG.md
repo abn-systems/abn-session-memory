@@ -11,6 +11,106 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 23 — Quinyx + Hogia write-back, DPA v1.1, connector toggles
+
+Broadens TIER 3 EXECUTE_CHANGE from Fortnox-only to a three-system allowlist. Adds Quinyx (schemaläggning) + Hogia (ekonomi) as first-class write connectors with the same opt-in shape Fortnox already uses.
+
+**Engineering decisions:**
+
+- **Refactored fortnox_write.py to use shared helpers — rule #2 overrode "mirror exactly".** The spec said "Mirror fortnox_write.py pattern exactly" but Engineering rule #2 says "One source of truth per concept. When two code paths need the same behaviour, both call the same helper." Triplicating the four internal helpers (~150 lines) across fortnox_write.py + quinyx_write.py + hogia_write.py would be ~450 lines of duplicate code that would drift on every Batch 22C-style update. Created `_tier3_write_helpers.py` with `Tier3WriteBlockedError` (base) + the four canonical helpers. fortnox_write.py refactored to thin wrappers; all 22 fortnox-related tests stayed green through the refactor. Per-connector exception classes (`FortnoxWriteBlockedError`, `QuinyxWriteBlockedError`, `HogiaWriteBlockedError`) subclass the base — existing test catches still work.
+
+- **Module-level `_nango_sync_call` thin wrapper kept per-connector.** When refactoring fortnox_write.py the first version had the GET/PUT helpers call `nango_sync_call` from the shared module directly. Three tests failed because they `monkeypatch.setattr(fw, "_nango_sync_call", _stub_nango)` — the monkeypatch couldn't intercept the call into the shared module. Fix: each connector module keeps a local `_nango_sync_call` thin wrapper that delegates to the shared helper. Test stubs still intercept; new code can use either symbol.
+
+- **Quinyx `approved_payroll` is hard-forbidden.** Mirrors the Fortnox `paid` allowlist reasoning. Once a shift is payroll-approved, the upstream Hogia/payroll batch has already consumed it; reverting it creates a reconciliation gap. Auditor-only territory in V1.
+
+- **Quinyx `create_absence` stores the new `absence_id` in `new_state` for rollback.** Most rollback flows restore a prior value from `prior_state`. Absence creation has no prior absence to restore — the rollback is "DELETE the absence by id". The capability captures the POST response's `id` field into `new_state.absence_id`, and `_rb_quinyx_create_absence` reads it to call `DELETE /v1/absences/{id}`. Documented inside the dispatch handler.
+
+- **Hogia API response shape is flat, not enveloped.** Fortnox returns `{"Invoice": {field: ...}}`; Hogia returns `{field: ...}` directly per the OpenAPI spec. So hogia_write.py uses straight dict accessors (`body.get(field)`) rather than the envelope helpers. Same pattern as Quinyx.
+
+- **DPA v1.1 is backward-compatible.** The PDF generator branches on `dpa_version` string comparison (`(dpa_version or "").lower() >= "v1.1"`). v1.0 renders the original "Endast Fortnox" bullet; v1.1 renders "Tillåtna system (v1.1)" with all three connectors listed. Existing v1.0 signatures stay valid (per the `Tier3DPASignature` unique constraint on `(tenant_id, dpa_version)`) so customers don't get logged out of TIER 3 by the version bump. AdminPage State C shows an "äldre — kan signeras om" badge when `dpa_version < current_dpa_version` so the customer is prompted to re-sign for the broadened write surface.
+
+- **`_rb_resolve_connection_id` is the single source of truth for the column-vs-prior_state policy.** Six new rollback handlers all need the same column-first + prior_state-fallback lookup (Batch 22C carry-over). Pulled it into one helper rather than copy-pasting the same 7 lines six times. Existing 3 Fortnox handlers still inline the lookup — refactoring them was out-of-scope for this batch and they're harmless duplication of a 7-line snippet.
+
+- **`Tier3ConnectorMatrix` reused in both State B + State C.** State B ("not signed yet") shows the matrix as "what would be activated after signing". State C ("signed") shows it as "what is live right now". Same component, different framing label. Bullet list trimmed to the three universally-applicable items (max-1-write, rollback, No-Data) since the per-connector specifics are now in the matrix.
+
+**Verification:**
+
+- Backend pytest: **1214 passed** (1202 + 12, zero regressions, 112 s)
+- Go suite (`golang:1.22-alpine`): all 7 packages green
+- Frontend: typecheck ✓, 60 tests ✓, Vite build ✓
+- Landing Next.js build: 33 static pages ✓
+
+**Manual pendings (unchanged from Batch 22C close-out):**
+
+- Hetzner Postgres `alembic stamp head` still pending — production restart will fail until the operator runs the two commands documented in CLAUDE.md `## Production DB`. Head expected: `10f575a96ce4 (head)`. (No new migration in Batch 23 — Quinyx + Hogia reuse the existing `RollbackRecord` table.)
+- GitHub branch-protection rule key: flip `Backend — 1202 tests` → `Backend — 1214 tests` in the Settings UI.
+- `SESSION_MIRROR_TOKEN` still expired — re-run the public mirror sync to `abn-session-memory` repo manually after push.
+
+**What's next — Batch 24 (preview):**
+
+TIER 3 telemetry — the production outcomes feed:
+- Per-tenant aggregate counters: writes_attempted / writes_succeeded / writes_rolled_back per (connector, agent, week)
+- AdminPage "Tier 3 outcomes" card surfacing the counters
+- Alert thresholds (e.g. > 10 % rollback rate triggers operator notification)
+- Optional opt-in telemetry channel ABN ↔ ABN Platform AB — aggregate-only, no per-tenant or per-write identifiers — so Customer Success can spot deteriorating tenants before they churn (this would require its own DPA addendum bump to v1.2)
+
+
+## 2026-05-26 — Batch 22C — TIER 3 Opt-in flow: DPA addendum + AdminPage panel + RollbackRecord V1 fix
+
+Final third of the TIER 3 trilogy. Turns `Tenant.tier3_enabled` from a developer flag into a customer-facing legally-binding opt-in with a signed DPA addendum, downloadable PDF evidence, audit-grade revocation, and the `RollbackRecord.connection_id` write-time fix that closes Batch 22B's V1 limitation.
+
+**Engineering decisions:**
+
+- **DGE renderer NOT reused for the DPA PDF.** The Document Generation Engine expects a `ReportData` schema (financial-report shape — metrics, time_series, findings, attestation proof). The Tier 3 DPA is a free-form legal artefact, not a report. Forcing it through DGE would require lying about the schema. Instead used reportlab directly via the same brand-palette pattern as `scripts/build_dpa_pdf.py` (which renders the master DPA the same way). Rule #1 still respected — reportlab is the underlying primitive both modules use, no new dep, no new toolchain. Documented this deviation in `tier3_dpa/generator.py`'s module docstring so the next contributor sees the reasoning.
+
+- **AdminPage.tsx extended, not rewritten.** Added `Tier3Section` + two modal components (`Tier3SignModal`, `Tier3RevokeModal`) alongside the existing `OverviewTiles` / `SystemStatusSection` / `UsersSection` / `ActivitySection`. The new section renders between Users and Activity. Three mutually-exclusive states (A platform off / B unsigned / C signed) match the backend status payload's flags one-to-one.
+
+- **Two-click signing UX.** The legal weight of activating EXECUTE_CHANGE demands defence-in-depth on the UI side too — a single accidental click can't flip `tier3_enabled`. The section button opens a confirmation modal carrying the four-bullet summary (Fortnox-only, max 1 write/run, rollback available, No-Data still applies); only the modal's primary button posts to `/api/admin/tier3/sign-dpa`. Same pattern for revoke (with an optional free-text reason field).
+
+- **`confirm=True` body field on sign endpoint.** Rejecting the request server-side without the explicit flag is rule #6 (Anthropic-grade safety, fail-closed). A misconfigured client that posts an empty body cannot accidentally sign the DPA.
+
+- **Double-signing returns 409, not 400.** The state — "an active signature already exists" — is a conflict, not a malformed request. Operator sees a clean status code; the AdminPage doesn't need to special-case the message.
+
+- **Denormalised state on Tenant + audit-grade truth in `tier3_dpa_signatures`.** The signature table carries the immutable record (with ip_address + user_agent for audit); the Tenant columns are the fast-read denormalisation for the admin panel. Both stay in sync via the same transaction. Revoke flips `Tenant.tier3_enabled=False` but preserves `tier3_dpa_signed_at` + version on the row as audit history.
+
+- **`UNIQUE (tenant_id, dpa_version)` on signature table.** Same tenant can't double-sign the same version. A bumped version (v1.1 → v2.0) gets a fresh row with no conflict. Re-sign after revoke works because the constraint is on (tenant, version), not (tenant) alone.
+
+- **`RollbackRecord.connection_id` is a first-class column now.** The Batch 22B V1 limitation was: the rollback handlers read `connection_id` from `prior_state` JSON, but the capabilities didn't put it there — they only stored the field they touched. Operators had to add it via the UI before a rollback would work. Batch 22C: `connection_id` is its own column. Capabilities pass it through `_persist_rollback_record(connection_id=...)`. Rollback dispatchers read `getattr(row, "connection_id", None) or (row.prior_state or {}).get("connection_id", "")` so historical pre-22C rows stay rollback-able (forward-compat).
+
+- **Raw SQL `IF NOT EXISTS` migration.** Three schema changes in one Alembic revision (`10f575a96ce4`): the new table + index, two `ALTER TABLE … ADD COLUMN` on `tenants`, one on `rollback_records`. Replay-safe per the Batch 12 → 16 → 17 → 18 → 20 → 22B lesson.
+
+- **No tests reused — built `tests/test_tier3_dpa.py` fresh.** Existing `test_tier3_executor.py` covers the EXECUTOR archetype + AVM tier-3 + Fortnox write contract; the DPA opt-in flow is orthogonal. 9 new tests:
+  - 4 sign endpoint (creates row · enables tier3 · refuses confirm=False · refuses double-sign)
+  - 2 revoke + status (revoke disables tier3 · status payload shape)
+  - 1 PDF generation (`%PDF` header + non-trivial size + idempotent regen)
+  - 2 gate + V1 fix (`tier3_enabled=False` blocks Fortnox writes · `RollbackRecord.connection_id` populated)
+
+  Scaffolding mirrors `test_tier3_executor.py`: in-memory SQLite via StaticPool, `database.session.SessionLocal` monkey-patched, FastAPI TestClient with `get_db` + `get_current_user` overrides.
+
+**Verification:**
+
+- Backend pytest: **1202 passed** (1193 + 9, zero regressions, 183 s).
+- Go suite (`golang:1.22-alpine`): all 7 packages green.
+- Frontend: typecheck ✓, 60 tests ✓, Vite build ✓.
+- Landing Next.js build: 33 static pages ✓.
+
+**Manual pendings (unchanged from Batch 22B close-out):**
+
+- Hetzner Postgres `alembic stamp head` still pending — production restart will fail until the operator runs the two commands documented in CLAUDE.md `## Production DB`. Head expected: `10f575a96ce4 (head)`.
+- Branch-protection rule key needs to flip from `Backend — 1193 tests` to `Backend — 1202 tests` in the GitHub Settings UI (lockstep with the ci.yml `name:` already bumped here).
+- `SESSION_MIRROR_TOKEN` still expired — the public mirror sync for `abn-session-memory` repo must be re-run manually after the push.
+
+**What's next — Batch 23 (preview):**
+
+Now that TIER 3 is end-to-end (foundation 22A · writes 22B · opt-in 22C), the natural next move is broadening the connector surface so TIER 3 isn't Fortnox-only:
+
+- Quinyx write-back: schedule_change capability + AVM rules + Nango proxy
+- Hogia write-back: invoice_status capability mirroring Fortnox's
+- AVM industry-specific allowlists (`scheduling` industry pins Quinyx; `payroll` pins Hogia)
+- DPA addendum versioning: bump to v1.1 when Quinyx/Hogia enter the allowlist; existing v1.0 signatures stay valid but prompt for re-sign on next AdminPage visit
+- Frontend: AdminPage "Tier 3-aktiverade system" matrix replacing the single `fortnox_write_enabled` flag with per-connector toggles
+
+
 ## 2026-05-26 — Batch 22B — TIER 3 EXECUTE_CHANGE: EXECUTOR archetype + Fortnox write-back + RollbackRecord
 
 Second half of the TIER 3 work. Batch 22A laid the cryptographic foundation (abn-security + canonical signatures); this batch wires the actual write-back. After this, ABN is no longer just an *Autonomous Observer Network* — it's the full *Autonomous Backoffice Network* the brand promises, gated behind a three-layer opt-in.
