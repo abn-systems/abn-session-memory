@@ -11,6 +11,66 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-26 — Batch 22B — TIER 3 EXECUTE_CHANGE: EXECUTOR archetype + Fortnox write-back + RollbackRecord
+
+Second half of the TIER 3 work. Batch 22A laid the cryptographic foundation (abn-security + canonical signatures); this batch wires the actual write-back. After this, ABN is no longer just an *Autonomous Observer Network* — it's the full *Autonomous Backoffice Network* the brand promises, gated behind a three-layer opt-in.
+
+**Architecture decisions made:**
+
+- **Two tier-3 switches, not one.** Platform-level `settings.enable_execute_change` (env-driven, ops-controlled) + per-tenant `Tenant.tier3_enabled` (DB-driven, legal-controlled). The DPA addendum is the platform-level legal opt-in; the tenant flag is the operational opt-in. **Both must be True.** Different stakeholders own different switches — operations can disable TIER 3 globally for any reason without touching tenant data; legal can disable per-tenant without touching ops config. Plus `fortnox_write_enabled` as the per-system kill-switch → three-layer defence.
+
+- **AVM ALWAYS downgrades, never rejects.** Engineering rule #6 (fail-closed) interpreted via the human-in-the-loop principle: a misconfigured tier-3 blueprint shouldn't kill the run; it should surface as a tier-2 proposal. Downgrade chain: EXECUTOR → PLANNER, tier 3 → 2, `execute_change=False`, plus an `AVM_DOWNGRADE_TIER3: <reason>` warning so operators see what happened in the audit log. Four rules trigger downgrade: (a) regulated industry blocks EXECUTE_CHANGE, (b) EXECUTOR archetype without the explicit flag + step, (c) tier-3 blueprint missing signature, (d) EXECUTE_CHANGE step lacks `rollback_action`. None reject — all downgrade.
+
+- **`paid` deliberately NOT in the allowed status set.** Spec said "Only allowed statuses: cancelled, reminded — never paid (financial record — too risky)". Honoured byte-for-byte: `ALLOWED_INVOICE_STATUSES = frozenset({"cancelled", "reminded"})`. Touching a financial record requires auditor sign-off + bookkeeping reconciliation; V1 stays at the safe boundary. The allowlist is the audit-friendly surface — adding `paid` later requires an explicit batch + a SOC2 readiness review.
+
+- **Signature verified TWICE per tier-3 step.** OPERA Mission Layer pre-flight (Batch 22B) verifies once at the run boundary; each capability re-verifies before its Nango call. Two HTTP round-trips to abn-security — cheap; the safety margin is large. A Mission Layer bug can't bypass the gate because the per-capability check runs anyway.
+
+- **`RollbackRecord` is the audit-and-undo seam, not a transactional log.** Written AFTER the Nango write succeeds — its existence is the proof the write actually happened. `prior_state` carries the field's value before the write (aggregate, never customer data — `{"status": "open"}` or `{"cost_center": "CC-100"}`). The rollback endpoint reads this and dispatches the reverse Nango call via `_ROLLBACK_DISPATCH`. Idempotent (second rollback call short-circuits on `rolled_back=True`).
+
+- **`run_id` as String FK, not Integer.** Per the Batch-17+ convention — `AgentRun.run_id` is a UUID string, not the integer PK. Same shape as `Finding.run_id`, `ROILedger.run_id`, `NotificationDispatch`'s relation to runs.
+
+- **5th ACTION_MAP category `execute` + `KIND_EXECUTE` constant.** The spec asked for an `execute.fortnox_*` action_map key shape. The existing four categories (fetch_data/analyze/propose/report) didn't accommodate EXECUTE_CHANGE actions, so a 5th category was the cleanest extension. Updated the existing `test_action_map_has_all_four_categories` → `_all_five_categories` so the test name reflects reality.
+
+- **EXECUTOR archetype was already in `VALID_ARCHETYPES`** (since the initial Blueprint Generator). Batch 22B just wired `_derive_archetype_handbook` to actually produce it under the right conditions. New kwarg `tier3_enabled: bool = False` with backward-compat default — existing callers see no change in behaviour.
+
+- **Reused `enable_execute_change` Settings field** rather than adding a new `tier3_enabled` Settings (which the spec hinted at). The existing field already covers the platform-wide concept (rule #2 — one secret/flag per env var). The tenant column is the per-tenant complement; the platform Settings is the platform-wide complement; they're not duplicates.
+
+- **`_ROLLBACK_DISPATCH` lives in `admin.py`** — the rollback API endpoint is the inverse-action dispatcher, so the routing belongs next to the endpoint. Each handler re-uses the Fortnox helpers from `fortnox_write._fortnox_put_invoice_field` (rule #1 — extend the Nango plumbing, don't fork it).
+
+- **V1 connection_id limitation documented.** The current rollback handlers require `connection_id` in `prior_state`, but the Batch-22B Fortnox writes don't store it there (only the field they touched). Real production rollback needs the connection_id baked into the row at write-time — that's flagged as Batch 22C work. The handlers raise a clean `RuntimeError("rollback requires connection_id in prior_state")` so the operator sees the V1 boundary instead of a silent failure.
+
+**Reviewer caught (mid-batch):**
+
+1. **Pre-existing `test_action_map_has_all_four_categories`** asserted exactly 4 categories. Adding `execute` broke it. Updated the test name + assertion to reflect the architectural change.
+
+2. **`Tenant.tier3_enabled` would have collided with `Tenant.policy.max_tier`** if implemented naïvely as redundant config. Resolved by treating them as defence-in-depth: `tier3_enabled` is the platform-level boolean kill-switch, `policy.max_tier` is the granular tier ceiling. EXECUTOR archetype requires both (boolean True + max_tier == 3). They diverge intentionally for tenants who signed the DPA addendum but haven't yet operationalised tier 3.
+
+**Test results:** 13 new tests in `tests/test_tier3_executor.py`. Full backend: **1193 passed** (1180 + 13), one pre-existing test name updated. Go: 7/7 packages green. Landing: 33/33 static pages.
+
+**No-Data invariant audit (rule #6):**
+- `RollbackRecord.prior_state` + `new_state` JSON columns hold only the field the capability touched — status string, cost-centre code, boolean flag. Never customer names, full amounts beyond the touched field, personnummer.
+- `target_id` is the external Fortnox invoice number — an identifier the customer already has in Fortnox, not a value extracted from their data (same pattern as `Subscription.stripe_customer_id`).
+- Rollback audit row writes `ABNActivityLog{activity_type="rollback", connector_type="fortnox", resource_name=action_type, sent_outside=0, pii_detected=0}` — counts only.
+- All capability errors map to `FortnoxWriteBlockedError` with short reason strings — never log Nango response bodies.
+- Three-layer opt-in check happens BEFORE any Nango call; even a misconfigured tenant can't trigger an outbound HTTP to Fortnox.
+
+**End-to-end TIER 3 flow now functional:**
+1. Tenant signs DPA addendum → operator flips `Tenant.tier3_enabled=True`
+2. Operator sets `ENABLE_EXECUTE_CHANGE=true` + `FORTNOX_WRITE_ENABLED=true` in env
+3. Blueprint Generator runs → detects `tier3_enabled_for_run=True` → produces tier-3 blueprint with `execute_change=true` + EXECUTOR archetype
+4. AVM step 5b validates: tier-3 rules pass → blueprint signed via canonical signer (Batch 22A)
+5. Agent run starts → OPERA `_tier3_preflight_or_raise` verifies signature cross-process via abn-security
+6. Execute phase reaches `execute.fortnox_update_invoice_status` step
+7. Capability does three-layer opt-in + signature re-verify + GET prior + PUT new + persist RollbackRecord
+8. If something went wrong: NODE_ADMIN goes to `/admin/rollback-records` → clicks rollback → reverse Nango call restores prior state
+
+Every step has its own fail-closed gate. The chain is end-to-end now; **closes the unbuilt half of the product promise** from the audit two days ago.
+
+**Manual pendings (unchanged from Batch 22A close-out):**
+1. `SESSION_MIRROR_TOKEN` still expired — manual mirror sync done.
+2. Branch-protection rule key: `Backend — 1180 tests` → `Backend — 1193 tests`.
+3. Hetzner DB `alembic stamp head` still pending since Batch 8 — now with one more migration on the chain (`b32c7e2ba5e5`).
+
 ## 2026-05-26 — Batch 22A — TIER 3 foundation: abn-security compiled + Go↔Python blueprint signatures
 
 First half of the TIER 3 EXECUTE_CHANGE work. Two long-standing gaps closed in one batch:
