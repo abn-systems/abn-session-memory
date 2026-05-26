@@ -11,6 +11,38 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-26 — Batch 19 — Admin Dashboard + ABN Node landing copy
+Jacob requested the admin surface + a landing-copy refresh ("ABN" → "ABN Node" on the download page). The audit revealed that the Admin Dashboard is actually two very different surfaces; only one of them fits ABN's architecture.
+
+**Architecture decisions made:**
+- **Surface A only — per-Node admin.** The NODE_ADMIN's view of their own Node. Every endpoint scoped to `current.tenant_id`. No cross-tenant queries ever.
+- **Surface B (cross-tenant fleet admin) audited + explicitly rejected.** Populating it requires either (a) pulling per-Node aggregates back to a central ABN store — at which point "no customer data leaves the Node" stops being architecturally enforceable, or (b) an aggregate-only opt-in telemetry channel which is its own batch with its own DPA addendum. The information ABN Systems AB actually needs for fleet ops already exists outside the Node: revenue via Stripe Dashboard, downloads via GitHub Releases analytics, uptime via external monitoring of `api.abnplatform.com`.
+- **Aggregate existing tables, never new persistence.** `/api/admin/overview` is one query per existing model (Tenant, Agent, AgentRun, Finding, ROILedger, Proposal, User, Subscription, Connector) — no new tables, no new audit columns. Engineering rule #2 (one source of truth) applies in reverse: the existing tables already hold every fact the admin tile shows.
+- **Reuse `require_role(Role.NODE_ADMIN)`, never re-implement RBAC.** All three admin endpoints declare the existing FastAPI dependency factory. Rule #1 in spirit: the auth scaffold from Batch 1 was built for exactly this surface.
+- **Surface `MAX_NODE_ADMINS_PER_ORG` constant via the API, not hard-coded in the frontend.** The cap (3) lives in `auth.rbac`; the overview payload carries it so a future cap change touches one file.
+- **Sidebar link visible to everyone, page itself is the gate.** Same pattern as `Billing` — non-NODE_ADMIN users see the link but `/admin` renders an "Ingen behörighet" card when the backend returns 403. Threading `currentUser.role` through the layout to hide the link would add state for cosmetics; the access control is at the API layer where it belongs.
+- **`AdminPage.tsx` mirrors `BillingPage.tsx` exactly** — same TanStack Query 30s refetch, same `Card` / `PageHeading` / `StatusBadge` / `Table` from `components/ui.tsx`, same Swedish copy style, same Stripe-period date rendering. Rule #1 — pattern reuse, not a new design language.
+- **The activity-log "Sänt utanför" column renders `0 byte` in green.** Carries the same No-Data signal the audit page uses — the operator sees at a glance that ABN's outbound traffic for that activity was zero, every row.
+- **Three scheduler singletons (`observer_scheduler`, `agent_scheduler`, `friday_report_scheduler`) already export `.status()`** (Batches 9, 16) — `/api/admin/schedulers` is a thin pass-through. Each returns `{"available": True, ...payload}` on success, `{"available": False, "error": ...}` when the import fails — the frontend can render the same UI either way.
+- **Landing copy: minimal, surgical changes only.** Two edits in `landing/app/company/download/`: the `<h1>` + the page metadata `title`, plus a new explainer `<section>` above the download accordion. No restructuring, no layout changes — the existing dark-theme styling (border `#2A2040`, card `#111118`) extends to the new block.
+- **The architectural noun "Node" was already canonical in code** (`NODE_ADMIN` role, `node_id` setting, `node_signing_key`). Batch 19 just makes the customer-facing copy match.
+
+**Reviewer caught:**
+- Initial test seed for `Finding` rows failed with `NOT NULL constraint failed: findings.id` because `Finding.id` is a UUID **string** (not autoincremented Integer like the rest of the schema). Fixed by setting explicit `id=f"f-{i}"` per row.
+
+**Test results:** 9 new tests in `tests/test_admin_routes.py` covering auth (requires_node_admin × 2, non_admin_gets_403, unauthenticated → 401/403/422), shape (full payload contract), correctness (agent counts; 7-day window filters out runs from 30 days ago + correctly counts in-window findings + correctly sums ROI; both `pending` and `pending_approval` count as pending), activity-log filtering (days=7 surfaces 2 rows, days=60 surfaces all 3, unknown activity_type filter → 0), schedulers (returns `available` flag per singleton).
+
+**Verification:**
+- Backend: **1148 passed** (1139 + 9), no regressions
+- Frontend: 60 tests passed + Vite build OK + typecheck clean
+- Landing: 33/33 static pages compiled
+
+**No-Data invariant audit (rule #6):**
+- Every count in the overview is filtered by `current.tenant_id` — admin can only see their own tenant's rows. RBAC scope = data scope.
+- Activity log returns aggregate columns only (`records_read` / `pii_detected` / `sent_outside`) — never per-record customer values; the underlying `ABNActivityLog` rows don't carry them in the first place.
+- The frontend never embeds the activity_id or any UUID in URLs or screenshots-friendly text; everything visible is type / status / counts.
+- The Node identity (`node_id`, `env`) is surfaced — these are infrastructure identifiers, not customer data.
+
 ## 2026-05-26 — Batch 18 — Teams/Slack notifications + approval buttons
 Jacob requested the full approval-button subsystem: outbound buttons in Slack + Teams, signature-verified webhook receivers, HMAC defence-in-depth, OPERA wired, 14 tests.
 
