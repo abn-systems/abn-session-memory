@@ -38,11 +38,11 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Batch 23 klar — Quinyx + Hogia TIER 3 (1214 tester gröna)
-Senast: quinyx_write.py + hogia_write.py + DPA v1.1 + per-connector toggles + AdminPage connector-matris
-Nästa: Batch 24 — TIER 3 telemetry + production outcomes
+Status: Batch 24 klar — TIER 3 telemetry live (1231 tester gröna)
+Senast: Tier3Telemetry + atomic counters + DPA v1.2 + alert thresholds + AdminPage TelemetryCard
+Nästa: Batch 25 — auto-pause + per-agent rollback rates + telemetry NDJSON export
 
-Last updated: 2026-05-27 (after Batch 23)
+Last updated: 2026-05-27 (after Batch 24)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md

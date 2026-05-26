@@ -11,6 +11,53 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 24 — TIER 3 telemetry, atomic counters, DPA v1.2, alert thresholds
+
+Operational visibility for TIER 3. Every write path now emits a counter; AdminPage surfaces the rollup; alert thresholds flag deteriorating tenants; DPA bumped to v1.2 to disclose the new processing activity.
+
+**Engineering decisions:**
+
+- **Two-statement portable upsert beats SA dialect-specific insert.** SQLAlchemy 2.0 has `sqlalchemy.dialects.{sqlite,postgresql}.insert(...).on_conflict_do_update(...)` which would let us write a single-statement atomic upsert, but the two dialects emit different SQL and our code would have to branch on `db.bind.dialect.name`. Instead used a portable pair: `INSERT ... ON CONFLICT DO NOTHING` (both dialects, ≥SQLite 3.24, all supported Postgres) followed by `UPDATE col = col + :amount`. Both statements are atomic on the row; two concurrent +1's yield correct sum. No dialect branching, no extra dependency.
+
+- **Field allowlist makes the f-string substitution injection-safe.** The UPDATE clause needs the field name interpolated (you can't bind a column name in SQL). Gated through a `frozenset({"writes_attempted", "writes_succeeded", "writes_rolled_back", "writes_blocked"})` allowlist; anything else short-circuits with a logged warning. Every other dynamic value in the SQL goes through parameter binding.
+
+- **Fail-silent at THREE layers, not one.** Inner try/except around the SQL execute. Outer try/except around the entire function body (catches setup-time failures like SessionLocal import errors). And the call sites wrap their own try/except around `increment_tier3_counter` too (defence-in-depth — even a misconfigured logger that re-raises in `logger.warning` can't break a Fortnox write). Rule #3 demands telemetry never blocks a business write; three layers of fail-silent guarantee it.
+
+- **`_bump_succeeded(spec)` lives in each per-connector module, not the shared helpers.** It's a 4-line function — duplicating it across `fortnox_write.py` + `quinyx_write.py` + `hogia_write.py` is cheaper than threading a generic helper through (the only difference is the `_INTEGRATION` constant captured by closure). The shared helpers stay focused on the three things that genuinely need centralisation: opt-in check, signature verify, rollback record persistence.
+
+- **Rollback dispatch decrements `writes_succeeded` by 1.** This was a spec call-out and it's the right call: a rollback isn't a fresh failure (which would be `writes_blocked`), it's a reversal of a previously-succeeded write. The pair (`+writes_rolled_back`, `-writes_succeeded`) is "atomic-enough" — each increment is a single-row atomic UPDATE, and a crash between the two leaves an over-counted `rolled_back` which is harmless (audit log is the source of truth; telemetry is reporting). Wired in admin.py at the single `_ROLLBACK_DISPATCH` invocation site so all 9 rollback handlers share the same telemetry contract automatically.
+
+- **`tenant_id` added to `Tier3StatusResponse` rather than fetching user info separately.** The TelemetryCard needs `tenant_id` to call `/telemetry/summary`. Cheapest path: extend the already-polled `Tier3StatusResponse` with one string field. Avoids a new `/api/me` or similar fetch and keeps the AdminPage at exactly one Tier 3 query per refresh tick.
+
+- **Null vs zero policy for rate columns.** `success_rate_pct` is null when `writes_attempted == 0`; `rollback_rate_pct` is null when `writes_succeeded == 0`. Centralised in a `_ratio_pct(num, denom)` helper so the policy lives in one place (rule #2). Frontend renders "—" for null. Prevents the silly "100 % rollback rate" reading when you had 1 rollback and 0 successes (it's actually undefined).
+
+- **TelemetryCard rendered in States B + C, NEVER State A.** State A means the platform-wide kill-switch is off — there are no Tier 3 writes happening, so a counter card would just show a row of zeros and confuse the customer. State B (unsigned) keeps it because the customer might have prior activity from before they revoked. State C (signed + active) is the primary case.
+
+- **DPA v1.2 disclosure is mandatory per GDPR Art. 28 (3)(a).** Adding any new processing activity — even an aggregate one with no customer data — is a "controller-processor agreement update" event under the regulation. We have to put it in writing in the DPA and have the customer re-sign. The PDF generator's `is_v12_or_later` branch adds the telemetry bullet right after the "No-Data-garantin gäller" bullet so the reader sees "we don't touch customer data" first and "we do track aggregate counters" second.
+
+- **Alert threshold default 20 %.** Tuned for noise vs signal. 10 % (the spec preview suggested this) is too noisy for tenants with low write volume — a single rollback at 5 successes triggers an alert. 20 % is the right floor for "this connector is genuinely misbehaving". Operators can tune via env var if they want stricter or looser thresholds.
+
+**Verification:**
+
+- Backend pytest: **1231 passed** (1214 + 17, zero regressions, 205 s)
+- Go suite (`golang:1.22-alpine`): all 7 packages green
+- Frontend: typecheck ✓, 60 tests ✓, Vite build ✓
+- Landing Next.js build: 33 static pages ✓
+
+**Manual pendings:**
+
+- Hetzner Postgres `alembic stamp head` — pending. Head expected: `3c9e1f4a8b2d (head)`. (Single new table `tier3_telemetry` + 2 indexes; raw SQL `IF NOT EXISTS` so it's idempotent against an already-migrated DB.)
+- GitHub branch-protection rule key: flip `Backend — 1214 tests` → `Backend — 1231 tests` in Settings UI.
+- Manual mirror sync to `abn-systems/abn-session-memory` after push.
+
+**What's next — Batch 25 (preview):**
+
+The natural next step after operational visibility is operational *intervention*:
+- Auto-pause: when a connector's `rollback_rate_pct` exceeds a stricter threshold (e.g. 40 %), automatically flip `Tenant.tier3_enabled = False` + audit log + Slack/Teams notification
+- Per-agent rollback rates (currently per-tenant per-connector only) so a single broken blueprint can be pinned without flagging the whole tenant
+- Telemetry NDJSON export — opt-in daily snapshot the operator wires to their own Grafana/Datadog
+
+
 ## 2026-05-27 — Batch 23 — Quinyx + Hogia write-back, DPA v1.1, connector toggles
 
 Broadens TIER 3 EXECUTE_CHANGE from Fortnox-only to a three-system allowlist. Adds Quinyx (schemaläggning) + Hogia (ekonomi) as first-class write connectors with the same opt-in shape Fortnox already uses.
