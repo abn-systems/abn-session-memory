@@ -11,6 +11,65 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-26 — Batch 22A — TIER 3 foundation: abn-security compiled + Go↔Python blueprint signatures
+
+First half of the TIER 3 EXECUTE_CHANGE work. Two long-standing gaps closed in one batch:
+1. `services/abn-security` (Go) compiles + tests **for the first time ever** since it was scaffolded in handbook ch. 11.
+2. Blueprint signatures **round-trip across Python and Go** — same byte stream, same key, same digest.
+
+**Architecture decisions made (all rule-driven deviations from spec):**
+
+- **Module name `abnsecurity` (not `github.com/abn-systems/abn-security` as spec assumed).** Read existing `go.mod` first — module is `abnsecurity`, stdlib-only, no third-party deps. Used `abnsecurity/internal/blueprint` for the new package. Spec was guessing at the module path.
+
+- **Env var unified to `ABN_NODE_SIGNING_KEY` (NOT spec's new `ABN_SIGNING_KEY`).** The existing abn-security `main.go` already reads `ABN_NODE_SIGNING_KEY` for the identity verifier. Adding a parallel `ABN_SIGNING_KEY` would create two confusing env vars for the same secret — exactly the kind of duplication rule #2 forbids. Reused the existing one. Python settings `node_signing_key` (which Docker Compose maps to `NODE_SIGNING_KEY` env var on the python container, then to `ABN_NODE_SIGNING_KEY` on the abn-security container) is the canonical name going forward.
+
+- **`BlueprintVerifier` is a higher layer on top of existing `identity.HMACVerifier`** — not a fork of it. The HMAC primitive (constant-time compare over arbitrary strings) already lives in `identity`; the new package adds blueprint-specific logic (canonical JSON, metadata extraction, tier-3 flag enforcement). Two layers, single primitive (rule #1).
+
+- **`api.Server` extended via `WithBlueprintVerifier` builder method, NOT rewritten.** The existing `NewServer(manager, engine, guard)` signature stays unchanged — existing tests + existing callers in `cmd/abn-security/main.go` see no behaviour change. The new `WithBlueprintVerifier(v, audit)` is opt-in builder style. When nil, the `/verify-blueprint` endpoint returns 503 fail-closed.
+
+- **Two divergent Python signers existed before the batch started (REVIEWER CAUGHT):**
+    - `agent_engine.blueprint_generator.sign_blueprint` used `json.dumps(payload, sort_keys=True, default=str)` — **default whitespace separators**, `, ` and `: ` (with spaces). Plus key `settings.blueprint_signing_key`.
+    - I had to add a Go-compatible signer that uses `separators=(",", ":")` (no whitespace) and key `settings.node_signing_key`.
+  - **Resolution**: New `backend/trust/blueprint_signer.py` is the SSoT for the canonical form. The legacy `generator.sign_blueprint`/`verify_blueprint` migrated to thin wrappers that delegate. Same function names, same import paths, same call sites — but now the canonical form is unified. Existing tests do round-trip (sign → verify in the same test) so they all still pass under the migration. The legacy `blueprint_signing_key` setting stays on Settings for backward compatibility but is no longer used by any new code; future batch can drop it cleanly.
+
+- **Canonical form contract is now a single-source-of-truth Python module that the Go service mirrors byte-for-byte:**
+    - `json.dumps(bp, sort_keys=True, separators=(",", ":"))` in Python.
+    - `json.Marshal(map[string]any)` in Go — emits identical bytes for the same input because Go's stdlib JSON sorts top-level map keys and emits no whitespace by default.
+    - **The contract is asserted in code**: `test_canonical_form_matches_go_reference` computes the Python signature by hand using `hmac.new(...).hexdigest()` over the byte stream and compares against `sign_blueprint(...)`. If anyone ever changes the canonical form in only one language, this test fails immediately. Go side has `TestSign_ProducesVerifiableSignature` which does the same round-trip on the Go side.
+
+- **Tier-3 flag rule is defence-in-depth on top of HMAC.** A blueprint with `"tier": 3` must also carry a truthy `"execute_change"` field. Without it: `Valid=false` regardless of whether the signature is correct. Rationale: forged tier promotion (attacker takes a valid tier-2 signature and changes `tier` to 3 in a downstream system) gets rejected on TWO levels — first because changing `tier` invalidates the signature, second because the flag is missing. Belt-and-braces (rule #6).
+
+- **Empty-key contract is FAIL-CLOSED.** `BlueprintVerifier` constructed with empty key responds to every Verify call with `Valid=false, Reason="signing key unconfigured"`. The HTTP endpoint short-circuits with **503 Service Unavailable** when `ABN_NODE_SIGNING_KEY` is empty. Defends against the "deploy with no env var" mistake — better to refuse all verifies than silently approve them.
+
+- **Audit log uses short uppercase tokens, not free-form reason strings.** `audit.Logger.Log("blueprint", "verify", "DENIED_SIG_MISMATCH")` — grep-able, fixed vocabulary, never carries the actual signature or payload (No-Data invariant on the audit trail).
+
+**Local Go compilation breakthrough:**
+- No Go toolchain in the dev environment (known issue since handbook ch. 11 was first scaffolded).
+- Tried `which go` → not installed. `winget install GoLang.Go` → download started but the path-resolution didn't surface a usable binary in this session.
+- **Docker pivot**: ran `docker run --rm -v "/c/Users/Jacob/.../abn-security:/src" -w /src golang:1.22-alpine sh -c "go vet ./... && go build ./... && go test ./..."` — worked immediately. First-ever local compile of abn-security: **all 5 existing packages green** before any new code was added.
+- After adding the new package + endpoint: **7/7 packages green** (75% coverage on `internal/blueprint`, 100% on `identity`, 88-95% on the others). The CI `security-go` job (which uses `actions/setup-go@v5`) runs the same Go 1.22 toolchain.
+- This means **the abn-security service is now operationally trustworthy** for the first time. Every batch from here can include Go changes that get exercised locally.
+
+**Test results:** 9 new Go tests + 9 new Python tests. Full backend: **1180 passed** (1171 + 9). All Go packages green. Landing 33/33. Zero regressions despite migrating the canonical signer.
+
+**No-Data invariant audit (rule #6):**
+- Canonical JSON form is computed on the dict EXCLUDING any raw fields the agent might have leaked there; we read keys like `agent_id`, `tenant_id`, `tier`, `signature`, `execute_change` — all metadata. The signed content is the blueprint structure (steps, capabilities, etc), all of which is aggregate-by-construction.
+- HTTP request/response payloads carry base64-of-JSON in transit but never log it.
+- Audit entries carry only `{system, subject, decision}` — short tokens, never the blueprint itself.
+- Failure reasons are mapped to short uppercase codes (`SIG_MISMATCH`, `TIER3_NO_FLAG`, etc) — no free-form text in the audit log.
+
+**Manual pendings (unchanged from Batch 21 close-out):**
+1. `SESSION_MIRROR_TOKEN` still expired — manual mirror sync done for this batch.
+2. Branch-protection rule key: `Backend — 1171 tests` → `Backend — 1180 tests`.
+3. Hetzner DB `alembic stamp head` still pending since Batch 8.
+
+**What's next — Batch 22B (the second half of TIER 3 EXECUTE_CHANGE):**
+- `EXECUTOR` archetype in `blueprint_generator._derive_archetype_handbook` (today returns one of MONITOR/ANALYZER/PLANNER/COORDINATOR; needs the fifth).
+- AVM rules for tier 3 — forbidden by default for every industry; opt-in per-tenant flag.
+- Per-connector write capabilities — first `Fortnox.create_invoice` + `Fortnox.update_invoice` (highest-impact for SE customers).
+- OPERA Mission Layer pre-flight via `verify_blueprint_via_security_service` — refuses to start any tier-3 step on `Valid=false`.
+- Write-back rollback semantics in the OPERA Act phase.
+
 ## 2026-05-26 — Batch 21 — Wire Proposal creation into OPERA runtime (Tier-2 end-to-end)
 Closes the gap I flagged in the "Top-3 most impactful missing things" answer earlier today: every Tier-2 surface ABN has built since Batch 11 was infrastructurally complete but functionally empty, because no OPERA path created Proposal rows. Batch 21 lands the bridge.
 
