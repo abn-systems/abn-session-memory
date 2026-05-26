@@ -36,7 +36,13 @@ what has been built, what prompts were given, and what is next.
 -->
 
 # ABN — Session Memory
-Last updated: 2026-05-24 (after Batch 6)
+
+## JUST NU
+Status: Batch 18 klar — väntar på Jacobs godkännande
+Senast: Teams/Slack approvals — Block Kit + Adaptive Card v1.4 med Godkänn/Avvisa-knappar; POST /api/slack/interactions (HMAC v0 signature verify + 5min replay-window) + POST /api/teams/interactions (bearer-token V1, JWT-via-JWKS dokumenterat som V2); NotificationDispatch-tabell correlerar message_id → proposal_id; dispatch_token HMAC defence-in-depth; _record_decision() är single source of truth; alltid 200 OK för att stoppa retries; OPERA _save_run_record fan-outar automatiskt. 14 nya tester, 1139 totalt.
+Nästa: Batch 19 — Admin Dashboard + ABN Node
+
+Last updated: 2026-05-26 (after Batch 18)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md
@@ -45,12 +51,14 @@ https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESS
 In any new Claude chat, paste this URL and say "read this":
 https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 
-## What is built (as of 2026-05-24)
-- Backend: **1010 tests passing** (939 V1 baseline + 23 Batch 1 + 20 Batch 2 + 8 Batch 5 + 20 Batch 6), V1 feature-complete
+## What is built (as of 2026-05-25)
+- Backend: **1139 tests passing** (V1 baseline 939, then per-batch additions through Batch 18; full per-batch accounting in the dated entries below), V1 feature-complete
+- **Production deploy live** (Batch 7): Hetzner CAX21 server `abn-core` at 46.225.165.62 (Frankfurt, Ubuntu 24.04, GDPR DPA signed). All four containers running under Docker Compose at `/opt/abn`. `https://api.abnplatform.com/health` returns `{"status":"ok","env":"production"}`. Vercel landing on `abnplatform.com` + `www.abnplatform.com` both Valid Configuration.
 - Frontend: Tauri desktop dashboard live, Swedish UI, NSIS installer built (`ABN_1.0.0_x64-setup.exe`)
 - Landing: 33 prerendered static pages live on Vercel (abn-nine.vercel.app), full dark theme
 - Auth: Clerk + RBAC (NODE_ADMIN / AGENT_MANAGER / VIEWER / AUDITOR) + named-employee invite flow live
 - AgentDetailPage.tsx: built and **fully hydrated** by the new Finding model + 3 endpoints (Batch 1)
+- MarketplacePage.tsx: **wired to real DB** (Batch 7) — install / disable / re-enable via the existing `Connector` table; no fake client-side Set anymore
 - Post-commit + post-merge git hooks: auto-create Jacob-authored deploy commits so Vercel Hobby plan deploys every push
 
 ## Batches done
@@ -61,6 +69,14 @@ https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 - **Batch 4 (DONE 2026-05-24)** — Multi-platform Tauri build workflow + download page redesign
 - **Batch 5 (DONE 2026-05-24)** — ConnectorsPage live-feed (real-time Observer-Layer events)
 - **Batch 6 (DONE 2026-05-24)** — Stripe payments (Subscription + InvoiceLog + billing API + BillingPage)
+- **Batch 7 (DONE 2026-05-25)** — MarketplacePage wired to real backend (`initiateConnect` / `disableConnector` / `enableConnector`, real installed state from `Connector` table, OAuth redirect support). 8 new backend tests. 1018 total.
+- **Batch 8 (DONE 2026-05-25)** — Migration deploy fix: replaced `Base.metadata.create_all()` startup with `alembic upgrade head` in `main.py` lifespan. No new tests (0 net — startup-path change only); 1018 still pass at 84.35% coverage. Manual one-time `alembic stamp head` required on the Hetzner production DB before the first restart — documented in CLAUDE.md `## Production DB — one-time stamp`.
+- **Batch 9 (DONE 2026-05-25)** — Full automation chain wired: connector activate → DNA → Process Graph → Agent creation runs as a background task on every `POST /api/connectors/{type}/connect`. New `AgentScheduler` (daemon thread, 60 s tick, blueprint-cron driven, per-tenant lock). Plan limits enforced (starter=2 / professional=25 / enterprise=∞) via `enforce_agent_limit_or_raise`. Observer `CONNECTOR_RESOURCES` now derived from the YAML catalogue — all 18 catalogue types covered (delivery-only YAMLs yield empty resource lists). 18 new tests. Backend: **1036 passed**, 84.45% coverage.
+- **Batch 10 (DONE 2026-05-25)** — DNS + public API endpoint wired: `landing/vercel.json` carries the apex→`www` 308 redirect; `landing/next.config.mjs` adds five global security headers (HSTS / X-Frame-Options / X-Content-Type-Options / Referrer-Policy / Permissions-Policy); `Settings.public_api_url` + surfaced on `GET /health` (`"public_url"` field); CORS allow-list extended with `https://www.abnplatform.com` + `https://abnplatform.com`. CLAUDE.md gains a `## DNS & Domains` section with the manual registrar + Vercel steps Jacob still has to perform. 1036 tests still green, 33 landing pages still build clean.
+- **Infra event (2026-05-25)** — Production deploy: domain DNS + email + Hetzner host + Docker Compose + Nginx/TLS + live `api.abnplatform.com`. Tracked here for cross-session memory; not numbered as a feature batch.
+- **Batch 18 (DONE 2026-05-26)** — Teams/Slack notifications + approval buttons. Extended `delivery/slack_deliverer.py` with `deliver_proposal` (Block Kit `blocks[]` with header + fields + actions block; two `button` elements styled primary/danger; `value` carries `"<approve|reject>:<proposal_id>:<dispatch_token>"`). Extended `delivery/teams_deliverer.py` with `deliver_proposal` (Adaptive Card v1.4 with TextBlock + FactSet + two `Action.Submit` actions). New `delivery.router.compute_dispatch_token` (HMAC-SHA256) + `verify_dispatch_token` (constant-time) + `DeliveryRouter.deliver_proposal_notification` (Slack first, Teams fallback, refuses to dispatch without `NOTIFICATION_SIGNATURE_SECRET` — fail-closed). New `NotificationDispatch` table (Alembic `4b0b88e1b9f7`) correlates `message_id → proposal_id` with status lifecycle. Two new routes: `POST /api/slack/interactions` (HMAC `v0:{ts}:{raw}` signature verify against `SLACK_SIGNING_SECRET`, 5-min replay window, always 200 OK) + `POST /api/teams/interactions` (V1 bearer-token check against `TEAMS_VALIDATION_TOKEN`, JWT-via-JWKS as documented V2 path). Both call the existing `proposals._record_decision` (rule #2 — single source of truth for the approval contract — never re-implemented). OPERA `_save_run_record` fires `deliver_proposal_notification` for any pending Proposal rows created during the run (fail-silent). Three new Settings: `slack_signing_secret`, `teams_validation_token`, `notification_signature_secret` — all default empty so a fresh install never accepts unverified interactions. 14 new tests in `tests/test_slack_teams_notifications.py` covering Block Kit / Adaptive Card structure, HMAC token, dispatch persistence, signature verify, replay-attack rejection, approve+reject flows, idempotent double-approve, always-200-OK, and the Teams approve flow. Reuses Stripe webhook pattern (signature-verify-then-act + always-200), existing `BaseDeliverer._proxy` (Nango plumbing), `ApprovalRecord` model (immutable audit). Backend: **1139 passed** (1125 + 14), landing 33/33.
+- **Batch 17 (DONE 2026-05-26)** — Agent Memory (three layers). New `backend/agent_memory/` package — `short_term.py` (7-day TTL, reinforcement counter, no_raw_values_check policy), `long_term.py` (promotion at >=3 reinforcements, decay 0.8 at 6 mo inactive, never deletes). Extended `agent_evolution/evolution.py` with `persist_state` + `load_state` (TTL-cached read-through). Three new tables (`agent_evolution_state`, `agent_short_term_memory`, `agent_long_term_memory`) in one Alembic revision `7ab8394c998a` — raw SQL `CREATE INDEX IF NOT EXISTS` per Batch 16 lesson. OPERA Plan phase now loads memory via `_load_agent_memory` (fail-silent, safe-empty defaults). `_save_run_record` writes short-term for findings with conf ≥ 0.7, persists evolution state, runs long-term promotion — all fail-silent. New API routes `GET /api/agents/{id}/memory` + `GET /api/agents/{id}/evolution` — aggregate metadata only, `fact_key` and `fact_payload` never exposed via API even though they're No-Data-safe (stable correlation handle = metadata leakage). 14 new tests in `tests/test_agent_memory.py`. Reuses `trust/fingerprint.py` (memory keys), existing `AgentEvolutionEngine.compute_state` (unchanged, persistence added in place), `findings` table (source of reinforcements). Backend: **1125 passed** (1111 + 14), landing 33/33.
+- **Batch 16 (DONE 2026-05-26)** — Friday Report viral-loop e-mail. New `backend/friday_report/` package (generator, email_builder, sender, scheduler). Aggregates ROILedger + AgentRun + Agent rows for the closed Sat→Fri week into `FridayReportData` (EUR saved, hours saved, agents active, runs completed, top-5 agents). HTML+plaintext e-mail with ABN purple `#5A3FC0` header band + gold `#F2C94C` money accent, Swedish copy, deterministic render. SendGrid sender with API-key auth (skips Nango — Friday Report aggregates ARE the No-Data-safe figures, so SendGridDeliverer's number-strip would be wrong here). Scheduler is a daemon thread mirroring `AgentScheduler` — cron `"0 7 * * 5"` Europe/Stockholm with ±5 min grace window, three-layer idempotency (cron + already_sent_this_week guard + `(tenant_id, week_ending)` unique index). New `FridayReportLog` table — Alembic revision `e0dde7bb974c`. API: `GET /api/friday-report/preview` (read-only, accepts optional `report_date` query), `POST /api/friday-report/send` (manual trigger, dry_run support), `GET /api/friday-report/history`. Wired into `main.py` lifespan after `AgentScheduler`. 12 new tests in `tests/test_friday_report.py` covering aggregation correctness, deterministic e-mail render, idempotent sends, dry-run, failure capture, scheduler already-sent guard, and the 3 API routes. **Bonus hotfix:** discovered + fixed the `8f8acda9625d_align_schema_drift` migration — `postgresql_if_not_exists=True` is NOT honoured on SQLAlchemy 2.0 `Index()` objects (only on `Table.create()`), so the prior Batch 12 migration would have crashed on Hetzner. Rewrote all 7 `op.create_index(..., postgresql_if_not_exists=True)` calls to raw SQL `op.execute("CREATE INDEX IF NOT EXISTS ...")`. Backend: **1111 passed** (1099 + 12).
 
 ## Batch 1 — Finding model + API endpoints (DONE 2026-05-24)
 **Prompt given:** Add Finding model, Alembic migration, wire into OPERA, GET /api/agents/{id}/findings, /trend, /runs/{run_id}/verification, surface tools_used + insight_layer on GET /api/agents/{id}. 15+ tests. All 939 existing must pass.
@@ -172,14 +188,101 @@ https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
 - 20 new tests in `backend/tests/test_billing_api.py` — 503 fail-closed gates, checkout-session happy path + 422 unknown plan + 404 unknown tenant + starter-price-id selection, portal-session 404 + happy path, webhook signature gate (missing header / invalid sig / unconfigured secret), all four event handlers, idempotency on replay, unknown-event-type 200, tenant lookup via stripe_customer_id (not from payload).
 - Full backend suite: **1010 passed** (990 + 20). Frontend: typecheck clean, **60 tests green**, Vite build green. Every Stripe SDK call mocked — zero real network calls in tests.
 
-## Batch 7 — NEXT
-www.abnplatform.com DNS + real public API endpoint.
+## Production deploy event — DNS + email + Hetzner + Docker + TLS (2026-05-25)
+(Originally logged as Batch 7; relabeled to an infra event so the Batch 7 slot can hold the MarketplacePage wire-up per the user's explicit numbering. Facts below intact.)
+**Goal:** flip `abnplatform.com` from a marketing-only site into a real production stack — domain email, public landing, live `api.abnplatform.com` host serving the FastAPI backend.
 
-## Batch 8
+**Delivered:**
+- **Proton Mail domain** `abnplatform.com` fully configured — VERIFIED, MX, SPF, DKIM, DMARC all green. Three mailboxes live:
+  - `hello@abnplatform.com` — sales / general
+  - `reports@abnplatform.com` — automated agent-report sender
+  - `legal@abnplatform.com` — legal / DPA / security
+- **Vercel DNS** fixed — both `abnplatform.com` and `www.abnplatform.com` show **Valid Configuration**. Landing site continues to deploy from `origin/main` via the Jacob-authored post-merge hook.
+- **Hetzner CAX21 server** provisioned — name `abn-core`, IP `46.225.165.62`, Frankfurt region, Ubuntu 24.04 LTS, GDPR-compliant DPA signed with Hetzner.
+- **Docker + Docker Compose** installed; repo cloned to `/opt/abn`. All four containers running:
+  - `abn-postgres` (PostgreSQL 16, persistent volume)
+  - `abn-core` (FastAPI on :8000)
+  - `abn-llm-gateway` (:8086)
+  - `abn-security` (:8085)
+- **Nginx + Let's Encrypt SSL** configured in front of the abn-core container. `https://api.abnplatform.com/health` returns `{"status":"ok","env":"production"}` over TLS.
+
+**Verification:** the public health endpoint is reachable, the four containers are up, and `api.abnplatform.com` resolves to `46.225.165.62`.
+
+## Batch 7 — MarketplacePage wired to real backend (DONE 2026-05-25)
+**Prompt given:** Wire MarketplacePage to the real `Connector` backend — no new models or migrations (the `Connector` table already IS the tenant↔system join). Extend `client.ts` with `disableConnector` + `last_synced_at`; rewrite MarketplacePage to read from the live DB rows instead of a local Set; replace the "Kompatibel" badge with status pills (Aktiv / Inaktiv / Kompatibel); 8 new backend tests; all 1010 existing tests must still pass.
+
+**Result:**
+- Engineering rule #1: greps confirmed `initiateConnect` and `getConnectors` already existed; `disableConnector` did not. Extended what existed, added only what was missing — no duplication of `deleteConnector` (which is a one-way soft delete; PATCH `disableConnector` is bidirectional and supports re-enable).
+- Caught FOUR bugs in the spec before writing code:
+  1. Spec said `initiateConnect(tenantId, item.id)` — but `item.id` is a marketplace agent id like `'invoice-audit'`, not a connector type. Fixed to `initiateConnect(agent.requires, tenantId)`. Standalone agents (`requires=null`) render an "Inkluderad" pill, no install button.
+  2. Spec named the response field `oauth_url` — the backend returns `connect_url`. Used the real field name.
+  3. Spec called the new interface `ConnectorRow` with `id: string` — the existing `Connector` interface uses `id: number` matching the SQLAlchemy Integer PK. Extended the existing interface with `last_synced_at` rather than creating a duplicate.
+  4. Spec said `POST /api/connectors/{type}/connect?tenant_id=…` (query param) — the existing backend takes `tenant_id` in the body. Kept the body form (Engineering rule #1: don't break the live contract).
+- Frontend: `Connector` interface gains `last_synced_at: string | null`; `getConnectors(tenantId?, activeOnly?)` extends without breaking existing callers (both `() => getConnectors()` wrappers in ConnectorsPage + SettingsPage updated); `disableConnector(id, enabled=false)` + `enableConnector(id)` PATCH the row (pair of explicit helpers per Batch 7 contract; the `disableConnector(id, true)` form still works).
+- MarketplacePage: installedMap derived from live `Connector` rows (`activeOnly=false` so disabled rows show "Inaktiv"). Per-connector-type loading spinner + inline error string. Optimistic invalidation on success. "Installera" → initiateConnect → `window.location.href = res.connect_url` (Nango OAuth redirect, per spec — popup form is in ConnectorsPage if we want it later).
+- Backend tests: 8 in new `tests/test_marketplace_wire.py` — grouped by FLOW (empty → install → upsert idempotency → disable → re-enable → list → soft-delete → live-feed regression) rather than by route. Deliberately overlaps the route-level tests at the boundaries; the docstring explains why so future maintainers don't dedupe blindly. One test hit a `gps` connector that isn't in the YAML catalogue; switched to `hogia` (which is).
+- Full backend suite: **1018 passed** (1010 + 8). Frontend: typecheck ✓, 60 tests ✓, Vite build ✓.
+
+## Batch 8 — Migration deploy fix (DONE 2026-05-25)
+**Prompt given:** Fix the migration deploy gap found in the prior audit (no script, Makefile target, compose/systemd/k8s step ran `alembic upgrade head` on the live server — startup used `create_all`, which never replays migration history). Replace `init_db()` in `main.py` lifespan with `alembic upgrade head`; document a one-time `alembic stamp head` on the Hetzner DB; fix the aspirational sentence in `docs/deployment.md`. Full test suite must stay green.
+
+**Result:**
+- `backend/main.py` lifespan: removed `from database.init_db import init_db` (line 20) and the `init_db()` call (line 93); replaced with `Config("alembic.ini")` + `command.upgrade(alembic_cfg, "head")`. The `init_db()` function itself stays — `scripts/setup.sh` still uses `python -m database.init_db` for fresh local dev installs.
+- `backend/sidecar_entry.py`: comment update to reflect the new startup path + note that the PyInstaller bundle must include `alembic.ini` + `alembic/versions/` (separate batch when the desktop installer is next rebuilt).
+- `CLAUDE.md` new section `## Production DB — one-time stamp (MANUAL — already done or do now)` with the exact `ssh root@46.225.165.62` → `cd /opt/abn/backend` → `docker compose exec abn-core alembic stamp head` → `alembic upgrade head` sequence and why a stamp is needed (Hetzner DB was bootstrapped via `create_all`, so `alembic_version` is empty/absent; running `upgrade head` against it without stamping first would try to recreate every existing table and fail).
+- `docs/deployment.md` line 260: aspirational "Database migrations run automatically on startup" replaced with accurate text covering both the every-startup `alembic upgrade head` and the first-deploy `alembic stamp head` precondition.
+- Verified by grep that no test imports `main.app` — every test builds a fresh `FastAPI()` and overrides `get_db`. The lifespan change is invisible to the test surface. Suite stays at **1018 passed, 84.35% coverage**.
+- Flagged but not changed (separate batch): `Config("alembic.ini")` is CWD-relative; works in Docker (`WORKDIR=/app`) and systemd (`WorkingDirectory=/opt/abn/backend`); the PyInstaller desktop bundle does NOT bundle alembic files, so a fresh desktop install would fail on first run. Fix is a `datas=[…]` line in `abn-core.spec`.
+
+## Batch 9 — Full automation chain (DONE 2026-05-25)
+**Prompt given:** Wire the full Friday→Monday flow. Connector activate must trigger DNA → Process Graph → Agent creation automatically. Add an AgentScheduler that runs OPERA on the blueprint cron. Add plan-based agent limits (starter=2 / professional=25). Extend Observer `CONNECTOR_RESOURCES` to all 18 catalogue types. 15+ new tests. All 1018 existing must still pass.
+
+**Result:**
+- Engineering rule #1 flagged FIVE spec-vs-reality conflicts before code:
+  1. Quality threshold: spec said "≥ 0.6", `process_graph/runner.py` already calibrates at AUTO=0.85 / VERIFIED=0.70 with an existing `agent_decision` field. Used the existing field per rule #2.
+  2. `DNAPhaseOrchestrator(db, tenant_id)` doesn't exist — the real signature is `(db, config: DNAPhaseConfig, progress_callback)`. Constructed a real config.
+  3. `ProcessGraphRunner(db, tenant_id)` arg order is wrong — real is `(tenant_id, db, domain, mode)`. Used the real signature.
+  4. All three chain calls are `async` — wrapped them in an `asyncio.run` shim so the sync FastAPI BackgroundTasks queue can drive them.
+  5. Hardcoding `CONNECTOR_RESOURCES` for 18 types would duplicate the YAML catalogue. Built `_build_connector_resources()` that reads YAML at module load + a `_seconds_to_cron` translator (rule #2).
+- `api/routes/connectors.py`:
+  - `BackgroundTasks` injected into `initiate_connect`.
+  - New `_trigger_automation_chain(tenant_id, connector_type)` runs DNA → Graph → Agent end-to-end, each step in its own try/except so a fresh-install tenant with zero events fails defensively. Owns its own `SessionLocal()` since the request scope is closed by the time the task fires.
+  - `_schedule_automation_chain` adapter wraps the async chain in `asyncio.run` for the BackgroundTasks queue.
+- `agent_engine/scheduler.py` (NEW): `AgentScheduler` mirrors `ObserverScheduler`. Daemon thread, 60 s tick, `croniter`-based, `_running_tenants: set[str]` for one-run-per-tenant. Reads `agent.blueprint["schedule"]["cron"]` (also accepts legacy string form). Wired into `main.py` lifespan after the Observer scheduler.
+- `api/routes/agents.py`: new `_PLAN_AGENT_LIMITS` dict (starter=2 / professional=25 / enterprise=10000), `get_tenant_plan_limits(db, tenant_id)`, `_count_active_agents(db, tenant_id)`, `enforce_agent_limit_or_raise(db, tenant_id)`. Gate added to `POST /api/agents/generate-from-process` — only on the non-idempotent path (existing agent for the process graph still returns 200 with `created=false`).
+- `observer/scheduler.py`: `CONNECTOR_RESOURCES` rebuilt at import time from YAML. Outbound-direction YAMLs (`slack_delivery`, `sendgrid`) yield empty lists. Legacy hardcoded `gps` preserved as fallback (no `gps.yaml`).
+- Two real bugs caught + fixed during test runs:
+  1. `_is_due` had a wrong `_DUE_WINDOW` upper-bound check that rejected late-firing cron windows. Removed; `nxt <= now` is the right condition.
+  2. `_is_due` short-circuited to True on `last_run_at=None` BEFORE validating the cron, so a malformed cron with no last-run was treated as "due now". Moved `croniter.is_valid` up.
+- 18 new tests in `tests/test_automation_chain.py`: YAML coverage (3), automation chain (3), AgentScheduler (6), plan limits (5), regression (1).
+- Full backend suite: **1036 passed** (1018 + 18), 84.45 % coverage.
+
+## Batch 10 — DNS + public API endpoint (DONE 2026-05-25)
+**Prompt given:** Wire DNS + public API endpoint for `www.abnplatform.com` and `api.abnplatform.com`. Add `vercel.json` with apex→www 308 redirect, security headers on `next.config`, `public_api_url` + `allowed_origins` in backend Settings, CORS reading from settings, `/health` returning `public_url`, replace any hardcoded localhost / `abn-nine.vercel.app` references. Additive only — no router or middleware re-architecting. 1036 tests must stay green and `npm run build` must produce 33 pages.
+
+**Result:**
+- Engineering rule #1/#2 flagged FOUR spec-vs-reality conflicts before code:
+  1. `Settings` already has `cors_origins` + `cors_origins_list` (config.py:45 / 119). Spec said to add a parallel `allowed_origins` — **kept `cors_origins`** as the single source of truth (rule #2). Extended its default to include `https://www.abnplatform.com` + `https://abnplatform.com`.
+  2. `main.py:181` CORS middleware already reads `settings.cors_origins_list` — Task 4 was essentially already done. Added an empty-list `["*"]` fallback for dev safety per the user's intent.
+  3. Spec said `next.config.js`; the real file is `next.config.mjs` (ES module). Edited in place.
+  4. Spec Task 6 said "replace any hardcoded `localhost:8000` / `localhost:3000` / `abn-nine.vercel.app` in landing" — **0 matches** in the grep. Nothing to fix.
+- `landing/vercel.json` (NEW): apex→`www` 308 via `redirects[]` with `has.host` matcher. `$schema` set so Vercel's editor validates.
+- `landing/next.config.mjs`: kept `reactStrictMode: true`; added `async headers()` returning `Strict-Transport-Security` (2 years incl. subdomains + preload), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
+- `backend/core/config.py`: NEW `public_api_url: str = ""` field. `cors_origins` default extended with the two production origins.
+- `backend/.env.example`: `PUBLIC_API_URL=https://api.abnplatform.com` block added next to `ABN_ENV`. `CORS_ORIGINS=` line extended with the two production origins. (No `ALLOWED_ORIGINS` env var — `cors_origins` is the canonical name; comment explains why.)
+- `backend/main.py` CORS: now reads `_cors_origins = [o for o in settings.cors_origins_list if o]` and uses `_cors_origins or ["*"]` so an empty env doesn't 502 the dashboard in dev.
+- `backend/api/routes/health.py`: `/health` response gains `"public_url": settings.public_api_url`. Additive only.
+- `CLAUDE.md`: new `## DNS & Domains` section with the host→target table, manual registrar steps (Vercel A `76.76.21.21`, CNAME `cname.vercel-dns.com`, Hetzner A `46.225.165.62`), and the manual Vercel project step (add both domains under `abn-nine`).
+- Backend suite: **1036 passed** (unchanged). Landing: `✓ Compiled successfully`, `✓ Generating static pages (33/33)`, zero errors / warnings.
+
+## Batch 11 — NEXT
 Fortnox end-to-end (needs org number + API key from Jacob).
 
-## Batch 9
+## Batch 12
 Branch-protection hardening (manual GitHub step — listed in CLAUDE.md under `## Branch Protection`).
+
+## Batch 13
+Bundle `alembic.ini` + `alembic/versions/` into the PyInstaller `abn-core.spec` so the Tauri desktop sidecar can run `alembic upgrade head` on a fresh install (Batch 8 follow-up).
 
 ## Manual prereqs for Stripe to go live
 1. Stripe Dashboard → create two Products + Price objects (Starter free / Professional €299/mo recurring) and copy their `price_...` ids.
@@ -189,8 +292,9 @@ Branch-protection hardening (manual GitHub step — listed in CLAUDE.md under `#
 
 ## Blockers
 - Fortnox: waiting for org number + API key from Jacob
-- DNS: Proton mail propagation (hello@abnplatform.com)
-- Google Cloud OAuth: waiting for mail-domain verification
+- ~~DNS: Proton mail propagation (hello@abnplatform.com)~~ — **resolved 2026-05-25 (Production deploy event)**
+- ~~MarketplacePage was a stub (local Set, no DB writes)~~ — **resolved 2026-05-25 (Batch 7)**
+- Google Cloud OAuth: ~~waiting for mail-domain verification~~ → unblocked (Proton mail-domain verified); add the OAuth callback URL when ready
 
 ## Technical debt
 - 7 duplicated package dirs (`agent_evolution/agent_evolution/`, `consistency/consistency/`, `delivery/delivery/`, `gdpr/gdpr/`, `inquiry_engine/inquiry_engine/`, `onboarding/onboarding/`, `opera/opera/`, `output_schema/output_schema/`) — cleanup sweep deferred
@@ -199,6 +303,24 @@ Branch-protection hardening (manual GitHub step — listed in CLAUDE.md under `#
 - Blueprint version history missing — `POST /api/agents/{id}/rollback/{v}` returns 501
 - `services/abn-security/` (Go) not compiled in this environment — CI job covers it
 - Many modules use deprecated `datetime.utcnow()` — cosmetic warnings only
+
+## ABN Innovation Philosophy
+
+Build ABN like the greatest innovators built their work:
+
+- **Ada Lovelace** — first to see what machines could truly become
+- **Alan Turing** — redefined intelligence, built the foundation of computing and AI
+- **John von Neumann** — architected how modern computers think and store
+- **Steve Jobs** — made complexity invisible, obsessed over experience
+- **Bill Gates** — saw software as infrastructure for the world
+
+Rules:
+
+- Never ask "does this exist?" — ask "should it exist, can we build it better?"
+- If a module ABN needs doesn't exist: use Python, Linux, open source — adapt it, make it ABN's own
+- Every feature must be 100,000x better than competitors — or don't ship it
+- Think in platforms, not features. Think in decades, not sprints
+- ABN has no real competitor — because no competitor thinks like this
 
 ## Rules
 - Always read CLAUDE.md first
