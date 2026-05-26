@@ -38,9 +38,9 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Batch 22A klar — abn-security kompilerad + blueprint signaturer round-trippar Go↔Python
-Senast: services/abn-security kompilerar + alla tester gröna under golang:1.22-alpine (Docker). Ny Go-paket internal/blueprint (BlueprintVerifier, HMAC-SHA256, tier-3 kräver execute_change-flagga). Ny Python-modul trust/blueprint_signer.py — kanonisk byteform (sort_keys=True, separators=(",",":")) som Go-verifieraren godkänner byte-för-byte. POST /verify-blueprint i abn-security. Generator-signering migrerad till kanonisk form via wrapper (befintliga tester gröna). 9 Go-tester + 9 Python-tester. 1180 totalt. abn-security-known-issue löst.
-Nästa: Batch 22B — EXECUTOR-arketyp + AVM tier-3-regler + Fortnox.create_invoice + OPERA Mission Layer pre-flight verify
+Status: Batch 22A klar — abn-security kompilerad + BlueprintVerifier
+Senast: Go BlueprintVerifier + blueprint_signer.py + /verify-blueprint
+Nästa: Batch 22B — EXECUTOR archetype + Fortnox write-back
 
 Last updated: 2026-05-26 (after Batch 22A)
 Repo: https://github.com/abn-systems/ABN
