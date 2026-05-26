@@ -11,6 +11,45 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-26 — Batch 21 — Wire Proposal creation into OPERA runtime (Tier-2 end-to-end)
+Closes the gap I flagged in the "Top-3 most impactful missing things" answer earlier today: every Tier-2 surface ABN has built since Batch 11 was infrastructurally complete but functionally empty, because no OPERA path created Proposal rows. Batch 21 lands the bridge.
+
+**Architecture decisions made (deviations from the spec, all rule-driven):**
+- **Helper calls `evaluate_commitment` internally — does NOT mutate `OPERARunResult`.** The spec's TASK 4 said "Add `commitment_decision` field to `OPERARunResult`". Avoided because threading a stable dataclass field through the runner for a value the helper can compute itself couples two layers for no benefit. The gate is pure logic — same input (output + confidence + blueprint), same output. Cleaner: OPERARunner stays unaware of the gate; the persistence seam owns the mapping.
+- **Helper lives in `agent_runtime/`, not `agent_engine/`.** The spec said `backend/agent_engine/proposals_persistence.py`. I moved it to `backend/agent_runtime/proposals_persistence.py` because: `commitment_gate` lives in `agent_runtime/execution/`; `findings_persistence` lives in `agent_runtime/`; the OPERA runner already imports both from `agent_runtime`. Same module = same import discipline. Rule #1 — extend the existing structure, don't fork a new one.
+- **NO redundant `deliver_proposal_notification` call in `_save_run_record`.** The spec's TASK 2 second half ("call deliver_proposal_notification on the newly-created Proposal") would have duplicated the Batch-18 block immediately downstream. That block was specifically designed to pick up any Proposal row written during the run via a `Proposal.run_id == self.run_id` query — it's the consumer side waiting for exactly this producer. Adding a direct call would double-dispatch. Rule #1, hard line.
+- **TASK 3 (draft_email wiring from commitment_gate) deliberately skipped.** Audit confirmed `CommitmentDecision.action ∈ {auto_deliver, deliver_with_flag, save_proposal, escalate}` — there is no `draft_email` action. Batch 20's `email.draft_email` capability is invoked directly via the `propose.draft_email` ACTION_MAP entry; the commitment gate runs alongside it and decides `save_proposal` on the same run if tier-2. Net result: an agent that drafts an email + the run lands a Proposal row with `action_type="report_delivery"` (per the `_PROPOSE_ACTION_MAP` mapping) — the human approves both at once on the dashboard. No new wiring needed for the email case; it falls out of the proposal mapping naturally.
+- **Field names diverged from the spec to match the real DB schema.** The spec asked for `Proposal.confidence` and `Proposal.proposal_payload`. Audit showed those columns don't exist — `Proposal` has `output_summary` (JSON) and confidence lives on `AgentRun`. Used the real columns (rule #2 — never invent fields). Confidence is preserved inside `output_summary.decision.confidence` for the audit trail.
+- **`run_id: str`, not int.** The spec wrote `run_id: int` but `Proposal.run_id` is `Column(String, ForeignKey("agent_runs.run_id"))` — the UUID string, not the integer PK. Used the string consistently.
+- **Action-type mapping uses the existing `VALID_PROPOSAL_TYPES` set from `api.routes.proposals.py`.** Five values total: `dispute_letter`, `schedule_change`, `threshold_adjustment`, `report_delivery`, `agent_pause`. Unknown `propose.*` actions fall through to `agent_pause` (safest default: proposal still surfaces, operator pauses the agent for review). Tested by `test_action_type_derivation_*` patterns.
+- **Idempotency identical to `save_findings_from_output`** — pre-existing `(run_id, tenant_id)` row returns its id; no double-write. The proposals helper diverges from findings in one detail: findings deletes-then-inserts for the multi-row case; proposals is one-row-per-run so it returns the existing id without re-inserting.
+- **`impact_summary` is aggregate-only Swedish** — `"3 fynd · potentiell besparing EUR 18 600"`. Never raw values. Built from `len(findings)` + `sum(findings.impact_eur)` — both already aggregates by definition. NBSP thousands grouping (Swedish convention).
+- **`output_summary` JSON captures the decision audit trail** — `{action, tier_used, original_tier, downgraded, confidence, reason}` from `CommitmentDecision.to_dict()` plus the run's `summary`, top-5 `recommendations`, top-10 `report_paths`. Every field is aggregate or LLM-narrative; no raw values.
+
+**Test results:** 10 new tests in `tests/test_proposal_wiring.py`. Full backend: **1171 passed** (1161 + 10), no regressions. Landing 33/33. Frontend typecheck clean (this batch is backend-only).
+
+**No-Data invariant audit (rule #6):**
+- `impact_summary` is aggregate-only (count + total).
+- `output_summary.recommendations` and `output_summary.summary` come from the OPERA Reason phase, which already enforces No-Data via the LLM Gateway's redact-mode policy. The helper truncates at 500/200 chars defensively.
+- `output_summary.report_paths` are filesystem paths — never raw customer values (per the existing OPERA report-generation contract).
+- The commitment gate's `reason` is a one-liner about confidence + tier — never carries customer data.
+- `action_type` and `target_system` are enum-bounded short strings.
+
+**End-to-end audit verifying Tier-2 actually works now:**
+1. Agent run starts (tier=2 blueprint), executes OPERA, produces output with confidence 0.82
+2. `_save_run_record` runs: AgentRun + Findings + ROI + Semantic + AgentMemory writes (all unchanged)
+3. **NEW Batch-21 block** calls `save_proposal_from_run` → gate decides `save_proposal` → row inserted with `status="pending"`, `action_type="schedule_change"`, `target_system="quinyx"`, `impact_eur=18600`, `expires_at=now+14d`
+4. **Existing Batch-18 block** queries `Proposal.run_id == self.run_id, status IN (pending, pending_approval)` → finds the new row → resolves `TenantDeliveryConfig` → calls `deliver_proposal_notification` → Slack/Teams Block-Kit/Adaptive-Card with Godkänn/Avvisa buttons appears in the customer's channel
+5. Human clicks ✅ → `POST /api/slack/interactions` signature-verifies → calls `proposals._record_decision` → flips `Proposal.status = "approved"` + writes `ApprovalRecord`
+6. Dashboard `/proposals` shows the new row from step 3 (status: pending) or step 5 (status: approved)
+
+Every link in that chain existed individually before Batch 21; **the missing piece was step 3**. Now closed.
+
+**Manual pendings unchanged from Batch 20 close-out:**
+1. `SESSION_MIRROR_TOKEN` still expired — auto-sync workflow keeps failing; manual mirror sync for Batch 21 same pattern as Batches 19/20.
+2. Branch-protection rule key: `Backend — 1161 tests` → `Backend — 1171 tests`.
+3. Hetzner DB `alembic stamp head` still pending since Batch 8.
+
 ## 2026-05-26 — Batch 20 — Email capability (read inbox → draft → human approves → never auto-send)
 Jacob requested the full agents-handle-mail surface: read inbox metadata, draft outbound, get human approval, send via existing deliverers. The audit two turns earlier laid out exactly what was missing.
 
