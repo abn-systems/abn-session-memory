@@ -11,6 +11,59 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 26 — DevSecOps CI hardening + ROI dashboard
+
+Two tracks in one batch: 3 advisory security CI workflows (SAST/SCA/secrets) plus a per-tenant ROI summary endpoint surfaced via a new AdminPage `ROICard` with per-agent attestation precision.
+
+**Engineering decisions:**
+
+- **Security workflows are advisory ONLY (rule #1).** All three new workflows (Semgrep / Trivy / gitleaks) have `continue-on-error: true` AND are NOT registered under branch-protection's required checks. The required gates remain the three names hardcoded in GitHub Settings: `Backend — 1263 tests`, `Frontend — build check`, `Landing — build check`. Findings surface in the Security tab via SARIF; operators read them but they never block a merge. Documented inline in each YAML's comment block so the next contributor doesn't accidentally promote them.
+
+- **Two ROI endpoints intentionally coexist.** `/api/roi/summary` (Batch 11A) reads `ROILedger` (pre-aggregated, written by `OPERARunner._save_run_record`). The new `/api/agents/roi-summary` reads the source tables (`AgentRun` + `Finding` + `Finding.attested`) and adds per-agent attestation precision + weekly breakdown + hours_saved. Different data sources, different shapes, different questions answered. CLAUDE.md rule #1 explicitly allows this: "two `class Foo` are only acceptable when each lives in a different namespace AND solves a different problem". They do.
+
+- **TenantSettings deviation documented.** Spec said "check TenantSettings for a `minutes_per_run` key in the settings JSON". But `TenantSettings` has no generic JSON catch-all column — only `notification_emails: JSON` (specific use). `Tenant.policy` (Batch 12) DOES have the generic config bag with safe defaults. Decision: read `tenant.policy.get("roi_minutes_per_run", 15)`. Forward-compat extension to an existing JSON column — no migration, no new model. Rule #2 fully respected. Documented in the endpoint's module-level docstring + the CLAUDE.md section so the deviation is honest and discoverable.
+
+- **`Field(...)` ≠ `Query(...)`.** First version of the endpoint used `Field(..., description=...)` from Pydantic for the `tenant_id` query param. FastAPI rejected the import with `non-body parameters must be in path, query, header or cookie`. Caught at import time via the `from main import app` smoke test before any pytest run. Fixed by switching to `Query(...)`. Lesson — Pydantic `Field` is for model fields; FastAPI `Query`/`Path`/`Header`/`Cookie` for request params. Different namespace, different role.
+
+- **Route ordering matters.** `/api/agents/{agent_id}` was registered at line 273 with `agent_id: int`. Inserting `/api/agents/roi-summary` after that route would mean FastAPI matches `/{agent_id}` first and would attempt to parse `"roi-summary"` as int. The int-type-converter actually falls through cleanly (Starlette converters reject non-int and continue routing), but I put the literal-path route BEFORE the parametric one anyway — explicit ordering is clearer than relying on framework fall-through semantics. Tested via `from main import app; [r.path for r in app.routes if 'roi' in r.path]` showing both routes present.
+
+- **`Finding.attested` is the source of truth for attestation rate.** The `Finding` model has a `attested: Boolean` column directly (Batch 1). I use it for both the global `attestation_rate_pct` and the per-agent `attestation_rate_pct`. No JOIN through `abn_attestations` (that table is per-OBSERVER-CYCLE attestation, not per-finding — different granularity, different role). Same-table aggregation is also faster.
+
+- **Hours saved formula is honest.** `total_runs * minutes_per_run / 60`. No fuzz, no marketing math, no per-finding heuristic. The `estimated_hours_saved_basis` field exposes whether the value came from `Tenant.policy["roi_minutes_per_run"]` (`"custom"`) or the hardcoded 15-minute default (`"default_15min"`) so the customer can audit the estimate at a glance. Rule #4 — never overclaim.
+
+- **`AdminOverviewResponse` gained `tenant_id`.** ROICard needs tenant_id to call the tenant-scoped endpoint. Two paths: (a) `getCurrentUser` separate fetch, (b) extend `AdminOverviewResponse` with `tenant_id`. Picked (b) — `Tier3StatusResponse` already exposed `tenant_id` since Batch 24; `AdminOverviewResponse` now mirrors the contract. One field, one line of frontend type update, zero extra HTTP calls. ROICard reads `overview.data.tenant_id` directly.
+
+- **Design system constraints respected.** Spec was explicit: "NO emoji anywhere in the card". ABN's design language uses emoji only for status indicators in transient cards (Pulse's ✅/⚠️/❌). Content cards stay clean — text labels ("tim" / "kr" / "%") + muted subtitles. Skeleton loader on first paint instead of a spinner; muted "Ej tillgänglig" on error instead of a red banner. ROI failures are NOT customer-actionable, so degrading silently is the right design call.
+
+- **Privacy test whitelists allowed keys, not blacklists forbidden ones.** `test_roi_summary_no_customer_data_in_response` asserts `set(body.keys()) == allowed_top` for the top level + identical assertions for each nested object. A future contributor who adds a `customer_name` field to the response will get an immediate test failure. Belt-and-braces: also rejects any payload string containing `"personnummer"`, `"email"`, `"iban"`, etc. — defence-in-depth against accidental leakage through a nested object I didn't anticipate.
+
+**Verification:**
+
+- Backend pytest: **1263 passed** (1248 + 15, zero regressions, 242 s)
+- Frontend: typecheck ✓, 60 tests ✓, Vite build ✓
+- Landing Next.js build: 33 static pages ✓
+- Go suite: not run locally (Docker offline); zero Go code touched in Batch 26 so CI's `security-go` job will validate on push
+- All 3 security YAMLs validated as `yaml.safe_load(...)` parse cleanly
+
+**Manual pendings (unchanged from Batch 25):**
+
+- Hetzner Postgres `alembic stamp head` — head expected `7e2d9a5c1f4b` (Batch 25 head; Batch 26 added zero migrations per rule #2)
+- GitHub branch-protection rule: flip `Backend — 1248 tests` → `Backend — 1263 tests` in Settings UI
+- Once Semgrep/Trivy/gitleaks first run, operator reviews the Security tab for initial baseline findings — may want to add a `.semgrep.yml` suppression file for known false-positives
+- Manual mirror sync to abn-session-memory will run after push
+
+**What's next — Batch 27 (preview):**
+
+ABN Shield — moving from observation/measurement to adversarial defence:
+- Replay-attack tests against the Mission Layer signature verifier
+- Malformed-signature handling on abn-security `/verify-blueprint`
+- Schema-injection probes against the Tier3Telemetry helper's f-string allowlist (already locked down, but explicitly proven)
+- Token-exfiltration probes on the pulse module (verify `error_message` never carries auth tokens)
+- Findings trace view — per-finding drill-down from ROICard's top-agents straight to attested source values
+- Per-agent rollback rates (Batch 24 carry-over)
+- Telemetry NDJSON export (Batch 24 carry-over)
+
+
 ## 2026-05-27 — Batch 25 — ABN Pulse: connector health monitoring + idempotent GH Issues
 
 Sister-system to Batch 24's telemetry: where telemetry counts what agents DID, Pulse counts what the connector APIs CAN do. Daily cron + on-demand button + per-connector matrix on AdminPage. Auto-creates one GitHub Issue per `(connector, check_type)` when checks fail.

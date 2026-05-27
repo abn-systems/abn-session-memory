@@ -38,11 +38,11 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Batch 25 klar — ABN Pulse live (1248 tester gröna)
-Senast: PulseResult + ping/contract per connector + idempotent GH Issues + pulse.yml cron + PulseStatusCard
-Nästa: Batch 26 — ABN Shield (adversarial tests för Mission Layer + signatur replay-skydd)
+Status: Batch 26 klar — DevSecOps + ROI live (1263 tester gröna)
+Senast: 3 säkerhets-CI workflows (Semgrep/Trivy/gitleaks, alla advisory) + /api/agents/roi-summary + ROICard med attesteringsgrad per agent
+Nästa: Batch 27 — ABN Shield adversarial tests + findings trace-vy
 
-Last updated: 2026-05-27 (after Batch 25)
+Last updated: 2026-05-27 (after Batch 26)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md
