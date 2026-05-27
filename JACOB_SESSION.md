@@ -38,11 +38,11 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Batch 33D-3 klar — landing v7 light migration komplett (backend ORÖRD)
-Senast: 572 dark-hex bytta över 32 filer (11 komponenter + 21 app-sidor); sage canvas + ink CTAs + terra accent + ink-toned particles. 0 dark-hex kvar.
+Status: Batch 33D-3 finish — purple variants i animerade komponenter rensade (backend ORÖRD)
+Senast: 13 komponenter sveptes för #6A4BD4 / #9F8FE6 / #4B34A6 / #7C5CE0 + rgba purple-glows. Hero halo, Layers SVG-strokes, LivingDemo keyframes, Logo gradient — alla nu ink/sage/muted.
 Nästa: Väntar på Jacob — Batch 32 (abn-observer §8) eller annan funktion-batch
 
-Last updated: 2026-05-27 (after Batch 33D-3)
+Last updated: 2026-05-27 (after 33D-3 finish sweep)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md

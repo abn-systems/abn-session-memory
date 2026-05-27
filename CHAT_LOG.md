@@ -11,6 +11,62 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 33D-3 finish — animated components purple sweep
+
+Jacob rapporterade att Vercel-deployen från 33D-3 huvud-commit fortfarande hade mörka inslag inuti animerade komponenter (canvas fillStyle / SVG stroke / inline rgba). Diagnostiserade och städade.
+
+**Vad hittades:** Min huvud-33D-3 sweep matchade BARA dark-canvas-hex (`#0A0A0F` etc.) men missade purple-VARIANTERNA som var spridda inuti animerade komponenter:
+
+- `#6A4BD4` (medium purple) — stroke + border + fill i Layers SVG-diagram, LivingDemo Layer-illustrationer, hover-borders i SiteHeader/Footer/DetailPageShell/DownloadCTA/Marketplace/Transparency. **32 träffar**.
+- `#9F8FE6` (light purple) — text-färg i quotes/eyebrows/agent-namn i 6 komponenter. **15 träffar**.
+- `#5A3FC0` (primary purple) — LivingDemo CSS-keyframe + SiteHeader CSS-class. **5 träffar**.
+- `#4B34A6` (dark purple) — Logo.tsx gradient stop. **1 träff**.
+- `#7C5CE0` (light purple) — Layers.tsx stroke. **1 träff**.
+- `#FF6B6B` (status red) — LivingDemo flag indicator. **2 träffar**.
+
+Plus **rgba-varianter** (samma färger uttryckta som decimal rgb i `rgba(...)`-konstruktioner — som radial-gradient halos):
+- `rgba(106,75,212,*)` — Hero halo, DetailPageShell, SocialProof, LivingDemo border, Layers fill. **7 träffar**.
+- `rgba(159,143,230,*)` — DownloadCTA glow. **1 träff**.
+
+Min ursprungliga regex matchade bara `#5A3FC0` exakt — inte de tonalt liknande systervarianterna `#6A4BD4` / `#9F8FE6` etc. som v6-designern hade använt som accent-skiftningar.
+
+**Replacement-strategi (sage-tonad mapping per kontext-roll):**
+
+```
+#6A4BD4  →  #1F1B17 (ink)        — strokes/borders/fills på data-element
+#9F8FE6  →  #5C5446 (muted)      — texter (light variant ⇒ muted text)
+#5A3FC0  →  #1F1B17 (ink)        — bg, keyframes
+#4B34A6  →  #1F1B17 (ink)        — gradient stops
+#7C5CE0  →  #5C6E55 (sage-deep)  — accent stroke (bright variant ⇒ sage glow)
+#FF6B6B  →  #D6453D (st-red)     — status indicator (semantik bevarad)
+
+rgba(106,75,212,*)  →  rgba(31,27,23,*)   — purple glow → ink glow
+rgba(90,63,192,*)   →  rgba(31,27,23,*)
+rgba(159,143,230,*) →  rgba(92,110,85,*)  — light purple → sage
+rgba(122,92,224,*)  →  rgba(92,110,85,*)
+rgba(75,52,166,*)   →  rgba(31,27,23,*)
+```
+
+Tillämpat via PowerShell-sweep med `[System.IO.File]::ReadAllText` + `WriteAllText` med `UTF8Encoding($false)` (samma säkra encoding som 33D-3 huvudet). 13 komponenter ändrade. Hero halo-gradient bakom rubriken (`rgba(106,75,212,0.20)`) bytt till `rgba(31,27,23,0.20)` — soft ink halo istället för soft purple halo.
+
+**`illustrations/`-mappen skippad** — de 12 signaturmönstren är spec:ade i Batch 33D med exakta v7-färger (`stroke="#1F1B17"`, `fill="#A85E2E"` osv) och får inte röras.
+
+**`ABNFlower.tsx` skippad** — terra-färgad redan, korrekt enligt 33D.
+
+**Animerade kontext som rensades:**
+- ``ParticleField`` particle network rgba kommentarer uppdaterade (logik redan ink-toned från 33D)
+- ``Layers`` lagerdiagram SVG-strokes/fills/gradient stops: alla `#6A4BD4` → ink, `#7C5CE0` → sage
+- ``LivingDemo`` Layer-illustrationer + CSS-keyframes (fill purples) → ink/sage
+- ``LivingDemo`` agent-kort `hue` metadata → `#1F1B17`
+- ``Logo.tsx`` (landing) gradient `#6E51DA → #4B34A6` blir nu mörk-ink-toned
+
+**Verifiering:** Landing build 33 statiska sidor ✓. Slutgrep visar 0 träffar av `#5A3FC0`, `#6A4BD4`, `#9F8FE6`, `#4B34A6`, `#7C5CE0`, `rgba(106|90|159|...)` i hela `landing/components/`. v7-migreringen är nu HELT slut: 0 v6-purple-hex i någon form i landing.
+
+**Backend ABSOLUT orörd:** `git status backend/` = tomt genom hela sweepen.
+
+**Lärdom:** Vid framtida design-batch där "byt alla v6-färger" är intentionen — gör en utökad grep INTE bara på primärfärgen utan på HELA tonalsystemet (skiftningar i samma färgfamilj). Designsystem brukar ha 5-7 tonsteg per primärfärg; om bara primären byts blir mellansteg ofta kvar och resultatet ser inkonsekvent ut.
+
+
 ## 2026-05-27 — Batch 33D-3 — Landing v7 full light migration
 
 Avslutar v7-migreringen. Landing-sidan nu i sage light-tema från top till botten. **Backend ABSOLUT orörd**. Inga innehållsändringar, inga layout-byten — bara färg.
