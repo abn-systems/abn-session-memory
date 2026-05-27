@@ -11,6 +11,57 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 25 — ABN Pulse: connector health monitoring + idempotent GH Issues
+
+Sister-system to Batch 24's telemetry: where telemetry counts what agents DID, Pulse counts what the connector APIs CAN do. Daily cron + on-demand button + per-connector matrix on AdminPage. Auto-creates one GitHub Issue per `(connector, check_type)` when checks fail.
+
+**Engineering decisions:**
+
+- **`PulseResult` is a separate table from `ConnectorHealth`.** Existing `ConnectorHealth` (line 209 in models.py) is the Observer's per-tenant circuit-breaker state — `connector_id` / `state` / `failure_count` / `last_failure` / `last_success`. That's a different problem from Pulse: Pulse is append-only system-level history of *operator-facing* contract validation. Per CLAUDE.md rule #1, "two `class Foo` definitions are only acceptable when each lives in a different namespace and solves a different problem" — they do. Decision documented inline in models.py so the next contributor doesn't accidentally merge them.
+
+- **YAML `pulse:` block is the contract (rule #1 — "the spec IS the contract").** Added a `pulse:` section to all three connector YAMLs (`fortnox.yaml`, `quinyx.yaml`, `hogia.yaml`) carrying `health_endpoint` + `contract_endpoint` + `contract_expected_keys` + `token_env` + `auth_scheme`. The pulse module reads this through a single `_config_loader.load_spec(connector_name)` helper — no string constants in checkers, no hardcoded URLs. The YAML IS the source of truth.
+
+- **Telemetry sentinel tenant `__system__`.** Pulse failures need to bump `writes_blocked` per rule #4, but Pulse is system-level — there's no customer tenant involved. Used `tenant_id="__system__"` so the telemetry helper still accepts the call (it requires a non-empty tenant_id), AND the existing per-tenant telemetry endpoints filter by `tenant_id = :caller_id` so `__system__` rows are automatically invisible to customers. Best of both: rule #4 satisfied, customer queries unaffected.
+
+- **Three layers of fail-silent in the runner (rule #5).** The checkers (`ping_connector`, `check_contract`) already swallow every exception. The runner wraps each checker call in a defensive try/except anyway (catches mis-coded checkers). The GitHub Issue creator returns None on every error path. The telemetry bump is fail-silent at its own layer. So a broken GH token, a Postgres outage, or a network blip at Fortnox can each kill at most ONE row's pulse — never the whole run, never the app.
+
+- **Idempotency via exact-title search (rule #3).** GH Search API is fuzzy; a near-miss could shadow a real duplicate. Solution: search by `repo:... is:issue is:open in:title "<exact-title>"`, then verify the response's `title` field matches `[ABN Pulse] {connector} — {check_type} failure` byte-for-byte. Only after that verification do we reuse the existing issue number. Tested via `test_issue_not_duplicated_when_open_exists`.
+
+- **Process-local rate limit on POST /run.** The dashboard's "Kör kontroll nu" button hits this; the daily cron runs `pulse_runner.py` directly so it never collides with the limit. A 60 s window keeps a misclicking operator from generating a thundering herd against Fortnox. Implemented via a single module-level `_last_run_monotonic` float — a Redis-backed limiter would be over-engineering for "the button you click once".
+
+- **AdminPage card renders in ALL three states.** Tier 3 has three states (platform off / unsigned / signed) because the customer's DPA opt-in matters. Pulse doesn't: the connector APIs are the same upstream services whether the customer signed Tier 3 or not. So `<PulseStatusCard />` lives at the AdminPage top level, sibling to `<Tier3Section />` rather than nested inside it. Less coupling, more honest.
+
+- **Latency timeout = `down_ms / 1000 + 1 s` slack.** A slow-but-eventually-responding API records its real latency rather than racing the timeout. This means a Fortnox response at 9.5 s gets correctly classified as `degraded` (above 3 s warn) rather than incorrectly as `down`. The slack also matters when the operator's machine is under load — clock drift inside httpx's internal timer is real.
+
+- **Spec_diff carries KEY names only (rule #6).** When the contract drifts, the issue body needs to show the diff so a developer can fix it. Including the FULL response would leak whatever Fortnox returned for the operator's own company. Diff format: `{"missing": ["CompanyInformation"], "extra": ["NewField"]}` — sorted lists of top-level keys, JSON-encoded. Tested via `test_contract_returns_diff_in_spec_diff_field`.
+
+- **`pulse_runner.py` at repo root, not under backend/.** The workflow does `cd backend && python ../pulse_runner.py` — the script's PYTHONPATH munging is the bridge. Putting it at the repo root means the operator can also invoke it from outside the venv (e.g. for a quick "is the cron working?" check). The script also detects the launch CWD and adds backend/ to sys.path if needed, so it works from either location.
+
+**Verification:**
+
+- Backend pytest: **1248 passed** (1231 + 17, zero regressions, 265 s)
+- Frontend: typecheck ✓, Vite build ✓
+- Landing Next.js build: 33 static pages ✓
+- Go suite: not re-run locally (Docker daemon offline); Pulse touched zero Go code so CI's `security-go` job will validate on push
+
+**Manual pendings:**
+
+- Hetzner Postgres `alembic stamp head` — pending. Head expected: `7e2d9a5c1f4b`. Single new table + 3 indexes, all raw SQL `IF NOT EXISTS` so idempotent.
+- GitHub branch-protection rule: flip `Backend — 1231 tests` → `Backend — 1248 tests` in Settings UI.
+- Operator must create `PULSE_GITHUB_TOKEN` secret in the repo before the cron can auto-create Issues (otherwise issues are skipped silently per rule #5).
+- Operator must create `FORTNOX_ACCESS_TOKEN` / `QUINYX_API_KEY` / `HOGIA_API_KEY` secrets (READ-ONLY tokens — never customer Nango tokens) so the cron can authenticate to the connector APIs.
+
+**What's next — Batch 26 (preview):**
+
+ABN Shield — moving from observation to adversarial defence:
+- Replay-attack tests against the Mission Layer signature verifier
+- Malformed-signature handling on the abn-security `/verify-blueprint` endpoint
+- Schema-injection probes against the Tier3Telemetry helper's f-string substitution allowlist (already locked down, but tested explicitly)
+- Token-exfiltration probes on the pulse module (verify `error_message` never carries auth tokens or customer data)
+- Per-agent rollback rates (Batch 24 carry-over)
+- Telemetry NDJSON export (Batch 24 carry-over)
+
+
 ## 2026-05-27 — Batch 24 — TIER 3 telemetry, atomic counters, DPA v1.2, alert thresholds
 
 Operational visibility for TIER 3. Every write path now emits a counter; AdminPage surfaces the rollup; alert thresholds flag deteriorating tenants; DPA bumped to v1.2 to disclose the new processing activity.

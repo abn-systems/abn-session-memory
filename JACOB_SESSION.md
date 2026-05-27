@@ -38,11 +38,11 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Batch 24 klar — TIER 3 telemetry live (1231 tester gröna)
-Senast: Tier3Telemetry + atomic counters + DPA v1.2 + alert thresholds + AdminPage TelemetryCard
-Nästa: Batch 25 — auto-pause + per-agent rollback rates + telemetry NDJSON export
+Status: Batch 25 klar — ABN Pulse live (1248 tester gröna)
+Senast: PulseResult + ping/contract per connector + idempotent GH Issues + pulse.yml cron + PulseStatusCard
+Nästa: Batch 26 — ABN Shield (adversarial tests för Mission Layer + signatur replay-skydd)
 
-Last updated: 2026-05-27 (after Batch 24)
+Last updated: 2026-05-27 (after Batch 25)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md
