@@ -38,11 +38,11 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Batch 33D-4 klar — LayerShowcase ersätter LivingDemo + ProductShowcase (backend ORÖRD)
-Senast: Skapat LayerShowcase med 3 sektioner (Observer/Process Graph/Agent Engine) matchande v7-designbild — number + label + title + body + 4-kol specs-grid + FIG-box med signaturmönster. Gamla → .legacy.tsx (bevarad historik). Hero #living-demo-ankar fungerar.
-Nästa: Väntar på Jacob — Batch 32 (abn-observer §8) eller annan funktion-batch
+Status: Batch 33D-5 klar — landing/body pixel-replikerad från landing_v7.html (backend ORÖRD)
+Senast: Hero + LayersSection + OperaSection + LedgerSection + TrustSection alla skapade från Anthropic Design API designsystem-bundle. 4 nya landing-fig SVG (Observer/Graph/Agent/Opera/NoData) + HeroFigure (träd + ringar + dots + diamond). 8 gamla komponenter renamade till .legacy.tsx (LivingDemo / ProductShowcase / LayerShowcase / Layers / Marketplace / DownloadCTA / Transparency / SocialProof). Header + Footer orörda.
+Nästa: Väntar på Jacob — fortsätt med sub-pages (/observer, /process-graph etc.) eller dashboard v7
 
-Last updated: 2026-05-27 (after Batch 33D-4)
+Last updated: 2026-05-27 (after Batch 33D-5)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md

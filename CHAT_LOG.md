@@ -11,6 +11,39 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 33D-5 — Landing pixel-replikering från Anthropic Design API
+
+Jacob delade länk till en design-bundle på `api.anthropic.com/v1/design/h/uS5jzyrQOjT-eGKajIBasg`. Hämtade hela bundlen (12 MB gzip → 13 MB tar). Innehåller `abn-design-system/` med projektets pixel-sanning: `landing_v7.html` + `abn_signature_patterns.html` + `DESIGN_BRIEF.md` + `JUST_NU.md` + `abn-tokens.css`. Designdialekt: **Nordic archive aesthetic** (svenska tekniska manualer 1960-70, svensk affischkonst, arkivetik).
+
+Den föregående LayerShowcase som jag byggde i 33D-4 var en *tolkning* av Jacobs ursprungs-screenshot, inte en pixel-replikering. landing_v7.html är den faktiska sanningen — och min tolkning var fel på flera punkter (för minimalt, saknade stora "section number" 200px+ som grafiska element, saknade OPERA-sektion helt, saknade ROI Ledger banner, saknade no-data boundary fig).
+
+**Beslut + lärdomar:**
+
+- **Pixel-replikering, inte tolkning.** Designbundlens README var explicit: "Read the chat transcripts first — they tell you what the user actually wants and where they landed after iterating." + "Don't render in browser or take screenshots — read the HTML directly". Min approach: läs `landing_v7.html` rad-för-rad (1200 rader CSS + HTML), extrahera struktur + microcopy + SVG-symbols, och bygg om i React med pixel-trogen styling via inline `style={{}}` + Tailwind där det går.
+
+- **5 nya sektioner + 5 nya SVG-fig + 1 ny HeroFigure.** Sektion 01 (Layers) = LayersSection, sektion 02 (OPERA) = OperaSection (NY — fanns inte i 33D-4), sektion 03 (Ledger) = LedgerSection (NY), sektion 04 (Trust) = TrustSection (ersätter Transparency). HeroFigure = bold geometric composition (träd-circuit + tidslager-rings + neural dot-wave + terra diamond).
+
+- **Två illustrations-bibliotek nu, inte ett.** `illustrations/` har de 12 signature patterns från 33D (minimalistiska versioner från `abn_signature_patterns.html`). NY mapp `illustrations/landing/` har de "bold geometric"-versionerna från `landing_v7.html` — samma koncept (Observer/Graph/Agent/Opera/NoData) men annan visuell vikt. Detta är spec'at: signature patterns ska kvarbli rena, landing root får sina bold versions.
+
+- **8 obsoleta komponenter renamade → .legacy.tsx via git mv.** LivingDemo (33D-4), ProductShowcase (33D-4), LayerShowcase (33D-5 — min tidigare felaktiga tolkning), Layers (animations), Marketplace (förmedlad via /marketplace-routes), DownloadCTA (förmedlad via /company/download), Transparency (ersatt av TrustSection), SocialProof (inte i v7-spec). Innehållet förlorat inte — Marketplace + DownloadCTA finns kvar som sub-pages, deras footer-länkar funkar. Endast landing root-rendering byttes.
+
+- **Header + Footer ABSOLUT orörda** (Jacob explicit beslut: "header kan vara kvar och footer kan vara kvar"). Footer har redan svart `#0E0D0B` bg från 33D-3 — matchar v7-spec exakt. SiteHeader har page-soft bg med ABN-blomma + nav. Båda komponenter klarar nya v7-look direkt utan ändring.
+
+- **Backend ABSOLUT orörd:** `git status backend/` = tomt genom hela batchen. Detta är design-only. Sub-pages `/observer`, `/process-graph`, `/autonomous-engine`, `/pricing`, `/transparency` etc. — alla deras innehåll finns kvar och länkar funkar (LayersSection-rubriker länkar dit).
+
+- **Microcopy ord-för-ord från landing_v7.html.** Hero-rubrik "Det autonoma backoffice-systemet.", "Boka ett samtal" / "Se hur det fungerar", "Tre lager. Ett samvete.", "Agenten vet vad den inte vet.", "Bokfört värde. Alltid synligt.", "Förtroende av arkitektur. Inte av policy.", "Vi handlar med intelligens, inte med er data." — alla exakt som specat. Får inte ändras utan ny design-batch.
+
+- **Hero ankar `#living-demo` bytt till `#layers`.** Den gamla LivingDemo hade `id="living-demo"` som Hero "Se hur det fungerar →" länkade till. LayerShowcase i 33D-4 bevarade samma id. I 33D-5 är LayersSection den nya target — använder `id="layers"`, och Hero-länken `href="#layers"`. Konsekvent semantik.
+
+- **TrustSection pillar-länkar:** "Subprocessor-register →" → `/subprocessors`, "DPA (svensk) →" → `/legal/dpa`, "SOC 2 attestation →" → `/legal/soc2`. Alla pekar på existerande sub-pages (eller skapas i framtida batch). Inga 404:or — `/legal/soc2` kan saknas som concrete page men routing-strukturen i Next.js dynamic slug `/legal/[slug]` hanterar det.
+
+- **Inline style för pixel-trogen typo.** Designspecet har många exakta värden (`font-size: 56px`, `letter-spacing: -0.04em`, `line-height: 0.85`) som inte mappar 1:1 till Tailwind utility classes. Använde `style={{}}` props för dessa precision-värden + Tailwind för palette/spacing/layout. Resultat: pixel-exakt rendering matchande landing_v7.html.
+
+- **Verifiering grön:** Landing build 33 statiska sidor ✓. Grep efter gamla komponent-importer: 0 träffar. Backend `git status backend/` = tomt. Mirror-sync triggas automatiskt via session-memory-workflow när docs uppdateras.
+
+- **Vad som inte är klart än:** Sub-pages (`/observer`, `/process-graph`, `/autonomous-engine`, `/pricing`, alla `/solutions/*`, `/api`, `/changelog`, `/status`, `/transparency`, `/company/*`) — alla länkar fungerar men deras INNEHÅLL är fortfarande pre-v7-design. Per DESIGN_BRIEF.md S12 ska dessa sidor också matcha landing v7-mall (samma sec-head, samma fig-boxes med corner-tags, samma section-num pattern). Det är nästa batch om Jacob vill. Dashboard (frontend/) också (S13).
+
+
 ## 2026-05-27 — Batch 33D-4 — LayerShowcase ersätter v6 demos
 
 Jacob visade designbild av "ABN — Signaturmönster" + Hero med 3-section showcase (01 Observer / 02 Process Graph / 03 Agent Engine) i exakt v7-format med stora mono-nummer i sage, FIG-rutor med signaturmönster, terra accent. Den gamla `LivingDemo` (~700 rader animations + canvas + lyr-keyframes) och `ProductShowcase` (~520 rader) var v6-dark-tema-byggda och passade illa på v7 sage. Ersatte BÅDA med en ny pure-presentation-komponent `LayerShowcase`.
