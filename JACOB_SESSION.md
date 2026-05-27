@@ -38,11 +38,11 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Batch 28 klar — Shield guardian + anomalidetektion live (1302 tester gröna)
-Senast: ShieldGuardian (3 checks, fail-silent) + /agents/anomaly-trend (8 veckor, configurable) + FindingTraceView integrerad i AgentDetailPage
-Nästa: Batch 29 — Fortnox live + ROI per connector-kategori
+Status: Batch 29 klar — universal connectors + ROI per kategori (1322 tester gröna)
+Senast: connector_registry (32 connectors, 6 kategorier) + connector_auth (Fernet) + 4 universella endpoints + ROI by_category
+Nästa: Batch 30 — ABN Mind self-improvement + sparad tid per vecka + real OAuth token exchange
 
-Last updated: 2026-05-27 (after Batch 28)
+Last updated: 2026-05-27 (after Batch 29)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md

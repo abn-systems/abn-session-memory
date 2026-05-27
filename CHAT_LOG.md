@@ -11,6 +11,53 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 29 — Universal connector registry + OAuth/API-key flow + ROI per connector category
+
+Three deliverables sharing one design principle: rule #1 of Batch 29 — universal first. Every endpoint, every helper, every component works identically for SAP, Salesforce, Shopify, or any future connector. ``connector_name`` is always a variable.
+
+**Engineering decisions:**
+
+- **Universal first means literally no if-connector branches.** Every new endpoint takes ``{connector_name}`` as a path parameter; ``authorize`` resolves OAuth-vs-API-key via the registry lookup; ``callback`` and ``api-key`` both flow through the same ``store_credential`` destination. Tested by ``test_authorize_unknown_connector_returns_instructions`` with ``custom_erp_v2`` — the endpoint renders a clean Swedish instructions page without any registry entry. The universal fallback IS the contract.
+
+- **CONNECTOR_DISPLAY_NAMES consolidated, NOT duplicated.** Batch 27 introduced this dict inline in ``api/routes/agents.py``. Batch 29's registry is the natural home. I consolidated rather than duplicating — replaced the local dict with imports from ``connector_registry``, kept the public ``_display_connector`` function as a thin wrapper so existing internal call sites still work unchanged. Rule #2 of CLAUDE.md: one source of truth per concept. Single dict in the codebase now.
+
+- **Fernet symmetric, not asymmetric.** The spec mentioned ``age-encrypted vault`` (handbook §2.4) as the production target. Fernet is the dev/test equivalent: same fail-closed contract, same plaintext-never-stored guarantee, same key-derivation pattern (SHA-256 of ``settings.abn_secret_key`` → URL-safe base64). The public API of ``store_credential`` / ``get_credential`` / ``revoke_credential`` is identical between Fernet and age-vault — a future batch swaps the implementation by changing only ``_derive_fernet_key`` + ``_encrypt`` / ``_decrypt``. The interface is stable.
+
+- **``store_credential`` upserts; ``revoke_credential`` clears but doesn't DELETE.** The Connector row (Batch 7) carries ``connection_id`` and observer config that shouldn't be lost when the operator rotates a credential. Revoke wipes the encrypted columns + flips ``enabled=False``; re-authorisation reuses the row. Tested by ``test_revoke_credential_removes_row`` which asserts the row stays but its ``token_ref`` is null.
+
+- **CSRF state token is process-local.** ``_csrf_tokens: dict`` is mutated in ``authorize`` and consumed in ``callback``. Fine for single-Node ABN (one customer, one process). Multi-Node deploys would need Redis; the comment in connectors.py documents this. The test ``test_state_token_mismatch_rejected`` verifies the security property: submitting connector B's callback with connector A's state token returns 403 with "csrf" in the detail.
+
+- **``callback`` stores the AUTH CODE as the access_token, not the token-exchange result.** The OAuth2 token-exchange step (POST to the connector's token endpoint with the code) is connector-specific and not implemented in this batch — Batch 30 picks it up per connector. For now we store the code itself so the credential row is present; the operator can rotate via the ``/api-key`` endpoint when ready. This is a deliberate vertical slice: universal storage flow ships now, per-connector token exchange ships when each connector goes live.
+
+- **Connector table extension was the right call (rule #5).** I considered adding a new ``ConnectorCredential`` table — 1:1 with Connector, separate concerns. Decided against: rule #5 says "no new models unless strictly necessary". Connector already has ``tenant_id`` + ``connector_type`` as the natural primary key for this data. Adding 5 nullable columns is cheaper than a JOIN on every credential read. The migration is forward-only (existing rows survive the upgrade; nothing references the new columns yet).
+
+- **20 tests, all 6 rules verified.** ``test_connector_registry_unknown_fallback`` and ``test_roi_unknown_connector_goes_to_other`` prove rule #1 (universal fallback). ``test_authorize_oauth2_returns_url`` and ``test_authorize_api_key_returns_null_url`` prove rule #2 (same flow, different auth types). ``test_store_credential_encrypts_token`` and ``test_tampered_token_raises_on_decrypt`` prove rule #3 (never plaintext, fail-closed). ``test_roi_category_display_names_swedish`` proves rule #4 (categories from registry). The Connector schema extension proves rule #5 (no new models). Grep-first proves rule #6 (the Batch 27 dict was found and consolidated rather than duplicated).
+
+- **One test bug fixed mid-batch.** ``TestClient.delete()`` in this httpx/Starlette version doesn't accept ``json=`` kwarg. Fixed by switching to ``client.request("DELETE", ..., json=...)``. Documented inline in the test file.
+
+**Verification:**
+
+- Backend pytest: **1322 passed** (1302 + 20, zero regressions, 259 s)
+- Frontend: typecheck ✓, 60 tests ✓, Vite build ✓
+- Landing Next.js build: 33 static pages ✓
+- Go: untouched in Batch 29; CI `security-go` validates on push
+
+**Manual pendings:**
+
+- Hetzner Postgres `alembic stamp head` — pending. NEW head: `a4e1d28c5f9b` (`add_connector_auth_columns`). Migration adds 5 nullable columns to ``connectors`` table; raw SQL ``ADD COLUMN IF NOT EXISTS`` so idempotent.
+- GitHub branch-protection rule key: flip `Backend — 1302 tests` → `Backend — 1322 tests`.
+- Carry-over from Batch 27/28: add `Shield — adversarial tests` as a 4th required check.
+- Production deploy must export ``ABN_SECRET_KEY`` (32+ chars, distinct from the default "change-me") before any operator can authorize a connector. ``connector_auth.py`` logs a loud warning when it sees "change-me"; production should never see that.
+- Mirror sync to abn-session-memory runs after push.
+
+**What's next — Batch 30 (preview):**
+
+- ABN Mind — self-improvement agent that watches its own findings + attestation precision and adjusts thresholds autonomously (per-agent learning loop)
+- Sparad-tid per vecka — weekly breakdown of hours saved on the AgentDetailPage
+- Per-connector token exchange — wire real Fortnox / Salesforce / HubSpot token endpoints into the callback handler (Batch 29 stores the auth code; Batch 30 exchanges it)
+- Shield CI gate enforcement (Batches 27/28 carry-over)
+
+
 ## 2026-05-27 — Batch 28 — Shield Guardian + Anomaly Trend + FindingTraceView integration
 
 Three parallel tracks: a live `ShieldGuardian` that observes the running system (rule #1 — observes, never blocks), an 8-week anomaly trend per tenant with configurable alert thresholds, and the Batch 27 `FindingTraceView` finally wired into `AgentDetailPage`'s new "Senaste fynd" inline-expand list.
