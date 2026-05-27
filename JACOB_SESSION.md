@@ -38,11 +38,11 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Landing-diagnostik + force-rebuild — ROTORSAK hittad: landing-komponenter (Hero/ProductShowcase/LivingDemo/Layers/Marketplace) har v6 DARK theme HARDCODED (~150 träffar). 33D bytte BARA tokens + CTA-färger, inte komponenternas dark-canvas.
-Senast: Force-rebuild ``78c1a3d`` pushad (cache-bust marker i globals.css). Vercel build OK men site är fortfarande dark-themed strukturellt.
-Nästa: Jacob bekräftar Batch 33D-3 (light-theme migration av landing-komponenter) ELLER lämnar landing dark + accent-only
+Status: Batch 33D-3 klar — landing v7 light migration komplett (backend ORÖRD)
+Senast: 572 dark-hex bytta över 32 filer (11 komponenter + 21 app-sidor); sage canvas + ink CTAs + terra accent + ink-toned particles. 0 dark-hex kvar.
+Nästa: Väntar på Jacob — Batch 32 (abn-observer §8) eller annan funktion-batch
 
-Last updated: 2026-05-27 (landing dark-theme diagnostik)
+Last updated: 2026-05-27 (after Batch 33D-3)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md

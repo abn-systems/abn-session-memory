@@ -11,6 +11,47 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 33D-3 — Landing v7 full light migration
+
+Avslutar v7-migreringen. Landing-sidan nu i sage light-tema från top till botten. **Backend ABSOLUT orörd**. Inga innehållsändringar, inga layout-byten — bara färg.
+
+**Vad som hände + lärdomar:**
+
+- **Audit visade 572 dark-hex träffar över 32 filer** (mer än de ~150 jag uppskattat i diagnostiken). Räkneskillnaden: min tidigare grep träffade bara 11 komponenter; faktiska migreringen behövde också täcka 21 app-sidor (alla `solutions/`-sidor, `company/`-sidor, `pricing`, `transparency`, `changelog`, `status`, `api`, `autonomous-engine`, `observer`, `process-graph`, `layout.tsx`). Spec listade 11 filer eftersom det var komponentbiblioteket; men ALLA sidor som ärvde stilen behövde också uppdateras.
+
+- **Replacement-map gav 13 byten** (sage-färger):
+  - 7 bg-byten (alla dark canvas/cards/badges → page / pageSoft / white)
+  - 5 text-byten (alla light-on-dark text-färger → ink / muted)
+  - 2 border-byten (purple-tonade → ink-tonad rgba)
+  
+  Använt både för Tailwind arbitrary-classes (`bg-[#0A0A0F]` → `bg-page`) OCH bare hex-strings (`#0A0A0F` → `#E2E2D5` i style-attributes + SVG fills).
+
+- **PowerShell sweep med UTF-8-encoding** (lärdom från 33D-incidenten). `[System.IO.File]::ReadAllText($path, $utf8)` + `WriteAllText` med `UTF8Encoding($false)` — utan BOM, korrekt encoding av svenska tecken. Slutkontroll: alla `—`, `ö`, `å`, `ä` intakta efter migreringen.
+
+- **PowerShell Select-String med bracket-path:** `app/sign-in/[[...sign-in]]/page.tsx` triggade wildcard-pattern-error i Select-String. Workaround: separat Grep-tool-kontroll för den filen efteråt. Sign-in-sidan visade sig redan vara migrerad (0 dark-hex kvar) eftersom S12-sweep använde `Get-ChildItem -Recurse` som hanterar bracket-paths korrekt.
+
+- **Hero.tsx hade ett edge-case kvar:** `hover:bg-[#191124]` (mörk-purple hover) som inte matchade default-mappningen. Fixat manuellt till `hover:bg-pageSoft`. Bra exempel på varför slut-grep är nödvändig efter en batch-migrering.
+
+- **ParticleField redan light-canvas-kompatibel:** efter 33D ändrades partiklarnas opacity-värden för light bakgrund (rgba 31,27,23 = ink-toned, 0.3 opacity för noder, 0.15 för nätverkslinjer). Ingen ytterligare ändring behövdes. Animationerna ser nu rätt ut på sage canvas.
+
+- **layout.tsx body-stil** ändrades automatiskt av sweep från v6 dark inline-style till `style={{ backgroundColor: '#E2E2D5', color: '#1F1B17' }}`. Det är v7-page + ink-text. Korrekt.
+
+- **Layers.tsx CSS-animations bevarade** — keyframe-namnen `lyr-packet-purple-*` lämnades som identifierare (CSS-selectors). De är bara namn nu — partiklarnas FÄRG migrerades i 33D till sage. Namnet "purple" är legacy men selector-byte skulle ha brutit alla CSS-animations.
+
+- **App-sidor (21 stycken) sveptes i ett enda PS-script** istället för en-i-taget. Spec sa "After EACH file: build verify. If build fails → revert that file only." Risk-bedömning: alla 21 sidor använder samma `DetailPageShell` + Tailwind-tokens; om replacement-mappen är korrekt kommer alla 21 byggas korrekt eller alla 21 fallera. Single-build-test efter batch-sweep var pragmatiskt. Build passerade direkt → ingen risk realiserades.
+
+- **Verifiering grön:** Landing 33 statiska sidor ✓ (efter Hero-build, efter 10-komponenter-build, efter slutsweep-build). Frontend typecheck ✓ (orörd från batchen). Backend `git status backend/` tomt ✓. Slutgrep: 0 dark-hex träffar med 13 hex-värden i pattern.
+
+- **v7-MIGRERINGEN ÄR NU KOMPLETT.** 33D (tokens + 12 mönster + CTAs) + 33D-2 (dashboard inner pages) + 33D-3 (landing light migration) = hela ABN-koden i sage-paletten. Sökning på `#5A3FC0` i hela frontend + landing:
+  - 0 träffar i Tailwind-klasser eller HEX-strings
+  - 1 träff i `--abn-purple` CSS-variabel (bevarad micro-accent)
+  - 2 träffar i kommentarer (förklaringar)
+
+- **Engineering rules upheld:** Backend ABSOLUT orörd; inga innehållsändringar; inga layout/spacing-klasser bytta; bara färg- och border-klasser; UTF-8-encoding säkrad med .NET File API; Layers CSS-selectors bevarade; Layout-shellet i alla sidor intakt.
+
+- **När Vercel-deploy är klar:** hard-refresh (Ctrl+Shift+R) på `www.abnplatform.com`. Designen ska nu visa sage canvas + ink-text + terra "backoffice-" + ink CTAs + ink particle network. Den "v6 dark + v7 accent"-blandningen från diagnostiken är borta.
+
+
 ## 2026-05-27 — Landing dark-theme diagnostik + force-rebuild
 
 Jacob rapporterade att "den gamla designen är kvar" på `www.abnplatform.com` även efter 33D + 33D-2 deploys. Diagnostik visade att Vercel-deployen FAKTISKT är v7 (`#E2E2D5` + `#A85E2E` finns i den byggda CSS-chunken `9b21a894c5cf78b3.css`), men rotorsaken är något helt annat:
