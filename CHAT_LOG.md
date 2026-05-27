@@ -11,6 +11,36 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 33D-6 — ViewportScale (SVG-style projector scaling)
+
+Jacob: "alla skärm storlek, länk som en projektor — bilden är exakt likadan, blir bara mindre eller större. Inga element får flytta på sig. Vektorkänsla (SVG): behåller proportioner oavsett hur mycket man drar i fönstrets hörn."
+
+**Beslut:** Klassisk "fix-canvas + transform-scale"-approach (det Jacob beskriver är PRECIS detta). Inner-wrapper rendrar alltid på 1440 px design canvas, outer-wrapper skalar via CSS `transform: scale()` baserat på `window.innerWidth / 1440`. ResizeObserver håller outer-höjd synkad med scaled inner-höjd så sidans scroll matchar synligt innehåll.
+
+**Filer:** Ny `ViewportScale.tsx` speglad i båda paketen (`landing/components/` + `frontend/src/components/`). Wrappas runt `{children}` i `landing/app/layout.tsx` och runt `<App />` i `frontend/src/main.tsx`. Båda implementationerna IDENTISKA — om en ändras måste den andra ändras i lockstep.
+
+**Tekniska val:**
+- `useLayoutEffect` istället för `useEffect` så scale appliceras innan första paint (annars flash av fix-bredd-layout)
+- `ResizeObserver` på inner — när text reflowar pga font-load eller dynamic content räknas outer-höjd om automatiskt
+- `transform-origin: top left` + auto-margin för centrering på skärmar ≥ 1440 px
+- `Math.min(1, vw / 1440)` — ALDRIG skala upp över 1.0 (skarpare rendering på desktop, prototyp-känsla skulle förloras på 4K-skärmar)
+- `{ passive: true }` på resize-listener för smooth scrolling
+- `overflow-x: hidden` på outer — horisontell scroll dyker aldrig upp
+
+**Konsekvenser dokumenterade:**
+
+- Tailwind responsive-prefixes (`sm:` / `md:` / `lg:` / `xl:`) gäller ALLTID på inre bredd 1440 px (alla mindre breakpoints triggar alltid). Det är vad vi vill — desktop-layout på alla skärmar.
+- Text på 375 px-mobil: scale = 0.26, 18 px brödtext renderas ≈ 4.7 px. Det är vad Jacob explicit bad om ("inga element får flytta på sig"). UX-trade-off: läsbarhet vs proportions-trohet. Accepterat per spec.
+- Click-targets minskar proportionellt — 44 px-knappar blir 11 px på mobil. Användare med fingrar har svårt att klicka. Accepterat per spec.
+- Hover-states orörda eftersom scale = 1.0 på desktop (>1440 px).
+
+**Backend ABSOLUT orörd:** `git status backend/` = tomt.
+
+**Verifiering:** Landing build 33 statiska sidor ✓. Frontend typecheck ✓, 60 tester ✓, Vite build ✓.
+
+**Lärdom:** Designer-prototyper renderas ofta i Figma/Sketch med fix bredd där hela artboarden zoomas. När produktion-kod behöver replicera det är `transform: scale()` på root-wrapper det rätta verktyget — inte CSS `clamp()`-baserad fluid scaling (som flyttar element vid breakpoints). Jacob's "projektor"-metafor var exakt rätt.
+
+
 ## 2026-05-27 — Batch 33D-5 — Landing pixel-replikering från Anthropic Design API
 
 Jacob delade länk till en design-bundle på `api.anthropic.com/v1/design/h/uS5jzyrQOjT-eGKajIBasg`. Hämtade hela bundlen (12 MB gzip → 13 MB tar). Innehåller `abn-design-system/` med projektets pixel-sanning: `landing_v7.html` + `abn_signature_patterns.html` + `DESIGN_BRIEF.md` + `JUST_NU.md` + `abn-tokens.css`. Designdialekt: **Nordic archive aesthetic** (svenska tekniska manualer 1960-70, svensk affischkonst, arkivetik).

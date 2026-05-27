@@ -38,11 +38,11 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Batch 33D-5 klar — landing/body pixel-replikerad från landing_v7.html (backend ORÖRD)
-Senast: Hero + LayersSection + OperaSection + LedgerSection + TrustSection alla skapade från Anthropic Design API designsystem-bundle. 4 nya landing-fig SVG (Observer/Graph/Agent/Opera/NoData) + HeroFigure (träd + ringar + dots + diamond). 8 gamla komponenter renamade till .legacy.tsx (LivingDemo / ProductShowcase / LayerShowcase / Layers / Marketplace / DownloadCTA / Transparency / SocialProof). Header + Footer orörda.
-Nästa: Väntar på Jacob — fortsätt med sub-pages (/observer, /process-graph etc.) eller dashboard v7
+Status: Batch 33D-6 klar — ViewportScale (SVG-style projector scaling) i landing + dashboard (backend ORÖRD)
+Senast: Ny komponent ViewportScale wrapas runt {children} i landing/app/layout.tsx + frontend/src/main.tsx. Inner-bredd alltid 1440 px, transform: scale(vw/1440). Inga element-stacks på mobil — bara enhetlig zoom som en projektor / SVG.
+Nästa: Väntar på Jacob — verifiera mobil-rendering ser ut som desktop. Sedan ev. sub-pages eller dashboard v7
 
-Last updated: 2026-05-27 (after Batch 33D-5)
+Last updated: 2026-05-27 (after Batch 33D-6)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md
