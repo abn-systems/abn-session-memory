@@ -11,6 +11,76 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Landing dark-theme diagnostik + force-rebuild
+
+Jacob rapporterade att "den gamla designen är kvar" på `www.abnplatform.com` även efter 33D + 33D-2 deploys. Diagnostik visade att Vercel-deployen FAKTISKT är v7 (`#E2E2D5` + `#A85E2E` finns i den byggda CSS-chunken `9b21a894c5cf78b3.css`), men rotorsaken är något helt annat:
+
+**Rotorsak:** Landing-komponenterna (`Hero.tsx`, `ProductShowcase.tsx`, `LivingDemo.tsx`, `Layers.tsx`, `Marketplace.tsx`, `Transparency.tsx`, `SocialProof.tsx`, `SiteHeader.tsx`, `DownloadCTA.tsx`, `Footer.tsx`, `DetailPageShell.tsx`) har v6 DARK-tema-färger HARDCODED som Tailwind arbitrary-value-klasser (~150 träffar totalt):
+
+```
+bg-[#0A0A0F]   dark canvas / hero gradient stop
+bg-[#111118]   dark frosted-glass cards
+bg-[#080810]   footer canvas
+text-[#F0EEF8] light text på mörk yta (snowy white)
+text-[#9892AC] muted purple-grey
+border-[#2A2040]   purple-tinted hairlines
+text-[#5C5670]   ultra-muted divider dots
+```
+
+33D + 33D-2 bytte **BARA**:
+  - CSS-variabler (`--page`, `--ink`, `--terra` etc.) ✓
+  - Tailwind theme tokens (page, pageSoft, ink, terra...) ✓
+  - `bg-[#5A3FC0]` (lila CTA) → `bg-ink` ✓
+  - Lila partikelfärg `#9F8FE6` → sage `#5C6E55` ✓
+  - Hero-rubrik gradient → ink + terra på "backoffice-" ✓
+  - Footer canvas `#05050A` → `#0E0D0B` ✓
+
+Men det BYTTE INTE de mörka HEX-färgerna `#0A0A0F` / `#111118` / `#F0EEF8` / `#9892AC` / `#2A2040` i komponenternas struktur. v6:s landing-iteration designades ENBART som dark-theme; v7-specet vill HELT flippa till sage canvas. Min 33D-tolkning var "byt accent-färger och primärknappar" — INTE "konvertera dark-tema till light-tema". Det är en strukturell ändring som behöver explicit OK.
+
+**Vad är på Vercel just nu (verifierat via Jacobs thumbnail i Vercel deploy details):**
+  - ✅ Hero "backoffice-" är terra-färgat (33D landed)
+  - ✅ "Boka en demo" + "Se hur det fungerar" CTAs är ink + light secondary (33D landed)
+  - ✅ Trust signals "Ingen bindningstid · Svar inom 24h · GDPR by design" syns nere
+  - ❌ Canvas är fortfarande mörk (`#0A0A0F`/`#111118`) — det är **v6 dark canvas**
+  - ❌ Text är ljus/cool-grey (`#F0EEF8`/`#9892AC`) — också v6-rester
+  - ❌ Hairlines är purple-tonade (`#2A2040`) — också v6
+
+Resultatet är en "blandad" design — ink/terra v7-accent mot v6 dark canvas. Det är inte vad Jacobs design-bilder visade (sage/cream canvas + mörka pålägg).
+
+**Diagnostiska fynd per steg:**
+
+1. **landing/app/page.tsx** importerar 10 komponenter (Hero, ProductShowcase, LivingDemo, Layers, Transparency, SocialProof, Marketplace, DownloadCTA, SiteHeader, Footer). Kommentaren säger "dark brand theme, particle hero" — det är från v6-iterationen och INTE uppdaterat i 33D. Det är inte fel kod — bara observation att kommentaren reflekterar v6-intentionen.
+
+2. **Bara EN landing-folder** (`./landing/`). `find . -name "page.tsx" -path "*/app/*"` hittade 20+ landing-sidor men inga dubletter, inga separata sub-vergessen-repos.
+
+3. **Vercel-config:**
+   - Ingen root `vercel.json`
+   - `landing/vercel.json` finns men innehåller BARA redirect-regler (apex `abnplatform.com` → `www.abnplatform.com`). Inget `routes`, ingen `framework`-override, inget `buildCommand`. Vercel detekterar Next.js automatiskt.
+   - Ingen lokal `.vercel/project.json` = Vercel-projektet (`abn-nine` per CLAUDE.md) konfigureras helt på Vercel-sidan (Settings → General). Vi kan inte verifiera "vilken branch" lokalt; men eftersom git push triggar deploys + Jacob ser deploys i sin Vercel UI så är `main` korrekt branch.
+
+4. **`git log -- landing/`** visar att `1533d18` + `18e81e8` ÄR senaste två commits som rörde landing. `18e81e8` (33D) rörde 28 landing-filer (inkl. `globals.css`, `tailwind.config.ts`, alla solutions-pages, components/Hero/LivingDemo/Layers/Marketplace/ParticleField/Footer). 33D ÄR fullt landat.
+
+5. **Vercel-branch:** kan inte verifieras lokalt (ingen `.vercel/project.json` i repo). Konfigurerad på Vercel-sidan.
+
+6. **v7-tokens FINNS i byggd CSS:** `grep #E2E2D5 landing/.next/static/css/9b21a894c5cf78b3.css` → träff. `grep #A85E2E` → träff. Den COMPILED CSS:en HAR sage-paletten. Det är inte ett build-fel.
+
+7. **Ingen separat landing-repo:** `git remote -v` visar bara `origin → github.com/abn-systems/ABN.git`. `ls -la` root visar `landing/` som vanlig mapp i monorepot. Inga andra git-repos.
+
+8. **Post-commit hook fungerar korrekt:** `cat .git/hooks/post-commit` visar `if [ "$AUTHOR_NAME" != "Jacob" ]; then git commit --allow-empty --author="Jacob ..." -m "chore: trigger deploy" --no-verify; git push origin main --no-verify; fi`. Det skapar empty trigger-commits som är Jacob-författade. Det är meningen — Vercel Hobby-plan deployar bara commits från team-owner.
+
+9. **build-release.yml** är för Tauri desktop-installer, inte landing. Inte relevant för Vercel-deploy.
+
+10. **18e81e8 hade alla landing-filer:** `git show 18e81e8 --stat` visar ~22 landing-filer ändrade. 1533d18 hade FRONTEND/-only (dashboard inner pages).
+
+**Force-rebuild:** Committed `78c1a3d` (cache-bust marker — fyra-rads kommentar tillagd högst upp i `globals.css`). Post-commit hooken triggade `82901af` (Jacob-författad empty trigger-commit). Båda pushade till `origin/main`. Vercel kommer bygga igen med ny CSS-chunk-hash, men eftersom designen ÄR redan på Vercel (v6-dark struktur + v7-accent färger), kommer det SE EXAKT samma ut som tidigare. Force-rebuild är meningslös här — koden är vad den är.
+
+**Beslutspunkt för Jacob:**
+  * Alternativ A — Lämna nuvarande design som "v7 ink-accent på v6 dark canvas". Brand-konsistens med dashboard finns delvis (CTA-färger matchar) men hela "sage canvas"-känslan från Jacobs design-bilder finns inte på landing.
+  * Alternativ B — Batch 33D-3: full light-theme migrering av landing-komponenter. ~150 hardcoded hex-värden ska bytas mot v7-paletten (`bg-[#0A0A0F]` → `bg-page`, `text-[#F0EEF8]` → `text-ink`, etc.). Risk: ParticleField + LivingDemo animationer designades för dark canvas — partiklarnas opacity och färg behöver omkalibreras för light canvas. Det är en faktisk strukturell migrering.
+
+Backend ORÖRD genom hela diagnostiken.
+
+
 ## 2026-05-27 — Batch 33D-2 — v7 Design Migration Part 2 (dashboard inner surfaces)
 
 Fortsättningen på 33D. Alla återstående dashboard-ytor migrerade. **Backend ABSOLUT orörd** — ``git status backend/`` var tomt under hela batchen, ingen pytest-körning behövdes.
