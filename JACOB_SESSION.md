@@ -38,11 +38,11 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Batch 29 klar — universal connectors + ROI per kategori (1322 tester gröna)
-Senast: connector_registry (32 connectors, 6 kategorier) + connector_auth (Fernet) + 4 universella endpoints + ROI by_category
-Nästa: Batch 30 — ABN Mind self-improvement + sparad tid per vecka + real OAuth token exchange
+Status: Batch 30 klar — ABN Mind + sparad tid per vecka + universell token exchange (1342 tester gröna)
+Senast: MindAgent (5 rule families, NO customer payload) + OAuthState (DB-backed CSRF, 10-min TTL) + 12-provider TOKEN_ENDPOINTS + WeeklyStatsCard + MindReportCard + Monday 08:00 UTC cron
+Nästa: Väntar på Jacob — Batch 31 TBD
 
-Last updated: 2026-05-27 (after Batch 29)
+Last updated: 2026-05-27 (after Batch 30)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md

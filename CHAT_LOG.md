@@ -11,6 +11,39 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 30 — ABN Mind self-improvement agent + Sparad tid per vecka + Universal OAuth2 token exchange
+
+Three deliverables in one batch, each closing a gap left by an earlier batch. Mind is the "what should we tune?" feed (sister to Pulse's "are connectors healthy?" and Shield's "are we under attack?"). Sparad tid is the customer-facing weekly disclosure of hours saved. The universal token exchange upgrades Batch 29's deferred-code placeholder to real access tokens via a 12-provider dict.
+
+**Engineering decisions:**
+
+- **MindAgent reads only operational metadata.** Rule #1 of Batch 30 is the headline contract. `_collect_metrics` queries AgentRun counts + statuses, Finding.attested booleans (NEVER `Finding.title` / `description` / `agent_value` / `source_value`), RollbackRecord counts, and PulseResult counts. The whitelist test `test_mind_no_customer_payload_in_metrics` rejects any string longer than 200 chars or matching common PII markers — so a regression that accidentally pulls `Finding.title` into the metrics blob fails the suite immediately.
+
+- **MindAgent NEVER writes anywhere except `MindReport`.** Rule #2. The helper has no `db.add(Agent(...))` / `db.add(Tenant(...))` paths. It writes one row to one table and returns. A human reads the suggestions on the AdminPage MindReportCard and acts manually. This is deliberately weaker than the Shield Guardian (which observes telemetry tables) and the agent runtime (which writes findings + ROI rows) — Mind is observation-of-observations, kept at the most-removed layer so it can never accidentally feedback-loop.
+
+- **Universal OAuth via TOKEN_ENDPOINTS dict.** Rule #3 — never a per-connector if/elif. The dict carries 12 OAuth2 providers; `_resolve_token_endpoint` does `{placeholder}` substitution for connectors with subdomain-based URLs (Shopify, Salesforce). The `exchange_code_for_token` + `refresh_token` helpers are connector-agnostic — same body shape, same error handling. Tested with `salesforce` (subdomain), `hubspot` (flat), `xero` (refresh-only) — all pass through the same code path.
+
+- **OAuthState is DB-backed CSRF (replaces in-memory dict from Batch 29).** Multi-worker deployments / restart-between-authorize-and-callback would lose state with an in-memory dict. The DB row carries `(state_token, tenant_id, connector_name, created_at, expires_at)` with a 10-min TTL. The in-memory dict stays as the fallback for the single-Node / single-worker dev path; the test `test_oauth_state_expires_after_10_min` proves that an expired DB row is rejected and the empty in-memory dict can't whitelist it.
+
+- **Sparad tid per vecka always discloses its basis.** Rule #4 — never present a value without its basis. The `WeeklyStatsCard` always renders "Underlag: standard (15 min per körning)" or "Underlag: anpassad (per-tenant)". Tested at the API level by `test_weekly_stats_basis_label_shown` (every series row carries `hours_saved_basis`) and the global response has its own `basis` field. The 15-min default is conservative; tenants who want to claim more set `Tenant.policy["roi_minutes_per_run"]` explicitly.
+
+- **MindReport is append-only by row.** Rule #5 — never overwrites previous reports. `UNIQUE(tenant_id, report_week)` is the DB-level guarantee; the helper's idempotency short-circuit (`if existing: return existing`) is the application-level guarantee. Tested by `test_mind_report_idempotent_per_week`. Historic reports stay queryable indefinitely so the operator can compare weeks.
+
+- **The fix to `test_oauth_state_expires_after_10_min`.** Initial run: 19/20 new tests passed. The failing test was caught by the silent fallback: `_persist_oauth_state` calls `database.session.SessionLocal()` directly (not via the FastAPI `get_db` dependency), so test scaffolding that only overrides `get_db` would write to production Postgres (unreachable in tests) and the row never got persisted. Fix: add `import database.session as ds; ds.SessionLocal = factory` to the test's `_make_client` helper, mirroring the pattern in `test_tier3_executor.py`. All 20 tests then green.
+
+- **`test_oauth_state_expires_after_10_min` is the only test that explicitly wipes the in-memory dict via `_reset_csrf_tokens_for_tests`.** This is the security-relevant assertion: the test wants to prove the DB-row expiry is enforced *even when the in-memory fallback would have accepted the token*. Wiping the dict isolates the DB path. The `_reset_csrf_tokens_for_tests` helper was already exposed by Batch 29 for the same reason; I extended its use, not its semantics.
+
+- **MindReportCard is lazy-load on expand.** The list endpoint returns summary rows only (no full metrics / suggestions). The card calls `getMindReport(id)` only when the user clicks "Visa" on a row. This avoids one extra full-report fetch per AdminPage poll cycle (which fires every 5 min, would add 5 reports × N tenants of useless work for 95 % of viewers).
+
+- **Mind cron is advisory, not a required CI gate.** Rule #6 — fail-closed at the runtime boundary but loose at the dev-loop. A Mind report failure never blocks a release, never modifies any agent, never crashes the lifespan. `mind_runner.py` exits non-zero only when EVERY tenant failed — operator-actionable. Single-tenant failures are logged and skipped.
+
+- **Backend tests: 1342 passed (1322 + 20 new).** Frontend: typecheck ✓, 60 tests ✓, Vite build ✓ (902 KB JS, 33 KB gzipped CSS). Landing: 33 static pages ✓. Go: untouched, CI `security-go` validates on push.
+
+- **Migration: `b5f3c9e7a012_add_oauth_states_and_mind_reports`.** Raw SQL `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` per the canonical pattern since Batch 12. Depends on `a4e1d28c5f9b` (Batch 29 head). Hetzner stamp still pending — operator step.
+
+- **Production OAuth env vars to set per-connector** (operator manual step, NOT a code change): `FORTNOX_CLIENT_ID` / `FORTNOX_CLIENT_SECRET` / `FORTNOX_REDIRECT_URI`; same triple for `SALESFORCE`, `HUBSPOT`, `XERO`, `QUICKBOOKS`, `WORKDAY`, `SHOPIFY`, `DYNAMICS365`, `SLACK`, `JIRA`, `ASANA`, `NOTION`. Without these set, the callback falls back to storing the auth code itself (Batch 29 deferred-exchange path stays as fallback).
+
+
 ## 2026-05-27 — Batch 29 — Universal connector registry + OAuth/API-key flow + ROI per connector category
 
 Three deliverables sharing one design principle: rule #1 of Batch 29 — universal first. Every endpoint, every helper, every component works identically for SAP, Salesforce, Shopify, or any future connector. ``connector_name`` is always a variable.
