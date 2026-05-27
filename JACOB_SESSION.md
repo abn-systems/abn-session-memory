@@ -38,11 +38,11 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Batch 27 klar — Shield + trace-vy live (1287 tester gröna)
-Senast: 16 adversarial tester (6 vektorer, ABN höll allt) + findings trace-endpoint (connector-agnostic) + per-agent rollback rates + shield.yml required CI-grind
-Nästa: Batch 28 — Shield prod guardian (branch-protection wire-up) + anomaly-trend sparklines
+Status: Batch 28 klar — Shield guardian + anomalidetektion live (1302 tester gröna)
+Senast: ShieldGuardian (3 checks, fail-silent) + /agents/anomaly-trend (8 veckor, configurable) + FindingTraceView integrerad i AgentDetailPage
+Nästa: Batch 29 — Fortnox live + ROI per connector-kategori
 
-Last updated: 2026-05-27 (after Batch 27)
+Last updated: 2026-05-27 (after Batch 28)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md

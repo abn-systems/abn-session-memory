@@ -11,6 +11,50 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 28 — Shield Guardian + Anomaly Trend + FindingTraceView integration
+
+Three parallel tracks: a live `ShieldGuardian` that observes the running system (rule #1 — observes, never blocks), an 8-week anomaly trend per tenant with configurable alert thresholds, and the Batch 27 `FindingTraceView` finally wired into `AgentDetailPage`'s new "Senaste fynd" inline-expand list.
+
+**Engineering decisions:**
+
+- **Guardian observes, never blocks (rule #1).** Every check method has its own try/except, and `run_checks()` wraps every per-check call in another try/except. Three layers of fail-silent: even a totally broken DB or a misconfigured `Tenant.policy` JSON value can't make the guardian crash. Proven by `test_guardian_silent_on_exception` (monkeypatches a check method to raise — the outer `run_checks()` still returns a list). The endpoint layer ADDS one more catch around the guardian construction itself, so a missing import surfaces as `overall_status='ok'` (the safe default) rather than 500.
+
+- **Zero new models, zero migrations (rule #3 of Batch 28).** All four new thresholds live in `Tenant.policy` as optional dict keys: `shield_rollback_spike_pct`, `shield_replay_attempts_per_hour`, `shield_injection_attempts_per_hour`, `anomaly_alert_multiplier`. Pattern carries over from Batch 26's `roi_minutes_per_run` decision. `Tenant.policy` is the canonical per-tenant config bag (Batch 12) — every new tunable goes there.
+
+- **`(tenant_id, run_id)` is the replay-pattern key, not `(tenant_id, run_id, action_type)`.** The Batch 27 replay protection in `three_layer_opt_in_check` blocks a SECOND attempt with the same `(tenant_id, run_id, action_type)`. So legitimate operation should produce AT MOST one RollbackRecord per `(tenant_id, run_id)` regardless of action_type. If a guardian check sees 3+ rows sharing the same `(tenant_id, run_id)` with DIFFERENT action_types, that's an attacker varying `action_type` to bypass the per-action replay check. The check key is wider than the protection key by design.
+
+- **CSS-only sparkline chart in AnomalyTrendCard.** The spec said "CSS bars only — no chart library", and the existing `recharts` would have been overkill for 8 bars. Pure HTML divs with `style={{ height: '${pct}%' }}` for each segment. Three purple shades stacked per bar: lightest `bg-primary/25` = regular, mid `bg-primary/60` = high severity, darkest `bg-primary` = critical. Total height proportional to the max week in the window — keeps the chart visually meaningful regardless of scale. Week labels rendered as ISO week numbers (`v18` / `v19` / …) via a pure-JS week-number computation (no date library).
+
+- **Trend direction logic.** Per the spec: needs >= 4 weeks of data. Compare last-2 avg to prior-2 avg; ±20 % defines degrading/improving. The edge case of `prior_avg == 0` is honest: if zero last month and any activity this month, that's `degrading` (you went from no findings to some — possibly a problem). Tested both directions (`test_anomaly_trend_direction_degrading` + `..._improving`).
+
+- **AgentDetailPage Overview tab gets a new "Senaste fynd" section.** Batch 27's `FindingTraceView` component was standalone-ready; this batch finally wires it in. New `FindingsListSection` reads `/api/agents/{id}/findings` (Batch 1 endpoint — finally gets a frontend consumer) and renders each persisted Finding row with a "Visa detaljer" button. Click toggles an inline `FindingTraceView` panel. Only one open at a time (clicking another row collapses the previous) — the spec called this out explicitly. Different from the existing AnalyzerInsight deviations table (which flattens from run output JSON and has no `finding_id` available).
+
+- **Dedup is in-memory per-instance, not in DB.** The "no duplicate alerts per (tenant, type, day)" rule uses a `_seen_dedup: set` on the `ShieldGuardian` instance. That means the dedup state is process-local — two API requests get two separate guardians with separate dedup sets. Acceptable trade-off: the alternative would be a `shield_alerts_seen` table (rule #3 violation) or a Redis dedup (operational complexity). The dashboard polls every 60 s and the guardian deduplicates within the polling window only. Operators can refresh manually with `POST /run` if they want a fresh alert list.
+
+- **`shield_tests_passing: null` in the response shape.** The spec mentioned probing GitHub Actions for the last Shield CI run status, but that's an HTTP-to-GitHub probe, not a DB query — different concern. Wired the field into the contract so a future batch can implement the probe without breaking the frontend. Today the field is always `null`; the frontend renders it as "ej tillgängligt" cleanly.
+
+**Verification:**
+
+- Backend pytest: **1302 passed** (1287 + 15, zero regressions, 261 s)
+- Frontend: typecheck ✓, 60 tests ✓, Vite build ✓
+- Landing Next.js build: 33 static pages ✓
+- Go: not touched in Batch 28; CI `security-go` validates on push
+
+**Manual pendings:**
+
+- Hetzner Postgres `alembic stamp head` — head still expected `7e2d9a5c1f4b` (Batches 26-28 added zero migrations; rule #3 explicitly forbade them this batch).
+- GitHub branch-protection rule key: flip `Backend — 1287 tests` → `Backend — 1302 tests` in Settings UI.
+- Batch 27 carry-over: add `Shield — adversarial tests` as a 4th required check.
+- Mirror sync to abn-session-memory runs after push.
+
+**What's next — Batch 29 (preview):**
+
+- Fortnox live integration — real OAuth flow + first read cycle against a Fortnox sandbox
+- ROI per connector-category — extend `/api/agents/roi-summary` with `by_category[]` grouping connectors into `finance` / `hr` / `operations`
+- Telemetry NDJSON export (Batch 24 carry-over)
+- Shield CI gate enforcement — add to branch-protection required list
+
+
 ## 2026-05-27 — Batch 27 — ABN Shield adversarial tests + Findings trace view
 
 Three parallel tracks: (1) 16 Shield adversarial tests across 6 vectors with real production hardening that emerged from making them green, (2) connector-agnostic Findings Trace endpoint + React component, (3) per-agent rollback rates extending the Batch 24 telemetry endpoint.
