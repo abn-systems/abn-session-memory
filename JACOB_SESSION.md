@@ -38,11 +38,11 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Batch 31 klar — abn-llm-gateway live (handboken §3.3 + §19) (1362 tester gröna)
-Senast: 5-stage pipeline (PIIRedactor → Tokenizer → Abstractor → Provider → Reconstructor) + ephemeral token mapping + 4 policy modes + LLMGatewayLog (metadata-only) + admin/status + /logs endpoints
-Nästa: Batch 32 — abn-observer full layer (handboken §8)
+Status: Batch 33D klar — v7 sage-design live i båda paketen (backend ORÖRD)
+Senast: Sage-palett + ink-primary + 12 SVG-signaturmönster + ABN-blomma + footer ``#0E0D0B``
+Nästa: Väntar på Jacob — Batch 32 (abn-observer §8) eller funktion-batch
 
-Last updated: 2026-05-27 (after Batch 31)
+Last updated: 2026-05-27 (after Batch 33D)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md

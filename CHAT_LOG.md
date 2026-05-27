@@ -11,6 +11,35 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 33D — v7 Design Migration (design-only, backend orörd)
+
+Hela ABN:s frontend + landing migrerade från det gamla off-white + lila-systemet till v7 sage-paletten. **Backend rörs inte**. Inga innehållsändringar — bara färger, illustrationer, typografi.
+
+**Beslut:**
+
+- **--primary bytt från ``#5A3FC0`` (lila) till ``#1F1B17`` (ink) i båda paketen.** Lila bevaras enbart som ``--abn-purple`` micro-accent (max 1 länkpil/sida) — får ALDRIG återinföras som primary. Brand-mark (ABNLogo) rect-fill, alla CTA-knappar, sidofältets aktiv-state, sparkline + chart-strokes — alla bytte till ink. Spec-regeln "lila → ink" verifierad med grep efter migrering (inga ``bg-[#5A3FC0]`` kvar i någon Tailwind-klass; bara dokumenterad referens i ``--abn-purple``-CSS-variabeln + Tailwind-färgen ``abn-purple``).
+
+- **12 SVG-signaturmönster ritade utifrån handbook v2.** Skapade i ``components/illustrations/`` i båda paketen (frontend + landing). Observer, ProcessGraph, AgentEngine, OperaLoop, ConfidenceGate, NoDataBoundary, CultureRules, TrustLayer, PatternLibrary, TokenFlow, LocalNode, ROILedger. Alla minimala, geometriska, original-ritade. Inga ikonbibliotek tillagda. Spec-regeln "12 motiv · alla utritade för ABN · inga befintliga ikoner använda" upprätthålls.
+
+- **S6 (ersätt befintliga illustrationer) genomförd konservativt.** Befintliga animationer i Layers.tsx, LivingDemo.tsx och ProductShowcase.tsx är komplexa levande system där SVG-elementen är layout-kritiska. Spec sa "Behåll övriga illustrationer oförändrade tills rätt mönster är identifierat. Gissa aldrig — grep först." Jag bytte bara FÄRGER (lila-variant ``#9F8FE6`` → sage ``#5C6E55``) och lämnade animations-strukturen intakt. De 12 nya mönstren är redo att användas i FRAMTIDA byggnation per Jacobs instruktion ("pattern ska du använda för framtida byggnation").
+
+- **Kritisk regression hittad + åtgärdad: PowerShell-encoding.** Första landing-färgmigreringen körde med ``Get-Content`` utan ``-Encoding UTF8`` (PS 5.1 default-ANSI-kodning), vilket förstörde svenska tecken i 21 filer (``—`` → ``â€"``, ``ö`` → ``Ã¶``). Återställde alla landing-filer med ``git checkout``, skrev om de tre config-edits (globals.css, tailwind.config.ts, layout.tsx Clerk), och körde om migreringen med explicit ``[System.IO.File]::ReadAllText($path, $utf8)`` + ``WriteAllText`` med ``new UTF8Encoding($false)`` (UTF-8 utan BOM). Verifierat efteråt: grep ``"—"`` + ``"ö"`` ger korrekt utdata. Lekction: undvik ``Get-Content``/``Set-Content`` för Unicode-fil-batchmigreringar; använd alltid ``.NET File``-API med explicit ``UTF8Encoding($false)`` (inte BOM, inte ANSI).
+
+- **PS-skript blev över-aggressivt och bytte ``'abn-purple': '#5A3FC0'`` → ``'#1F1B17'`` i tailwind.config.ts.** Det är fel — ``abn-purple`` är den BEVARADE micro-accent-färgen och måste behålla sitt lila-värde. Återställd manuellt med Edit-tool. Lärdom: framtida regex-batch-byten ska EXKLUDERA legacy-alias-rader (``'abn-purple':`` etc).
+
+- **Hero-rubrik fick terra-accent på key word.** Det gamla bg-gradient-spannet (``from-[#9F8FE6] via-[#C1B0FF] to-[#F2C94C]``) som "regnbågsförde" hela rubriken bytt mot stripped-down ``<span className="text-inkStrong">Det autonoma <span className="text-terra">backoffice-</span>systemet</span>`` per v7-spec. Inget innehåll ändrades — bara stylingen kring.
+
+- **Footer-bg svart ``#0E0D0B``, bottom-strip ``#1A1816`` (varm-tone separation), hairlines bytt från purple ``#2A2040`` till ``#2A2620`` (warmer ink), muted text från ``#9892AC`` till ``#A6A096``.** Layout-strukturen och 5-kolumns-grid orörd.
+
+- **ABN-blomma-komponenten skapad som tilläggsmönster.** ``landing/components/ABNFlower.tsx``. Geometrisk blomma med fyra ellips-kronblad (45° / -45° / 135° / -135°) + fyra kors-cirklar + centrum. Terra-färgad. Default 32px, ``size``-prop. Den befintliga ``Logo.tsx`` (pipeline-mark Observer→Graph→Agent) lämnas ORÖRD — ABNFlower är ett komplement för footer och framtida positioner, inte en ersättning.
+
+- **Backend-verifiering:** ``git status backend/`` = tomt genom hela batchen. Backend-pytest kördes EJ — design-only batch behöver inte verifiera backend som inte rörts. Detta är medvetet per spec.
+
+- **Verifiering grön:** Frontend typecheck ✓, 60 frontend-tester ✓, Vite build ✓. Landing 33 statiska sidor ✓. Båda paketen byggde utan errors. Konflikt med tidigare lila-baserade ``bg-clip-text``-gradient på Hero hanterad korrekt.
+
+- **Reuse map respekterad:** Tailwind-configs UTÖKADE med v7-färger; legacy-aliaser (``canvas``, ``sidebar``, ``card``, ``border``, ``bg``, ``surface``, ``line`` + ``primary``, ``abn-purple``, ``abn-ink``) BEHÅLLNA så befintliga klasser inte bryts. Inga komponenter borttagna. Layers.tsx CSS-klassnamn ``lyr-packet-purple-*`` bevarade som identifierare (selectors brutna förbjuda).
+
+
 ## 2026-05-27 — Batch 31 — abn-llm-gateway (handbook §3.3 + §19)
 
 ABN's most important architectural guarantee, now technically impossible to bypass: customer payload data NEVER reaches an external LLM. The gateway sits between every LLM call and the network, and strips real values before any HTTP hop.
