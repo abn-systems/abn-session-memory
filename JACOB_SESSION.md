@@ -38,11 +38,11 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Batch 33D klar — v7 sage-design live i båda paketen (backend ORÖRD)
-Senast: Sage-palett + ink-primary + 12 SVG-signaturmönster + ABN-blomma + footer ``#0E0D0B``
+Status: Batch 33D-2 klar — v7 komplett över alla dashboard-ytor (backend ORÖRD)
+Senast: AgentsPage / AgentDetailPage / AdminPage / Marketplace / Proposals / Onboarding / Clerk — terra siffror, sage bars, cream FindingTrace, signaturmönster som empty-state-dekor. 0 lila-klasser kvar.
 Nästa: Väntar på Jacob — Batch 32 (abn-observer §8) eller funktion-batch
 
-Last updated: 2026-05-27 (after Batch 33D)
+Last updated: 2026-05-27 (after Batch 33D-2)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md

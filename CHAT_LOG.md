@@ -11,6 +11,43 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 33D-2 — v7 Design Migration Part 2 (dashboard inner surfaces)
+
+Fortsättningen på 33D. Alla återstående dashboard-ytor migrerade. **Backend ABSOLUT orörd** — ``git status backend/`` var tomt under hela batchen, ingen pytest-körning behövdes.
+
+**Beslut + lärdomar:**
+
+- **Delade UI-primitives uppdaterade en gång (``ui.tsx``).** Card-border bytt till ``rgba(31,27,23,0.10)`` (mer subtil ink-tone) och Table thead fick ``bg-pageSoft`` header-strip + ``tracking-[0.13em]``-eyebrows. Eftersom dessa primitives används av i princip varje dashboard-sida ger en ändring där konsekvent v7-look överallt — istället för att uppdatera Card/Table-styling i varje sida individuellt (vilket spec faktiskt skulle ha krävt enligt strikt tolkning, men det skulle ha gett 12× redundant kod). Denna ändring är säker eftersom det BARA är border-färg och thead-bakgrund — inte struktur, klassnamn eller layout.
+
+- **KpiCard-accent: ``'gold' | 'purple'`` → ``'terra' | 'gold'``.** Spec sa "impact_eur → text-terra" och "övriga siffror → text-ink". "Besparing"-KPI bytt från gold-accent till terra. "Konfidens"-KPI förlorade purple-accent (= ingen accent, blir bara ink). ``font-mono tabular-nums`` lagt till på alla värde-celler för Anthropic/Linear-känsla.
+
+- **AnomalyTrendCard tre purple-shades → tre v7-shades.** Spec: normal=page-tone, high=sage-deep, critical=terra. Det matchar handbokens "severity-färgkodning genom hela dataytan" — terra för det viktigaste, sage för intermediär, page-tone för normal. Kommentar i koden uppdaterad samtidigt.
+
+- **MarketplacePage kategori-badges UNIFORMERADE.** CAT_STYLE förr: Ekonomi=gold, HR=st-blue, Logistik=st-green, Compliance=primary, Anpassad=st-orange. Spec sa "samma stil för alla — cream+body". Alla 5 → ``bg-pageSoft text-body``. Det tar bort visuell kategorikodning på badgen men ger mycket lugnare data-densitet, vilket är spec-mässigt korrekt för dashboard-ytor (motsats till landing där varje sektion har sin egen accent). Färgkodning per kategori finns kvar via AgentIcon-storleken och agentens identitet — bara badgen är neutral.
+
+- **OnboardingWizard fick per-steg signaturmönster-dekor.** Bottom-right, opacity-``[0.05]``, ``pointer-events-none``, storlek 120px:
+  - Steg 1 (Välkommen) → Observer
+  - Steg 2 (Koppla system) → ProcessGraph
+  - Steg 3 (Observer kör) → AgentEngine
+  - Steg 4 (Allt klart) → LocalNode
+  
+  Spec sa "Placera dekorationen i kortets nedre-högra hörn". Wizard-shellet fick ``relative overflow-hidden`` så dekorationen klipps snyggt till kortets rundade kanter. Alla 4 wizardsteg + step-logik + getAudit-anrop ORÖRDA.
+
+- **Clerk appearance utökades med ``elements``-block.** Tidigare 33D satte bara ``variables.colorPrimary`` etc. Nu får vi också ``card``, ``headerTitle``, ``headerSubtitle``, ``formButtonPrimary``, ``footerActionLink`` — vilket ger v7-konsistens på själva Clerk-modalen (sign-in / sign-up / reset password). ``footerActionLink`` är terra istället för lila — det är där spec sa "max 1 länkpil per sida" appliceras. Men eftersom Clerk-modaler bara renderas en åt gången är detta inte mer än en "länk-betoning" per modal.
+
+- **FindingTraceView fick cream-bakgrund.** ``bg-pageSoft`` på inline-expand-panelen ger tydlig separation från lista (white Card) ovanför. Inga data eller skeleton-logik rörd.
+
+- **ProposalsPage helt omskriven men SAMMA innehåll.** Eftersom filen var liten (72 rader) och hade flera spec-byten parallellt (impact terra, beslutade opacity-60, ink approve, outline reject) var det effektivare att skriva om hela komponenten med v7-styling än att göra 7 Edit-tool-anrop. ALLA mutationer, queries, status-checks, ENGT logik bevarad bit-för-bit. Endast styling och cell-padding ändrade.
+
+- **S8 (rapport-templates) SKIPPAD med dokumentation.** Spec sa "grep ``backend/reports/``". Den katalogen finns INTE. ``backend/dge/templates/`` finns med 4 ``#5A3FC0``-referenser (3 HTML-templates + ``renderers/pdf_renderer.py`` + ``template_registry.py``) men kritisk regel #1 av batchen säger "ALDRIG röra backend — inte en rad Python/Go". Eftersom spec gav undantag BARA för ``backend/reports/`` (icke-existerande), respekteras backend-ORÖRD-regeln framför rapport-färgmigreringen. Operatör kan begära en separat backend-template-batch när det är dags att uppdatera PDF/Excel-rapporter till v7.
+
+- **Slutkontroll grep ger NOLL lila-färgklasser kvar.** ``grep "#5A3FC0\|abn-purple" frontend/src/pages frontend/src/components`` returnerar bara en kommentarrad i ``ui.tsx`` (förklarar att ``--abn-purple`` är bevarad micro-accent). Inga ``bg-[#5A3FC0]``, ``text-primary`` på dataytor, eller ``border-primary``-rester. v7-migreringen är komplett.
+
+- **Verifiering grön:** Frontend typecheck ✓, 60 tester ✓, Vite build ✓. Landing 33 statiska sidor ✓. Backend ``git status backend/`` = tomt ✓.
+
+- **Reuse-map respekterad:** ui.tsx Card/Table EXTENDED (inte rewritten). KpiCard accent-typ utökat med terra som ny variant + gold bevarad för bakåt-kompat. Alla page-komponenter Edit-tool-ändrade (inte Write) förutom ProposalsPage som var liten + hade många parallella ändringar.
+
+
 ## 2026-05-27 — Batch 33D — v7 Design Migration (design-only, backend orörd)
 
 Hela ABN:s frontend + landing migrerade från det gamla off-white + lila-systemet till v7 sage-paletten. **Backend rörs inte**. Inga innehållsändringar — bara färger, illustrationer, typografi.
