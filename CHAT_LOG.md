@@ -11,6 +11,39 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 31 — abn-llm-gateway (handbook §3.3 + §19)
+
+ABN's most important architectural guarantee, now technically impossible to bypass: customer payload data NEVER reaches an external LLM. The gateway sits between every LLM call and the network, and strips real values before any HTTP hop.
+
+**Engineering decisions:**
+
+- **Two gateways coexist, on purpose.** Step 0 grep found a pre-existing ``services/abn-llm-gateway/`` Python service (separate process at :8086, 16 tests, 7-stage pipeline). The Batch 31 spec asked for an in-process module in ``backend/agent_runtime/llm_gateway/`` — "not a separate service yet — that comes in a later batch when we containerise fully". Decision: build the in-process module as the immediate-use path; leave the separate service untouched as the future containerised deployment. The public ``LLMGateway.call`` signature mirrors what the separate service exposes via HTTP so a future batch can swap implementations without touching call sites. Two implementations, one contract.
+
+- **PIIRedactor first, Tokenizer second.** Rule #5 (fail-closed) demands belt-and-braces: a customer name might slip through as a free-text comment value, where the tokenizer's name-based type inference can't catch it. The PII regex pass catches those shapes (personnummer, email, IBAN, phone, address, credit card with Luhn validation) BEFORE tokenisation runs. After this stage the tokenized payload contains either real domain values (replaced by tokens downstream) or ``REDACTED_<TYPE>`` sentinels (which the tokenizer leaves untouched because there's nothing to recover).
+
+- **Personnummer regex refined mid-batch.** First test run failed: ``0701234567`` (a Swedish mobile, 10 digits no dash) was being redacted as a personnummer. The regex ``\b(?:\d{2}|\d{4})\d{4}[+\-]?\d{4}\b`` accepted 10-digit-no-dash, but personnummer's 10-digit form ALWAYS carries a separator (``YYMMDD-XXXX`` / ``YYMMDD+XXXX``). Tightened to ``\b(?:\d{8}-?\d{4}|\d{6}[+\-]\d{4})\b``: 12-digit form dash-optional (unambiguous), 10-digit form dash-required. The 10-digit-no-dash case is left to the phone pattern downstream. False positives are fine (rule #5), but flagging every mobile number as a personnummer would be noise that hides real issues.
+
+- **Token mapping ephemeral by construction.** Rule #1 — the mapping is built in the gateway's stack frame on each call, threaded through the abstractor + reconstructor by REFERENCE, and ``.clear()``-ed by the reconstructor before returning. The gateway's error path also clears it in a try/finally so a tokenisation-stage failure can't leave values in memory. Tested by ``test_gateway_mapping_cleared_after_call`` (wraps the reconstructor, captures the dict reference, asserts it's empty after the call returns).
+
+- **LLMGatewayLog vs abn_llm_calls — orthogonal, NOT redundant.** ``abn_llm_calls`` (Batch 13B) is the CUSTOMER-FACING transparency log of WHAT was sent (event types, statistics). ``llm_gateway_logs`` (Batch 31) is the OPERATOR-FACING operational log of WHAT the gateway DID (provider, mode, latency, error stage). Different consumers, different retention shapes (customers see one row per AGENT decision; operators see one row per LLM CALL). Both fire from the gateway. ``log_gateway_call`` has NO ``payload`` / ``prompt`` / ``mapping`` parameter in its signature — the architecture, not just the implementation, enforces rule #4.
+
+- **Provider routing via task_type, not feature-flag chains.** Rule #3 says one path for LLM calls. The router dict ``_TASK_PROVIDER_MAP`` maps ``task_type`` → ``"anthropic"`` | ``"openai"``; unknown task types fall back to OpenAI. Empty key + non-local_only mode raises ``LLMGatewayError(stage="provider")`` — fail-closed (rule #5). No silent fallback to raw data, ever. ``local_only`` is the only mode that swallows errors; it returns a deterministic stub so the caller has something to continue from.
+
+- **One direct LLM call site found + rewired.** Step 0 grep turned up exactly one direct ``anthropic.Anthropic()`` instantiation: ``agent_engine.opera.runner._call_llm_reasoner``. Rewired to call ``LLMGateway`` with ``task_type="agent_reasoning"``. The deterministic fallback path stays — if the gateway raises (any pipeline stage), the OPERA layer falls back to a finding-count summary so the run completes. Fail-closed at the gateway boundary, fail-graceful at the OPERA boundary. Three other backend LLM call sites (``industry_detector``, ``llm_phase_b``, ``dual_brain_critic``) currently HTTP-POST to ``services/abn-llm-gateway/`` at ``settings.llm_gateway_url`` — they predate this batch's in-process module and were left on that path. Both satisfy rule #3 (LLM never called directly from runtime code).
+
+- **Audit happens even on error.** The gateway's outer try/except catches ``LLMGatewayError`` and writes an audit row with ``error_stage`` set to the failing stage (``redaction`` / ``tokenization`` / ``abstraction`` / ``provider`` / ``reconstruction``), then re-raises. Operators get a complete picture of failure modes without inspecting traces. ``test_gateway_blocks_on_tokenization_failure`` verifies: tokenisation raises → audit row written with ``error_stage="tokenization"`` → no provider call made → ``LLMGatewayError`` re-raised.
+
+- **API responses are explicitly typed, not echo-the-row.** ``GET /admin/llm-gateway/logs`` returns ``list[LLMGatewayLogRow]`` (a Pydantic model with exactly the 11 metadata fields). If a future column is added to the table that accidentally carries payload (a schema mistake), the response model wouldn't pass it through — rule #4 stays enforced even on schema drift. Tested by ``test_gateway_logs_endpoint_no_sensitive_data``, which whitelists every present key and rejects nested-dict / nested-list values.
+
+- **Status endpoint exposes booleans, never keys.** ``providers_configured`` carries ``{anthropic: bool, openai: bool}`` — a boolean for "is an API key set" but never the key itself. Rule #4 of Batch 19 (never leak secrets through the admin surface) applies.
+
+- **Backend: 1362 passed (1342 + 20).** Frontend: typecheck ✓, 60 tests ✓, Vite build ✓. Landing: 33 static pages ✓. Go: untouched, CI ``security-go`` validates on push.
+
+- **Migration: c8a4e72f1d36_add_llm_gateway_logs_table.** Raw SQL ``CREATE TABLE IF NOT EXISTS`` + three ``CREATE INDEX IF NOT EXISTS`` per the canonical pattern since Batch 12. Depends on ``b5f3c9e7a012`` (Batch 30 head). Hetzner stamp still pending — operator step.
+
+- **Operator pending: provide ``OPENAI_API_KEY`` (Anthropic key already in place from earlier).** Without it, the gateway's OpenAI branch raises ``LLMGatewayError(stage="provider")`` — fail-closed by design. ``local_only`` mode bypasses the requirement entirely.
+
+
 ## 2026-05-27 — Batch 30 — ABN Mind self-improvement agent + Sparad tid per vecka + Universal OAuth2 token exchange
 
 Three deliverables in one batch, each closing a gap left by an earlier batch. Mind is the "what should we tune?" feed (sister to Pulse's "are connectors healthy?" and Shield's "are we under attack?"). Sparad tid is the customer-facing weekly disclosure of hours saved. The universal token exchange upgrades Batch 29's deferred-code placeholder to real access tokens via a 12-provider dict.
