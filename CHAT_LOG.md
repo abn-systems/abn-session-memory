@@ -11,6 +11,29 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-27 — Batch 33D-4 — LayerShowcase ersätter v6 demos
+
+Jacob visade designbild av "ABN — Signaturmönster" + Hero med 3-section showcase (01 Observer / 02 Process Graph / 03 Agent Engine) i exakt v7-format med stora mono-nummer i sage, FIG-rutor med signaturmönster, terra accent. Den gamla `LivingDemo` (~700 rader animations + canvas + lyr-keyframes) och `ProductShowcase` (~520 rader) var v6-dark-tema-byggda och passade illa på v7 sage. Ersatte BÅDA med en ny pure-presentation-komponent `LayerShowcase`.
+
+**Beslut + lärdomar:**
+
+- **Pure presentation över finputsad migrering.** Den gamla `LivingDemo` hade canvas-element, partikelanimationer, lyr-packet-purple keyframes, scroll-revealed transforms, edge-fade-x masks, particle hue-shifts — allt designat för dark canvas. Att färgmigrera den hade krävt finjustering av varje animation; istället byggde jag en NY komponent som är 165 rader pure JSX utan state, utan effects, utan animationer. Resultat: snabbare, mer förutsägbar render, exakt matchning mot designbild.
+
+- **git mv → .legacy.tsx istället för delete.** Spec sa explicit "Do NOT delete the old files yet — rename them to .legacy.tsx first". Det är säkrare: filerna finns kvar i historiken om något i `LayerShowcase` visar sig behöva återimporteras (t.ex. en partikel-effekt). Inga importer pekar på .legacy.tsx-filerna (verifierat med grep efteråt), så de är "borttagna från användning" utan att vara borta från disken.
+
+- **`id="living-demo"` flyttat utan att Hero rörs.** Den gamla LivingDemo satte `id="living-demo"` på sin section-root rad 488. Hero-knappen "Se hur det fungerar →" länkar via `href="#living-demo"` rad 106. Jag satte SAMMA id på LayerShowcase wrapper-sektion (rad 145), så Hero-länken fungerar OFÖRÄNDRAD. Det är rule #1-trogen approach: ALDRIG röra en komponent när du kan flytta id:t i den andra änden av länken.
+
+- **Innehållstexterna är ord-för-ord från designbilden.** Section 01 body "Läser era system i realtid via Nango. Data Minimizer vitlistar fält; PII Guardian tokeniserar värden. Inga råvärden lämnar Trust Layer." matchar bildens text exakt. Specs (ANSLUTNINGAR=200+, POLLING=5 min, etc.) matchar bilden. FIG-labels matchar bilden. Skrev in dem i CLAUDE.md som "får inte ändras utan ny batch" eftersom det är spec'ad copy från Jacobs design.
+
+- **Reuse map följdes strikt.** Importerade Observer/ProcessGraph/AgentEngine från `./illustrations` (Batch 33D originals, oförändrade). Hero, Layers, Transparency, SocialProof, Marketplace, DownloadCTA, Footer — alla orörda. Bara page.tsx fick två rader import bytta + två JSX-element ersatta med en. Minimal blast radius.
+
+- **page.tsx kommentaren uppdaterad till v7-anda.** Den gamla kommentaren sa "dark brand theme, particle hero" (v6-arv från Batch 19). Bytt till "v7 sage canvas + composition of static sections" + history-not om att LivingDemo/ProductShowcase är legacy. Framtida bidragsgivare ser direkt att det är v7-iteration.
+
+- **Verifiering:** Landing build 33 statiska sidor ✓. Grep efter "LivingDemo" / "ProductShowcase" utanför .legacy-filerna ger 0 träffar (=ingen kvar importerar dem). Grep "living-demo" visar Hero rad 106 + LayerShowcase rad 145 — länk-ankar fungerar. Backend `git status backend/` = tomt.
+
+- **Nästa steg:** När Vercel-deploy är klar — hard-refresh (Ctrl+Shift+R) på `www.abnplatform.com`. Hero-sidan kommer scrolla till en sage-canvas LayerShowcase istället för den gamla animated demo. Designen ska nu matcha bildens 3-rader: stora 01/02/03 mono-nummer + label + titel + body + 4-kol specs + FIG-box med signature pattern.
+
+
 ## 2026-05-27 — Batch 33D-3 finish — animated components purple sweep
 
 Jacob rapporterade att Vercel-deployen från 33D-3 huvud-commit fortfarande hade mörka inslag inuti animerade komponenter (canvas fillStyle / SVG stroke / inline rgba). Diagnostiserade och städade.

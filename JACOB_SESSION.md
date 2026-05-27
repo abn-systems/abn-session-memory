@@ -38,11 +38,11 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## JUST NU
-Status: Batch 33D-3 finish — purple variants i animerade komponenter rensade (backend ORÖRD)
-Senast: 13 komponenter sveptes för #6A4BD4 / #9F8FE6 / #4B34A6 / #7C5CE0 + rgba purple-glows. Hero halo, Layers SVG-strokes, LivingDemo keyframes, Logo gradient — alla nu ink/sage/muted.
+Status: Batch 33D-4 klar — LayerShowcase ersätter LivingDemo + ProductShowcase (backend ORÖRD)
+Senast: Skapat LayerShowcase med 3 sektioner (Observer/Process Graph/Agent Engine) matchande v7-designbild — number + label + title + body + 4-kol specs-grid + FIG-box med signaturmönster. Gamla → .legacy.tsx (bevarad historik). Hero #living-demo-ankar fungerar.
 Nästa: Väntar på Jacob — Batch 32 (abn-observer §8) eller annan funktion-batch
 
-Last updated: 2026-05-27 (after 33D-3 finish sweep)
+Last updated: 2026-05-27 (after Batch 33D-4)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md
