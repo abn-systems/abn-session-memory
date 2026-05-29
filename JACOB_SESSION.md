@@ -47,11 +47,11 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batchar 36-43 mergas till main via PR #3 (1500 tester). Väntar på CI grön.
+Status: Batch 44 klar — installer + updater
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: efter PR #3 merge = sanning, 1500 tester
-Nästa: Batch 44 — abn-installer + abn-updater, grena från main EFTER PR #3 mergad
-VIKTIGT: alla feature-branches 36-43 var staplade, nu konsoliderade i PR #3
+Main-branch: 1518 tester efter merge
+Senast: ABNInstaller + ABNUpdater + signatur-verifiering + atomisk rollback
+Nästa: Batch 45 — Firecracker sandbox (§11)
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
