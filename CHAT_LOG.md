@@ -11,6 +11,33 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-29 — Batch 46: Augmented Lagrangian (Research Pass 1 Candidate 6)
+
+Jacob (Architect): "proceed" after a mandatory Phase-1 Discovery Report. First build off Research Pass 1 (PR #8): Candidate 6 — least implementation cost, highest moat per line.
+
+**Phase 0.5 — JUST NU sync (first commit).** PR #6/#7/#8 had merged without their own self-update commits, so `JACOB_SESSION.md ## JUST NU` still read the 45a state (`Main-branch: 661f8e3`). Flipped it to the post-PR-8 state (`Main-branch: 9bba7f0`, alla mergade PR #5/#6/#7/#8, Nästa: Batch 46). Kept the 6-line shape (rule from 45a).
+
+**Discovery Report summary.** `epistemic.py` (402 lines) confirmed STATIC: `_ALPHA=1.0`/`_BETA=0.5`/`_GAMMA=0.3` (L112-114), `L_t = α‖E‖+β·κ_p+γ·H` (L311-316), no multipliers. Callers: `__init__` (re-export), `engine.py` (per-(agent,tenant) `_EPISTEMIC_CACHE`), `commitment_gate.py` (mirrors thresholds), `agents.py` (reads label). Constraint signal source = `control_plane.global_invariants.accept() -> (bool, list[str])` over the 8 hardcoded `V_GLOBAL` — BOOLEAN per invariant, so D3's `gᵢ=1.0` indicator maps cleanly. Anti-dup grep (`augmented_lagrangian|mu_t|dual_multiplier|penalty_parameter|AugmentedLagrang`) = **0 hits** → clean slate.
+
+**CREATED (in epistemic.py — EXTEND, never a parallel module, D1):**
+- `ABNAugmentedLagrangian` — multiplier engine. State per `(tenant_id, agent_id, invariant_id)` for μ + streak, per `(tenant_id, agent_id)` for ρ + prev-max (D2 isolation; mirrors the `_EPISTEMIC_CACHE` in-memory pattern, persistence deferred with a TODO per D5).
+- `ABNAugmentedState` — frozen dataclass result (base/augmented L, penalty_term, ρ, μ snapshot, max_violation).
+- `g_from_accept(accepted, violations, invariant_ids)` — pure mapper from `accept()` output → g-vector (no control_plane import; intelligence must not depend on control_plane — layer cleanliness).
+- Constants `_RHO_INIT=1.0 / _RHO_MAX=1024 / _DECAY_FACTOR=0.5 / _DECAY_AFTER_K=10` (single source of truth).
+
+**EXTENDED (no rewrite, D6 backwards-compat):**
+- `ABNEpistemicGeometry.__init__` — one new line: `self._augmented = ABNAugmentedLagrangian()`.
+- `ABNEpistemicGeometry.compute_augmented_lagrangian(...)` — NEW method delegating to `_augmented.step`. The old `update()` / static `L_t` are byte-for-byte untouched.
+- `intelligence/__init__.py` — re-exports the 3 new public names additively.
+
+**Math (locked, Hestenes/Powell 1969):** `L_A = L_t + Σ μᵢ·gᵢ + (ρ/2)·Σ gᵢ²`; `μᵢ ← max(0, μᵢ + ρ·gᵢ)`; `ρ ← min(ρ·2, 1024)` only while max(g) does NOT shrink AND > 0 (so all-satisfied runs never inflate ρ); `μᵢ ← μᵢ·0.5` after K=10 consecutive `gᵢ==0` steps. Hestenes/Powell step order: penalty uses current μ/ρ → μ-update (current ρ) → ρ-schedule for next step → streak/decay. **D4 honoured:** static α/β/γ untouched; μ-multipliers are a separate constraint-penalty layer.
+
+**Tests:** `tests/test_augmented_lagrangian.py` — 13 (12 unit + 1 integration), all green. Convergence test uses `g_t = 0.5**t` (shrinks, never exactly 0) → μ→Σ=2.0, ρ frozen at 1.0, μ-change over last 20 steps ≈1e-24 < 1e-3 — textbook dual convergence. Integration test wires a mock `accept()` over the real `V_GLOBAL` names through `g_from_accept` → `compute_augmented_lagrangian`, asserts μ for the violated invariant grows + a satisfied one stays 0. Regression: `pytest -k "epistemic or intelligence"` = **111 passed**, 0 regressions.
+
+**Coverage delta — env-blocked locally.** `pytest --cov` / `coverage run` both crash at collection with numpy-2.x ↔ coverage C-tracer conflict on this Python 3.13/Windows host ("ImportError: cannot load module more than once per process"), independent of `COVERAGE_CORE`. Same posture as the Go suite (toolchain-blocked → CI is the gate). The 13 tests exercise every new line/branch; CI (Linux) reports the real number.
+
+**NOT in scope (held for a later batch):** persistence for multipliers (Redis/DB); wiring `compute_augmented_lagrangian` into the live OPERA runner (engine.process_run has no blueprint/constraint signal today); auto-tuning of α/β/γ (= Candidate 5, meta-grad).
+
 ## 2026-05-29 — Batch 45a merged + branch cleanup
 
 Jacob merged **PR #5** into `main` (mergedAt 2026-05-29T17:04:02Z) — the §32.2 security sign-off. `main` HEAD = `661f8e3 Merge pull request #5`. Standard post-merge cleanup: `git checkout main && git pull` (fast-forward `de11cfd..661f8e3`), then deleted the feature branch locally (`git branch -D`) and on origin (`git push origin --delete`). Verified PR #5 state = MERGED via `gh pr view 5` BEFORE deleting — deleting an unmerged branch would have closed the PR and orphaned the 45a commits, so the merge-state check is the safety gate. Backend untouched throughout (45a was all `services/abn-security` + docs + ci.yml). Session docs flipped from "in open PR, not merged" → merged: JUST NU block + the CLAUDE.md 45a section header/status. **Manual step still open:** add `abn-security — Go build & test (45a)` to GitHub branch-protection required checks.
