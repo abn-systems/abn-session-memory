@@ -37,12 +37,26 @@ what has been built, what prompts were given, and what is next.
 
 # ABN — Session Memory
 
-## JUST NU
-Status: Batch 33D-6 klar — ViewportScale (SVG-style projector scaling) i landing + dashboard (backend ORÖRD)
-Senast: Ny komponent ViewportScale wrapas runt {children} i landing/app/layout.tsx + frontend/src/main.tsx. Inner-bredd alltid 1440 px, transform: scale(vw/1440). Inga element-stacks på mobil — bara enhetlig zoom som en projektor / SVG.
-Nästa: Väntar på Jacob — verifiera mobil-rendering ser ut som desktop. Sedan ev. sub-pages eller dashboard v7
+## ÅTERHÄMTNING EFTER /clear
+1. cd C:\Users\Jacob\Downloads\abn
+2. git log --oneline -5
+3. git status
+4. cat CLAUDE.md | head -40
+5. cat JACOB_SESSION.md
 
-Last updated: 2026-05-27 (after Batch 33D-6)
+ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
+
+## JUST NU
+Status: Batchar 36-43 mergas till main via PR #3 (1500 tester). Väntar på CI grön.
+Repo-sökväg: C:\Users\Jacob\Downloads\abn
+Main-branch: efter PR #3 merge = sanning, 1500 tester
+Nästa: Batch 44 — abn-installer + abn-updater, grena från main EFTER PR #3 mergad
+VIKTIGT: alla feature-branches 36-43 var staplade, nu konsoliderade i PR #3
+
+## TODO — Design-inspiration från Claude desktop-appen
+Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
+
+Last updated: 2026-05-28 (after Batch 34)
 Repo: https://github.com/abn-systems/ABN
 Raw URL (public mirror — auto-synced from main):
 https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md

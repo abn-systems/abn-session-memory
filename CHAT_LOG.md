@@ -11,6 +11,208 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-28 — ABN Code Law + AGI Mathematics
+
+Jacob: "Det här är en MEMORY UPDATE prompt. Bygg ingenting nytt på feature-sidan — uppdatera bara CLAUDE.md + DESIGN_RULES.md med de permanenta lagarna nedan + skapa intelligence-paketet med Jacobs AGI-matematik från agi.docx (V1–V18). Detta ÄR konkurrensfördelen."
+
+**Beslut:** Lås in ABN Code Law (7 permanenta lagar) + Jacobs AGI-matematiska vokabulär (V4 / V16 / V18) som högsta prioritet i CLAUDE.md. Skapa ``backend/agent_runtime/intelligence/`` med 5 produktionsmoduler som implementerar matematiken. Bygger INGEN feature-kod denna omgång — paketet är ren matematisk substrat som Batch 40-42 kommer använda för AgentIntelligenceState + KnowledgeDiffusion + Insight Layer-uppgraderingar.
+
+**Filer:**
+- ``CLAUDE.md`` — NY högsta-prio sektion ``## ⚠️ ABN CODE LAW`` (7 lagar verbatim) längst upp. Direkt efter den, ``## ABN Mathematical Foundations`` med fullständig härledning (Core AGI State Equation S(t+1)=F(...), V4 Physics Operators Φ/D/A, V16 TemporalMemoryGeometry, V18 CognitivePhase/UnifiedIntelligenceMetric/SelfGeneratedReality, V5-V7 Knowledge Diffusion, V13-V15 Safe Self-Modification). OPERA-loop-integrationen dokumenterad inline — matematiken lever i R-fasen, blueprint är fortfarande lagen, dessa två lager rör aldrig varandra.
+- ``DESIGN_RULES.md`` — appendix ``## ABN Code Law (permanent)`` (sammanfattning) + ``## ABN Mathematical Vocabulary`` (TABELL: USE TemporalMemoryGeometry, NOT sliding window; USE UnifiedIntelligenceMetric, NOT single rate; etc.).
+- ``backend/agent_runtime/intelligence/`` — NYTT paket:
+    - ``__init__.py`` — exporterar hela offentliga ytan
+    - ``physics_operators.py`` — Φ(S)=S/(1+Var(S)), D(S)=∇S/||∇S||, A(E)=1/(1+|E|). Pure NumPy + functional API + IntelligencePhysicsOperators-klass.
+    - ``memory_geometry.py`` — TemporalMemoryGeometry. κ(t)=||S(t+1)-2S(t)+S(t-1)||. Ring-buffer (capacity 1024 default). add() / curvature() / cumulative_curvature(window) / identity_conserved(epsilon).
+    - ``cognitive_phase.py`` — CognitivePhase + Phase-enum (chaotic / learning / structured / crystallized). P_t = (C_t · I_t) / (1 + H_t). Komponenter: koherens (1/(1+mean_std)), informationsdensitet (Sturges-normaliserad Shannon-entropi per dimension), entropi (variance-of-magnitudes mappad till [0,1)). CognitivePhaseResult returnerar phase + score + alla tre komponenter så dashboarden kan visa VARFÖR.
+    - ``intelligence_metric.py`` — UnifiedIntelligenceMetric. I_t = αM_t + βR_t + γΣ_t + δA_t - λK_t. Defaultvikter α=β=γ=δ=0.25, λ=0.20. ValueError på out-of-range input (rule #6 — fail-loudly på programmerarfel).
+    - ``reality_model.py`` — SelfGeneratedReality. R_t = (S_t + mean(M_t)) / (1 + ||S_t - mean(M_t)||). Tension = ||S_t - R_t||. Inget fixed threshold — agenten anchorar mot sin egen historia.
+    - ``README.md`` — full integrationsguide + OPERA-loop-diagram + planerad AgentIntelligenceState-tabell (Batch 40).
+
+**Tekniska val:**
+- **NumPy som primitiv (Law 4 — open source som råvara, ABN äger algoritmen):** NumPy är rätt vectoriserings-primitiv för matrisalgebra; algoritmerna ovanpå är ABN:s egna. Inga randomiserade experiment, ingen demo-kod.
+- **Bounded memory överallt (Law 7 — scale from day 1):** Ring-buffers med konfigurerbar capacity (default 1024). Per-tenant fleet av 1 000 agenter passar långt under 64 MiB vid d=64. Per-call cost O(d) eller O(window·d).
+- **ValueError på out-of-range / dimension mismatch (Law 6 — no temporary solutions):** En programmerare som blandar dimensioner mellan ``observe()``-anrop är ett bugg-tillstånd, inte en runtime-anomali. Fail loudly.
+- **Identity behavior på saknad data (Law 1 — best solution):** ``κ(t)`` på <3 states returnerar 0.0. ``tension()`` på tom memory returnerar 0.0. ``CognitivePhase.classify()`` på <4 states returnerar ``Phase.CHAOTIC`` med score 0. Dessa är de matematiskt korrekta identitetsvärdena för "ingen kunskap ännu".
+- **Phase boundaries definierade en gång (Law 2 — custom ABN naming, source of truth):** ``_PHASE_BOUNDARIES`` tuple i ``cognitive_phase.py`` — om Batch 40 behöver kalibrera bands, ändras de på EN plats.
+- **Frozen dataclasses för resultat (Law 6 — immutable):** ``CognitivePhaseResult`` + ``UnifiedIntelligenceResult`` är ``@dataclass(frozen=True)``. Ingen kan muta resultat efter compute.
+- **Klassinpackning + funktionell API (Law 1 — best solution):** ``physics_operators`` exporterar både fria funktioner OCH en ``IntelligencePhysicsOperators``-klass. Tester monkey-patchar klassen; produktion använder vad som är idiomatiskt på platsen.
+
+**Verifiering:**
+- Pakets-import + smoke-tester gröna (Φ konstant → identitet; A(0)=1; A(10)=0.091; κ på 4-staters spike+flat = 0.14; Phase.STRUCTURED med score 0.82 på lågbrus-serie; UnifiedIntelligenceMetric.compute → 0.63 på mid-band-input; SelfGeneratedReality tension ≈ 1.0 nära memory, ≈ 13.1 långt borta).
+- Full backend pytest: 1434 passed — **inga regressioner** från att lägga till paketet.
+
+**Var matematiken bor (för framtida Batch 40+):**
+- Blueprint definierar VAD agenten gör — regler, trösklar, connectors. Signerad, oföränderlig.
+- Matematiken mäter HUR agenten presterar över tid — fasklassificering, kurvaturdetektion, intelligenspoäng. Helt separat lager.
+- Blueprint modifieras ALDRIG av matematiken. Matematiken läser outcomes och bygger en intern modell.
+- OPERA R-fas är där modulerna körs varje run. AgentSettings + Finding är där värdena persisteras (Batch 40 lägger till ``AgentIntelligenceState``-tabell för dedikerad lagring).
+
+**Konkurrensvinkel:** En enkel ``attestation_rate_pct`` kollapsar fyra distinkta agent-tillstånd till en bit. UnifiedIntelligenceMetric bevarar gradienten som spelar roll för trust scoring, AI Act-riskklassificering och Customer Success-triage. SelfGeneratedReality eliminerar per-tenant tröskeltrim helt. TemporalMemoryGeometry detekterar SLOW drift som varianse-baserade alarms missar. Dessa är de tre konkreta operativa förbättringar Jacobs AGI-matematik ger ABN.
+
+**Nästa:** Batch 40 — ABNAgentMemory: ny ``AgentIntelligenceState``-tabell + Alembic-migration + OPERA R-fas-integration som faktiskt anropar dessa moduler per körning och persisterar resultatet.
+
+## 2026-05-28 — Batch 39 — abn-llm-gateway thin proxy (handboken §19)
+
+Jacob: "Extrahera den in-process LLMGateway:n (Batch 31) till en separat FastAPI-microservice under ``services/abn-llm-gateway/`` — den separat-process gateway:n som redan finns scaffoldad där. Backend ska behålla sin LLMGateway-klass som interface och kalla den nya tjänsten via HTTP istället för providers direkt."
+
+**Beslut:** Behåll den befintliga ``services/abn-llm-gateway/abn_llm_gateway/`` Python-paketet (16+5 = 21 äldre tester från Batch 6) som legacy-bibliotek; bygg den nya Batch 39 thin proxy som ``services/abn-llm-gateway/main.py`` på port 8001 med endpoints ``GET /health`` + ``POST /v1/call`` (X-Gateway-Secret-auth). Dockerfile uppdaterad till ``CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]`` — bara den thin proxy:n körs i produktion; legacy-koden finns kvar för referens och täcker fortfarande 21 äldre tester.
+
+**Filer:**
+- ``services/abn-llm-gateway/main.py`` — NY thin FastAPI-proxy (~325 rader): GET /health (no auth) + POST /v1/call (X-Gateway-Secret), httpx-baserad pass-through till api.anthropic.com / api.openai.com. Strukturerade fel ``{error, stage}``. Stateless (rule #4), fail-closed på saknad secret (rule #5).
+- ``services/abn-llm-gateway/requirements.txt`` — tighta pins (fastapi 0.115.0, uvicorn 0.30.6, httpx 0.27.2, pydantic 2.7.4, python-dotenv 1.0.1). Tar bort ``anthropic`` optional extra (thin proxy använder httpx direkt).
+- ``services/abn-llm-gateway/.env.example`` — NY (GATEWAY_SECRET, ANTHROPIC_API_KEY, OPENAI_API_KEY, OPENAI_MODEL, PORT, GATEWAY_TIMEOUT_SECONDS).
+- ``services/abn-llm-gateway/Dockerfile`` — uppdaterad: python:3.12-slim, curl tillagd (compose healthcheck), entrypoint ``main:app`` på 8001, kör som icke-root.
+- ``services/abn-llm-gateway/tests/test_gateway_service.py`` — 10 nya tester: auth + health (3), routing till anthropic/openai/struktur (3), fel + fail-closed + stateless + timeout (4).
+- ``backend/agent_runtime/llm_gateway/gateway.py`` — refaktor: ``_call_provider`` blir orchestrator som först försöker ``_call_via_proxy`` (om ``settings.llm_proxy_url`` är satt), faller tillbaka till ``_call_direct`` (Batch 31-logik bevarad) på fel. Inga signaturändringar — ``(text, provider_name)`` returneras oavsett path.
+- ``backend/core/config.py`` — nya inställningar ``llm_proxy_url: str = ""`` + ``llm_proxy_secret: str = ""``. Tomma default = direkt-väg (rule #2 — proxy-otillgänglighet bryter inte agenter).
+- ``backend/.env.example`` — nya LLM_PROXY_URL + LLM_PROXY_SECRET med dokumentation.
+- ``backend/tests/test_llm_gateway.py`` — 4 nya tester: routes_via_service_when_configured, falls_back_on_service_error (proxy 500 → direkt-call, inget undantag), uses_direct_when_url_empty, secret_sent_in_header.
+- ``docker-compose.yml`` — abn-llm-gateway container uppdaterad: port 8086 → 8001, lägger till GATEWAY_SECRET/ANTHROPIC/OPENAI env, curl-healthcheck (30s/10s/3retries), backend depends_on ändrad från service_started → service_healthy.
+- ``.github/workflows/abn-llm-gateway-test.yml`` — NY path-filtererad fast lane (``abn-llm-gateway — focused``). Skild från befintliga ABN CI ``llm-gateway`` job — distinkt namn för att undvika kollision med branch-protection-listan.
+
+**Tekniska val:**
+- **Namnkollision undviken (rule #1 grep-first):** Existerande ``llm_gateway_url`` används redan av Batch 13B (industry_detector + llm_phase_b + dual_brain_critic) som POST:ar mot /classify-industry, /blueprint-narrative, /critique-output. Den nya proxy:n exponerar /v1/call. Distinkta endpoints → distinkta settings. ``llm_proxy_url`` / ``llm_proxy_secret`` istället för att skugga existerande semantik. Dokumenterat avsteg från spec (som föreslog ``llm_gateway_url``).
+- **Legacy paketet bevarat:** ``services/abn-llm-gateway/abn_llm_gateway/`` (16-stegs gateway från Batch 6) tas inte bort — testerna (16 i test_gateway.py + 5 i test_ollama_provider.py) fortsätter passera mot legacy-koden. Bara Dockerfile:n flippas till nya ``main:app``. Total gateway-tester: 21 äldre + 10 nya = 31.
+- **Graceful fallback (rule #2):** ``_call_provider`` orchestrator har try/except runt ``_call_via_proxy``. Vid undantag loggas varning och fallback till ``_call_direct`` (Batch 31:s ursprungliga httpx → anthropic/openai). Verifierat av ``test_gateway_falls_back_on_service_error``.
+- **Stateless (rule #4):** Inga DB, sessioner, in-memory cache i main.py. Varje request är oberoende. Verifierat av ``test_gateway_stateless`` (två sekventiella anrop, distinkta token-räkningar).
+- **Fail-closed startup (rule #5):** main.py:s ``on_event("startup")`` raisar om GATEWAY_SECRET är tom. uvicorn exiterar med non-zero kod → Docker healthcheck failar → compose markerar containern unhealthy. Verifierat av ``test_missing_gateway_secret_env_fails_closed``.
+- **No customer data crosses HTTP boundary (rule #3):** PIIRedactor + Tokenizer + SemanticAbstractor körs alla i backend INNAN ``_call_via_proxy`` skickar. Den ALREADY tokenised prompt:en är det enda som passerar tråden. Dokumenterat verbatim i main.py docstring.
+
+**Verifiering:**
+- Backend pytest: **1434 passed** (1430 + 4, exakt target)
+- Gateway service pytest: **31 passed** (21 legacy + 10 nya)
+- Frontend: typecheck ✓, 60 tester ✓, Vite build ✓
+- Landing: 33 statiska sidor ✓
+
+**Operatörsåtgärd vid deploy:**
+1. Sätt ``LLM_PROXY_SECRET`` (min 32 chars) i .env — samma värde delas mellan backend och gateway-container.
+2. ``docker compose up --build abn-llm-gateway`` — containern måste passera healthcheck innan backend startas (compose-villkor ``service_healthy``).
+3. Sätt ``LLM_PROXY_URL=http://abn-llm-gateway:8001`` i backend-env för att aktivera proxy-routing. Om tomt fortsätter LLMGateway anropa providers direkt (rule #2).
+
+**Tidigare bana:** spec föreslog att överskriva existerande ``llm_gateway_url``-inställning. Hade jag följt det skulle 3 äldre konsumenter (industry_detector / llm_phase_b / dual_brain_critic) inte kunna nå sina /classify-industry-, /blueprint-narrative- och /critique-output-endpoints längre. Distinkta settings-namn (``llm_proxy_url``) löser kollisionen utan att bryta något.
+
+**Nästa:** Batch 40 — Firecracker sandbox (§11).
+
+## 2026-05-28 — Batch 38 — Conversational trigger (POST /instruct)
+
+Jacob: "En kund skriver på vanlig svenska: 'Kör betalningspåminnelse för alla fakturor äldre än 30 dagar'. ABN tolkar avsikten, mappar till en agentkapabilitet, validerar mot den signerade blueprinten, och utför — eller förklarar varför den inte kan. Detta är ABN:s svar på Sanas konversationsgränssnitt. Men till skillnad från Sana skickar ABN aldrig instruktionstexten eller kunddata till en extern LLM."
+
+**Beslut:** Bygg en deterministisk pipeline (parser → validator → executor) där regex-pattern-matchningen är primär (täcker 80 % av fallen utan LLM) och LLMGateway bara konsulteras vid ambiguitet (confidence < 0.7), då med ``policy_mode="no_data"`` så att gateway abstraherar payloaden till schemaräkningar innan provider-anrop. Instruktionstexten passerar ALLTID genom ``PIIRedactor`` innan något downstream-steg ser den — varken matchningen, LLM, eller InstructionLog-tabellen kan därför ta emot rå PII. Allt audit-loggas i en ny InstructionLog-tabell (separat från AgentActivityLog som registrerar *effekten*; InstructionLog registrerar *orsaken*).
+
+**Filer:**
+- ``backend/database/models.InstructionLog`` — 11 kolumner, UUID PK, två composite-index för audit-queries
+- ``backend/alembic/versions/a2d75c0e1b48_add_instruction_logs_table.py`` — raw SQL CREATE IF NOT EXISTS, depends on f4a91e6b27c3 (Batch 37 head)
+- ``backend/agent_runtime/instruction_engine/`` paket: ``__init__.py`` + ``intent_patterns.py`` + ``parser.py`` + ``validator.py`` + ``executor.py``
+- ``backend/api/routes/agents.py`` utökad med 2 nya endpoints (POST /instruct + GET /instructions)
+- ``frontend/src/components/agents/InstructBar.tsx`` — ny komponent ovanför tab-strippen på AgentDetailPage
+- ``frontend/src/api/client.ts`` utökad med InstructionResult + InstructionLogEntry types + 2 helpers
+- ``backend/tests/test_instruction_engine.py`` — 16 tester (7 parser + 3 validator + 3 executor + 3 API)
+
+**Tekniska val:**
+- **5 intents:** ``run_now`` / ``pause`` / ``resume`` / ``set_threshold`` / ``report``. Varje intent har en lista regex-patterns på svenska + engelska och en ``requires_blueprint_capability``-nyckel som validatorn sedan kontrollerar mot ``Agent.blueprint.capabilities``.
+- **Deterministisk-först (rule #1):** parsern matchar varje regex i ``INTENT_PATTERNS``-ordning. 1 träff → confidence 0.9. 2+ träffar inom samma intent → 1.0. Flera intents matchade → top vinner men confidence cappas till 0.6 så LLM-promotion / clarification triggas (aldrig gissning vid ambiguitet, rule #5). LLM-seam ``llm_call(text) → (intent, confidence)`` är ett test-hook; produktion använder ``LLMGateway.call`` med ``policy_mode="no_data"``.
+- **PII-sanering (rule #3):** parsern återanvänder ``llm_gateway.PIIRedactor.redact_value`` som första steg. Test ``test_pii_sanitised_before_parse`` injicerar ett personnummer i instruktionen och verifierar att det är borttaget från den sanerade texten OCH att intent-detektionen ändå funkar.
+- **Validatorn = blueprint är lagen (rule #2):** ``_has_capability`` läser ``Agent.blueprint["capabilities"]`` och accepterar både bara namn (``"configure"``) och dotted-namespace (``"settings.configure"``). ``run`` / ``pause`` / ``resume`` är implicit tillgängliga (AAEA-lager) — bara ``set_threshold`` gate:as på ``configure``-capabiliteten för forward-compat.
+- **Rate limit:** 10 instruktioner per (agent, tenant) per rullande timme. Validatorn räknar InstructionLog-rader inom 1-timmes-fönstret och returnerar Swedish "försök igen om N min"-meddelande. Routen översätter rate-limit-rejection till HTTP 429 med ``Retry-After: 60``-header.
+- **Executor med 5 handlers:** ``_handle_run_now`` spawnar OPERA via ``asyncio.run(OPERARunner.run())`` (konversationsendpointen stannar plain sync). ``_handle_pause`` / ``_handle_resume`` flippar ``Agent.enabled`` + mirror på ``AgentSettings.enabled`` + skriver ``paused``/``resumed`` till AgentActivityLog. ``_handle_set_threshold`` upsert:ar ``AgentSettings.threshold_pct``. ``_handle_report`` läser Finding-aggregat (counts only) och returnerar svensk summering.
+- **dry_run=True:** kör parse + validate + executor-handler i preview-läge — alla handlers har en ``if dry_run`` early-return som producerar "Förhandsvisning: …" Swedish-meddelande utan side-effects. InstructionLog skrivs ändå för audit (rule #4). Test ``test_dry_run_never_executes`` mock:ar ``asyncio.run`` och asserterar 0 anrop + Agent.enabled oförändrad.
+- **InstructBar med debouncad preview:** input på 500ms-debounce → POST /instruct med ``dry_run=true`` → tolkning + confidence-badge live. Submit → ``dry_run=false``. Confidence-färgkodning: ≥0.9 status-green, 0.7-0.9 status-orange, <0.7 status-red. Quick-suggestion-chips (Kör nu / Pausa / Visa rapport). Senaste 5 instruktioner i ``<details>`` med tidsstämpel + intent-label + confidence-%. OperaLoop signaturmönster på opacity-[0.05].
+- **InstructionLog-format:** ``instruction_text`` är ALLTID den PII-sanerade strängen (PIIRedactor-output). ``parsed_intent`` är canonical key ur ``INTENT_PATTERNS``. ``intent_confidence`` är Numeric(4,3). ``resolution`` ∈ {``executed``, ``rejected``, ``clarification_needed``}. ``run_id`` sätts bara på ``run_now``-execution (inte på pause/resume/threshold/report). Dry-run rader har ``run_id=NULL`` så audit-UI kan skilja på förhandsvisning vs faktisk action.
+
+**Verifiering:**
+- Backend pytest: **1430 passed** (1414 + 16, exakt target)
+- Frontend: typecheck ✓, 60 tester ✓, Vite build ✓
+- Landing: 33 statiska sidor ✓
+- Go-suite: orörd (CI ``security-go`` validerar på push)
+
+**Konkurrentvinkel:** Sana har konversationsgränssnitt men skickar instruktionstexten till sin LLM-host. ABN gör samma sak strukturellt men bevarar No-Data-garantin: 80 % av instruktionerna avgörs deterministiskt (LLM nås aldrig); de 20 % som behöver promotion går genom ABN:s egna LLMGateway under ``no_data`` policy mode där abstraktorn ersätter all text med schemaräkningar innan provider-anropet. Operator-instruktionen lämnar aldrig ABN-noden som rå text.
+
+**Nästa:** Batch 39 — abn-llm-gateway as service (separera den in-process LLMGateway till en standalone container per handboken §19).
+
+## 2026-05-28 — Batch 37 — EU AI Act Article 11 + Annex IV (regulatory moat)
+
+Jacob: "Från augusti 2026 kräver EU AI Act att operatörer av AI-system upprätthåller teknisk dokumentation enligt artikel 11 + bilaga IV. ABN ska auto-generera detta per agent — något INGEN konkurrent erbjuder."
+
+**Beslut:** Bygg en deterministisk per-agent compliance-deklaration som forge:as från befintlig data (Agent.blueprint + Finding history + attestation rates). Append-only versionering (rule #4 — ny version per blueprint-ändring, äldre versioner bevaras). PDF-renderare med v7 sage palette (cream/terra/ink, ingen lila, ingen vit). All svenska. **ABN-original arkitekturell-garanti-modell:** klassificeraren returnerar ALDRIG "high" eller "unacceptable" eftersom ABN-agenter är strukturellt exkluderade från dessa kategorier genom de fem ARCHITECTURAL_GUARANTEES (HITL / rollback / zero-data-retention / Confidence Gate / signerade blueprints).
+
+**Filer:**
+- ``backend/database/models.AIActDeclaration`` — 14 kolumner, UUID PK, två UNIQUE constraints (``(agent_id, version)`` + ``(agent_id, blueprint_hash)`` för idempotens)
+- ``backend/alembic/versions/f4a91e6b27c3_add_ai_act_declarations_table.py`` — raw SQL CREATE IF NOT EXISTS, depends on d3f8a721ba51 (Batch 36 head)
+- ``backend/agent_runtime/compliance/`` paket: ``__init__.py`` + ``risk_classifier.py`` + ``declaration_engine.py`` + ``pdf_renderer.py``
+- ``backend/api/routes/agents.py`` utökad med 4 nya endpoints (GET /ai-act-declaration + /pdf + /ai-act-declarations + POST /regenerate)
+- ``frontend/src/components/agents/AIActPanel.tsx`` — ny tab "EU AI Act" på AgentDetailPage
+- ``frontend/src/api/client.ts`` utökad med AIActDeclaration types + 4 helpers
+- ``backend/tests/test_ai_act_declaration.py`` — 16 tester (4 classifier + 5 engine + 7 API)
+
+**Tekniska val:**
+- **ABN-specifik vokabulär (rule #2):** klassen heter ``ABNComplianceDeclaration`` och ``ABNRiskClassifier`` — inte generiska "AIActDoc"-namn. ABN:s arkitektoniska språk genomsyrar varje yta.
+- **Blueprint hash = canonical-form SHA-256:** mirror på den ``trust.blueprint_signer`` form som används för HMAC-signering. Två forge-anrop mot samma signerade blueprint ger samma hash → idempotent (rule #7).
+- **Append-only via UNIQUE constraints:** ``(agent_id, blueprint_hash)`` är idempotency-ankaret; ``(agent_id, version)`` säkerställer monotont ökande version per agent. En blueprint-edit producerar en NY rad med version+=1; äldre rader bevaras som audit trail.
+- **No-Data garanti (rule #1):** deklarationsraden + JSON + PDF innehåller ENDAST aggregat (attestation_rate_pct, total_findings, attested_findings) + arkitektoniska garantier. ``Finding.title`` / ``agent_value`` / ``source_value`` korsar ALDRIG seamen. Verifierat av ``test_no_customer_payload_in_declaration`` som planterar ett unikt skvallrande substring i 15 Finding-rader och griper hela serialiserad payload efter forge för att fail loudly på regression.
+- **Fail-closed (rule #5):** saknad data → "Ej tillämpligt" svensk sträng. EU-revisorer förväntar sig kompletta dokument; aldrig tomma fält.
+- **POST /regenerate:** operatörens escape hatch. När guarantee-texten driftar (säg ABN släpper en 6e arkitektonisk garanti) kan en NODE_ADMIN tvinga fram en ny version utan blueprint-ändring. Implementeras genom att temporärt overrida blueprint med en "regenerate marker"-dict så hashen blir unik och idempotency short-circuit:en undviks. Agentens egen blueprint-kolumn ALDRIG muteras (try/finally restore).
+- **PDF-renderare med reportlab:** samma primitive som ``tier3_dpa/generator.py`` använder. Ingen ny dep. A4, 10 sektioner i Annex IV-ordning (Identifiering → Avsett ändamål → Riskklass → Tekniska specs → Datakällor → Garantier → HITL → Prestandamått → Efterlevnadsdeklaration → Signatur).
+- **Frontend v7-design:** TrustLayer signaturmönster vid opacity-[0.06] som bakgrund, terra accent på arkitektoniska garantibullets, ink CTA-knappar, ingen lila, ingen vit. Per DESIGN_RULES.md kravnivå.
+
+**EU AI Act-artiklar refererade i deklarationen:**
+- Article 11 (Technical documentation)
+- Annex IV (Detailed Technical documentation contents)
+- Article 13 (Transparency and provision of information to deployers)
+- Annex III (Risk classification — ABN strukturellt exkluderad från high/unacceptable)
+
+**Verifiering:**
+- Backend pytest: **1414 passed** (1398 + 16, exakt target)
+- Frontend: typecheck ✓, 60 tester ✓, Vite build ✓
+- Landing: 33 statiska sidor ✓
+- Go-suite: orörd (CI ``security-go`` validerar på push)
+
+**Reglatorisk moat:** ingen konkurrent — varken Sana, Legora eller Workday — genererar per-agent EU AI Act-deklarationer automatiskt. ABN-kunder kan visa upp en signerad, daterad teknisk dokumentation per agent vid varje EU-revision. Detta är ABN:s strukturella försvarsverk mot AI Act-compliance-kostnader hos enterprise-kunder.
+
+**Nästa:** Batch 38 — Conversational trigger (POST /api/agents/{id}/instruct) eller Jacob väljer annan inriktning.
+
+## 2026-05-28 — Batch 36 — Custom Connector Generator (handboken §18)
+
+Jacob: "ABN ska kunna ansluta vilket system som helst — SAP, Dynamics, hemmagjorda ERP — på under 30 minuter utan att skriva kod."
+
+**Beslut:** Bygg en deterministisk YAML + Python generator + 5-stegs ConnectorWizard. Ingen LLM i renderpipen — operatören beskriver specen i wizarden, vi validerar Pydantic-fail-closed, vi emitterar YAML som matchar EXISTERANDE schema (Engineering rule #1 — fork inte schemat) + Python-klass som extender den REAL ``BaseConnector`` (rule #2 — runtime-kontraktet, inte spec:ens idealiserade version).
+
+**Filer:**
+- ``backend/agent_runtime/connector_generator/`` — pakethus: spec.py + yaml_generator.py + python_generator.py
+- ``backend/database/models.CustomConnector`` — UUID PK, JSON resources, yaml_content + python_content cachade i DB
+- ``backend/alembic/versions/d3f8a721ba51_add_custom_connectors_table.py`` — raw SQL CREATE IF NOT EXISTS (Batch 12-lärdomen)
+- ``backend/api/routes/connector_generator.py`` — 4 endpoints (POST /generate/preview + POST /generate + GET /custom + DELETE /custom/{id})
+- ``backend/main.py`` — router monterad under ``prefix="/api/connectors"``
+- ``frontend/src/components/connectors/ConnectorWizard.tsx`` — 5-stegs modal (Grundinfo / Resurser / Fält / Förhandsvisning / Klart)
+- ``frontend/src/api/client.ts`` — utökad med ConnectorSpec types + 4 helpers
+- ``frontend/src/pages/ConnectorsPage.tsx`` — utökad med "+ Egen koppling"-knapp + "Egna kopplingar"-sektion
+- ``backend/tests/test_connector_generator.py`` — 18 tester (7 validator + 3 YAML + 4 Python + 4 API)
+
+**Tekniska val:**
+- **Engineering rule #2-konflikt:** spec:en visade ConnectorEvent med (connector, resource, external_id, payload) men den RIKTIGA i ``observer/connectors/base.py`` (Batch 32) har (resource_type, event_time, raw). Generated kod respekterar den RIKTIGA signaturen — PII-filtrerade fält hamnar i ``ConnectorEvent.raw``, inte spec:ens "payload".
+- **Engineering rule #1 — YAML-schema:** spec:en föreslog ``name:`` / ``display_name:`` etc, men existerande ``fortnox.yaml`` har ``connector_type:`` / ``nango_integration_id:`` / ``tier:`` / ``region:``. Vi emitterar matchande befintligt schema + additiva ``custom: true`` + ``auth:`` + ``runtime:`` block som legacy-loadern ignorerar.
+- **Determinism:** ``yaml.safe_dump(sort_keys=False)`` med manuellt ordnat payload-dict + ``json.dumps(sort_keys=True, indent=8)`` för endpoint dict literal. Test ``test_yaml_is_deterministic`` + ``test_python_is_deterministic`` asserterar byte-identiskt output på två anrop.
+- **Module-level ``_CUSTOM_DIR``:** så tester kan monkeypatcha det och peka mot tmp_path utan att röra produktion-disken.
+- **Fail-closed validering:** HTTPS-only base_url, slug regex ``^[a-z][a-z0-9_]{1,62}$``, 1-10 resurser, 1-50 fält/resurs, ingen duplicering. ``SpecValidationError`` → HTTP 422 med verbatim meddelande.
+- **Inkrement-säker:** ``POST /generate`` är idempotent per ``(tenant_id, connector_name)`` — samma slug + tenant uppdaterar i stället för att skapa duplikat. Disk-write händer EFTER DB-commit så ett DB-fel lämnar filsystemet rent; OS-write-fel flippar ``status="error"``.
+
+**Wizard UX-val:**
+- Modal-on-page (ingen route) så användaren behåller kontext från ConnectorsPage
+- Steg 1 har live slug + HTTPS validering med röd border-st-red på fel input
+- Steg 2 har taggar för 1-10 resurser, klick växlar aktiv resurs
+- Steg 3 har en kompakt tabell med checkboxar för PII + required-flaggor
+- Steg 4 visar YAML + Python sida vid sida i ``bg-ink + text-page font-mono``-paneler (DESIGN_RULES code-context exception)
+- Steg 5 visar ``connector_id`` + on-disk YAML-path så operatören vet vad som sparades
+- ``LocalNode`` signaturmönster på opacity-[0.05] i top-right corner per v7-design
+
+**Verifiering:**
+- Backend pytest: **1398 passed** (1380 + 18, exakt target)
+- Frontend: typecheck ✓, 60 tester ✓, Vite build ✓
+- Landing: 33 statiska sidor ✓
+- Go-suite: orörd (CI ``security-go`` validerar på push)
+
+**Nästa:** Batch 37 — EU AI Act dokumentation (handboken §29) eller Jacob väljer annan inriktning.
+
 ## 2026-05-27 — Batch 33D-6 — ViewportScale (SVG-style projector scaling)
 
 Jacob: "alla skärm storlek, länk som en projektor — bilden är exakt likadan, blir bara mindre eller större. Inga element får flytta på sig. Vektorkänsla (SVG): behåller proportioner oavsett hur mycket man drar i fönstrets hörn."
@@ -1296,3 +1498,330 @@ Jacob slept; ran with explicit overnight autonomy. Per his instruction: only fix
 - **Batch 1 started + completed** in same session: Finding model + Alembic migration + persistence helper + 3 new API endpoints + extended `GET /api/agents/{id}` + 23 new tests. All 962 tests green.
 - Locked in 8 engineering rules in CLAUDE.md (`## Engineering rules`): grep-first, one source of truth, English-only in code, document the flow, CLAUDE.md is persistent memory, Anthropic-grade safety, idempotency for everything that writes, tests cover the contract.
 - Created `JACOB_SESSION.md` + `CHAT_LOG.md` for permanent session memory readable from a fresh chat via the GitHub raw URL.
+
+
+## 2026-05-28 — Batch 33D-8 — ViewportScale borttagen (projector mode bröt halv-skärm)
+- Jacob visade 3 screenshots där landing-sidan på halv-skärm (≈960 px) renderade med transform: scale(0.67) — text blev oläsbart (≈4-5 px) och element omplacerades visuellt fast layout-koden var oförändrad. Jämförelse med Anthropic.com visade fluid responsive där text förblir läsbar på halv-skärm.
+- Root cause: ViewportScale från Batch 33D-6 låste inner-bredd till 1440 px och skalade allt proportionellt. Det var bokstavligen vad Jacob bad om ("som en projektor — bilden är exakt likadan, blir bara mindre eller större") men i verkligheten gjorde det texten oanvändbar på allt under desktop-bredd.
+- Beslut: ta bort <ViewportScale> wrap från landing/app/layout.tsx + frontend/src/main.tsx. Tailwind responsive (sm/md/lg/xl) hanterar nu skalning naturligt — elementen reflowar istället för att krympa proportionellt. Samma approach som Anthropic.com använder.
+- Behåll: ViewportScale.tsx-filerna kvar på disk i båda paketen (landing/components/ + frontend/src/components/) för historik. Inga importer pekar på dem längre — verifierat med grep.
+- Cache-bust marker i landing/app/globals.css bumpad från 33D-7 till 33D-8 så Vercel-CDN tvingas leverera ny CSS-hash.
+- Verify: landing build 33 statiska sidor ✓, frontend typecheck ✓, 60 frontend-tester ✓, backend orörd ✓ (git status backend/ = tomt).
+- Engineering rule #1 (extend, never duplicate) upprätthållen: layout.tsx + main.tsx fick chirurgisk edit (3 rader vardera) istället för rewrite. Engineering rule #6 (No-Data + customer experience): läsbarhet är en sannolik del av kundupplevelsen — vi accepterade projector-mode kortsiktigt men backade när Jacob visade konsekvenserna.
+
+
+## 2026-05-28 — Batch 33D-9 — bg-white eliminated + old logo retired
+- Jacob screenshot: three first elements with white backgrounds (cards/dropdowns) jarring against the v7 sage palette. Said no element in entire ABN should sit on raw white — use a tone from the signature pattern palette (page-soft / page-tone / page).
+- Audit (Explore agent): 18 bg-white instances + 3 hover:bg-white across landing + frontend live code. Zero in data-viz/chart surfaces — those were already sage-correct per Batch 33D-2. Legacy .legacy.tsx files skipped (not rendered).
+- Replacement decisions: Cards/modals/dropdowns/onboarding shell → bg-pageSoft (#EBE6D7, slightly warmer than canvas). Hover states → hover:bg-pageTone (#C9CFBC, the deeper sage). ErrorBoundary pre-tag → bg-pageTone for the code block contrast.
+- Old logo retirement: deleted landing/components/Logo.tsx + frontend/src/components/ABNLogo.tsx via git rm. Created frontend/src/components/ABNFlower.tsx as mirror of the landing version (rule #1 — same SVG primitive both packages). Updated 7 consumer sites: SiteHeader.tsx (<img> → ABNFlower), DetailPageShell.tsx (<img> → ABNFlower), Footer.tsx (<img> → ABNFlower), TitleBar.tsx (ABNLogo → ABNFlower), sign-in/sign-up/legal-[slug]/subprocessors (Logo import → ABNFlower with inline wordmark wrapper).
+- company/download fix: page was still v6 dark theme with hardcoded #A09AB8 / #6B6680 / #7C5CFC / text-white. Added SiteHeader + SiteFooter at page.tsx level (server component) since DownloadView is a client component. Swept v6 colors → v7 tokens (text-muted / text-terra / text-ink). Fixed "Latest" badge from text-ink-on-bg-ink (invisible) to text-page-on-bg-ink (cream on dark).
+- SiteHeader cosmetic fix: "Logga in" link had text-white (invisible against sage bar). Flipped to text-muted hover:text-ink matching the nav style.
+- Rule #1 enforcement: ABNFlower spegelkopierad istället för delad lib (kräver monorepo-config som inte finns). Editorial note in JSDoc: "uppdatera båda i lockstep".
+- Rule #6 (No-Data + customer experience): data-viz surfaces explicitly left untouched per Jacob's "viktig insikter data graf etc ska inte påverkas av design eller annat".
+- Verify: landing build 33 statiska sidor ✓, frontend typecheck ✓, 60 frontend-tester ✓, backend orörd ✓ (git status backend/ = tomt), final grep bg-white|hover:bg-white in live code = 0 träffar.
+- Cache-bust marker globals.css bumpad 33D-8 → 33D-9.
+
+
+## 2026-05-28 — Batch 33D-10 — projector-mode by min-width + footer pinned
+- Jacob på full-skärm: vissa texter fortfarande för små, footer har crème-band höger och vänster, stor tom crème yta under footern. Halv-skärm: elementen omplaceras + texten krymper trots 33D-8 fix.
+- Diagnos: efter 33D-8 togs ViewportScale bort så Tailwind responsive (sm/md/lg) tog över. Det löste läsbarheten på halv-skärm men introducerade reflow — exakt vad Jacob INTE ville. Footer-frågan: body har min-h-screen utan flex-layout, så body-bg (crème #E2E2D5) syns under footern när content + footer < 100vh. Det "crème-band" på sidorna är förmodligen samma — när huvudsidans innehåll inte fyller hela 100vh visas body-canvas runt.
+- Fix #1 — projector-mode by min-width: ody { min-width: 1280px } i globals.css. Tailwind responsive triggrar ALDRIG under 1280px (sm:640, md:768, lg:1024 alla < 1280) så layouten förblir desktop på halv-skärm + mobil. Smalare viewports får horisontell scroll istället för reflow. Texter behåller sin storlek eftersom rem/em-värden inte krymper när breakpoints inte triggar.
+- Fix #2 — footer pinned: ody { display: flex; flex-direction: column; } + main { flex: 1 0 auto; }. Footer pinnas naturligt mot viewport-botten när content är kortare än 100vh. Eliminerar crème-yta under footern.
+- Fix #3 — footer w-full: explicit w-full på <SiteFooter> som belt-and-suspenders.
+- Cache-bust marker globals.css bumpad 33D-9 → 33D-10.
+- Verify: landing build 33 statiska sidor ✓, frontend typecheck ✓, backend orörd ✓.
+- Lärdom: Jacob's krav är "exakt samma layout på alla skärmar, bara skala visuellt eller scrolla" — projector-mode med transform: scale() (33D-6) gjorde texten oläsbar; Tailwind responsive (33D-8) skapar reflow. Lösningen är min-width på body som låser layouten till desktop-bredden och triggar horisontell scroll på smalare viewports. Detta är det tredje försöket — fjärde gången gillt eller det är fundamentalt vad Jacob behöver.
+
+
+## 2026-05-28 — Batch 33D-11 — v6 artifacts purged (cleanup-only batch)
+- Jacob: städa fronted, ta bort gamla design överallt, inga dubbliceringar, behåll allt rent. Backend orörd, bara cleanup.
+- Audit (Explore agent): identifierade 3 problemkategorier — dead files (no imports), stale v6 hex i 18 sub-pages, latent vit Tailwind alias.
+- Deletion sweep (15 files, all confirmed zero live imports):
+  · 8 .legacy.tsx från 33D-4/33D-5 (LivingDemo/ProductShowcase/LayerShowcase/Layers/Marketplace/DownloadCTA/Transparency/SocialProof)
+  · 3 landing/public SVG-loggor (logo.svg / logo-mark.svg / logo-animated.svg) som ersattes av ABNFlower-komponenten i 33D-9
+  · 2 frontend/public SVG-loggor (logo.svg / logo-mark.svg)
+  · 2 ViewportScale.tsx (33D-6 projector-mode wrapper, ersatt av min-width approach i 33D-10)
+- Hex sweep via PowerShell-script (regex-replace med UTF8Encoding(false), inga BOM-regressioner):
+  · g-[#6A4BD4] → g-ink (v6 purple primary → v7 ink)
+  · 	ext-[#6A4BD4] → 	ext-terra (v6 purple accent → v7 terra)
+  · order-[#6A4BD4] → order-ink
+  · g-[#9F8FE6] → g-terra (v6 light purple → v7 terra)
+  · 	ext-[#9F8FE6] → 	ext-terra
+  · order-[#9F8FE6] → order-terra
+  · #0E0E14 → #0E0D0B (v6 near-black → v7 footer-bg)
+  · 18 sub-pages patchade, totalt 80 hex-träffar borta.
+- Tailwind alias-städning i båda paketen: card: '#FFFFFF' → card: '#EBE6D7'. Eliminerar latent vit-yta via legacy g-card-klassen som fortfarande används i 6 frontend-filer (MarketplacePage, AdminPage, ui.tsx, SettingsPage, CoordinatorInsight, ObserverConsentModal). Nu automatiskt v7 sage.
+- Stale dokumentkommentarer uppdaterade: landing/app/page.tsx (legacy-fil-referensen ändrad från "renamade till .legacy.tsx" → "togs bort i Batch 33D-11"), landing/app/layout.tsx + frontend/src/main.tsx (ViewportScale-referenser ersatt med 33D-10 min-width approach).
+- Cache-bust marker bumpad 33D-10 → 33D-11 i globals.css.
+- Verify: landing build 33 statiska sidor ✓, frontend typecheck ✓, 60 frontend-tester ✓, backend orörd ✓ (git status backend/ = tomt), slutlig grep för #6A4BD4|#9F8FE6|#0E0E14|#0A0A0F|#0F0F14 i hela landing/ + rontend/src/ = 0 träffar.
+- Engineering rule #1: ABNFlower spegelkopior, 12 signaturmönster, --abn-purple CSS-variabel (micro-accent) — ALLA bevarade, audit'en bekräftade att de fortfarande används korrekt enligt v7-specen.
+
+
+## 2026-05-28 — Batch 33D-12 — Hero responsive (grid stack + clamp fluid text)
+- Jacob: halv-skärm (~600-900 px) hade text-shrink och pattern-omflyttning på Hero, fullskärm OK. Begärde grid-cols-1 md:grid-cols-2, clamp() text, max-w-full overflow-hidden på hero-fig, min-w-0 på grid-children, breakpoint-baserade trust-strip-siffror.
+- Audit visade orsaken: 33D-10:s ody { min-width: 1280px } förhindrade INTE Tailwind responsive prefixes från att triggra (de baseras på viewport, inte body width). Resultat: viewport 900px → md: och sm: triggar → komponenter stackar → men body är 1280px bred → horisontell scroll. Sämsta av båda världar.
+- Fix: tog bort min-width: 1280px från globals.css. Behöll display: flex; flex-direction: column + main { flex: 1 0 auto } (footer-pin från 33D-10 fungerar fortfarande).
+- Hero.tsx fixes (per Jacob's 5 punkter):
+  1. Grid: lg:grid-cols-[1.15fr_0.85fr] → md:grid-cols-[1.15fr_0.85fr] (sida-vid-sida från 768px+ istället för 1024px+)
+  2. Display: clamp(56px, 7.2vw, 96px) → clamp(40px, 6vw, 88px) (40px floor mobil-läsbar)
+  3. Hero-fig container: la till min-w-0 max-w-full overflow-hidden, ändrade min-h-[480px] → min-h-[320px] md:min-h-[480px]
+  4. min-w-0 på vänster text-kolumn också (grid-child must shrink)
+  5. Trust-strip-siffror: ontSize: '56px' → clamp(40px, 5vw, 56px), sup '24px' → clamp(18px, 2.2vw, 24px)
+- Padding-fix: px-8 → px-6 sm:px-8 (mindre side-padding på trånga viewports)
+- Bevarade orört (per Jacob's regler ✗): allt textinnehåll, alla färger, alla länkmål.
+- Verify: landing build 33 statiska sidor ✓, backend orörd (git status backend/ = tomt) ✓.
+- Lärdom: min-width på body förhindrar inte Tailwind responsive — viewport är sanningen. Om vi vill ha "no reflow" behöver vi också skriva utan responsive-prefixes överallt. Jacob har efter tre försök (scale/responsive/min-width) accepterat att proper responsive design med clamp() + mobile-first breakpoints är lösningen — text förblir läsbar via clamp(), elementen stackar elegant på mobil/halv-skärm.
+- Cache-bust marker bumpad 33D-11 → 33D-12.
+
+
+## 2026-05-28 — Color law + DESIGN_RULES.md
+- DESIGN_RULES.md created (permanent law — repo root, outside CLAUDE.md drift)
+- 7 colors only + no white backgrounds
+- bg-white → page-soft (#EBE6D7) everywhere (audit returned 0, already eliminated in 33D-9 + 33D-11)
+- 12 patterns placed in empty states: AgentsPage (AgentEngine, swapped from PatternLibrary per spec), AgentDetailPage FindingsList (Observer), ProposalsPage (PatternLibrary), ConnectorsPage Live-flöde (ProcessGraph). MarketplacePage skipped — no real empty state (curated catalogue always populated).
+- Status colors documented as data-only exception (#2EA86F green, #E0892E orange, #D6453D red, #3B7DD8 blue, #F2C94C gold — only in graphs / sparklines / status badges, never as bg)
+- CLAUDE.md color law locked at top of v7 section as ⚠️ block, references DESIGN_RULES.md as source of truth
+- bg-primary → bg-ink sweep across 15 .tsx files (primary alias was already #1F1B17 in tailwind config, but the name carried v6 baggage and Jacob's verifying grep treated it as a violation; sweep removes the ambiguity)
+- Final verification greps: bg-white = 0, bg-primary | bg-abn-purple | bg-[#5A3FC0] = 0
+- Verify: frontend typecheck + 60 tests + Vite build ✓; landing 33 static pages ✓; backend git status backend/ = empty ✓
+
+
+## 2026-05-28 — Batch 33D-14 — FIG-boxes responsive at half-screen
+- Jacob bug-report: LayerShowcase (= LayersSection efter 33D-5 rename + 33D-11 .legacy purge) FIG-box med pattern "försvinner" på halv-skärm ~900px.
+- Audit: ingen hidden md:block eller motsvarande klass fanns. Faktiskt orsak: lg:grid-cols-[80px_1fr_1.1fr] triggar bara från 1024px+. På 900px viewport stackar alla tre grid-children (number / content / FIG-box) i EN lång kolonn → FIG-box ligger långt nedanför sin text-kolumn → perceived som "right column disappeared". FIG-box rendrar fortfarande, bara stackad.
+- Samma lg:grid-cols-[…] pattern fanns i ALLA fyra sektioner: LayersSection, OperaSection, LedgerSection, TrustSection. Konsistens-fix: ändra alla lg: → md:.
+- LayersSection.tsx:
+  · Sec-head: lg:grid-cols-[auto_1fr_0.7fr] → md:grid-cols-[auto_1fr_0.7fr]
+  · Layer-rows: lg:grid-cols-[80px_1fr_1.1fr] → md:grid-cols-[80px_1fr_1.1fr]
+  · FIG-box min-h-[220px] → min-h-[240px] md:min-h-[320px] (per Jacob's spec: behåller värdig höjd både stackad och sida-vid-sida)
+- OperaSection.tsx: lg:grid-cols-[auto_1fr_0.7fr] + lg:grid-cols-[0.95fr_1.05fr] → båda md:
+- LedgerSection.tsx: lg:grid-cols-[auto_1fr_0.7fr] + lg:grid-cols-[1.4fr_1fr] → båda md:
+- TrustSection.tsx: lg:grid-cols-[auto_1fr_0.7fr] + lg:grid-cols-[1.3fr_1fr] → båda md:
+- Pattern SVG-komponenterna (FigObserver/FigGraph/FigAgent) hade redan lock h-full w-full + preserveAspectRatio="xMidYMid meet", så de skalar perfekt till containerstorlek. Inga ändringar krävdes där.
+- Engineering rule #1 (extend, don't duplicate) + rule #2 (single source of truth): samma fix-pattern applicerat på alla 4 sektioner istället för bara LayersSection som Jacob rapporterade — annars hade 3 sektioner kvarvarande bug.
+- Bevarade orört (per Jacob's regler ✗): allt textinnehåll, alla färger, alla länkmål.
+- Verify: landing build 33 statiska sidor ✓, backend orörd (git status backend/ = tomt) ✓.
+- Cache-bust marker bumpad 33D-13 → 33D-14.
+- Mental test matrix: viewport 640 (mobil) — alla sektioner single-column stack (md: triggar inte under 768). Viewport 900 (halv-skärm) — md: triggar, FIG-boxar sitter bredvid text. Viewport 1280 (desktop) — same. ✓
+
+
+## 2026-05-28 — Batch 33D-15 — SOC 2 attestation 404 fix + full link audit
+- Jacob: "SOC 2 attestation → 404. fixa tack koppla den så att man kan läsa om SOC 2 attestation → sög till att alla länakr är korrekt kopplade till korekt ämne och fungerar tack"
+- Audit: TrustSection.tsx rad 73 pekade på /legal/soc2 men inget slug "soc2" existerar i landing/lib/legal.ts LEGAL_DOCS. Den faktiska dokumentationen om SOC 2 ligger under slug security (SECURITY_CHECKLIST.md, description ord-för-ord: "ISO 27001 and SOC 2 Type 1 readiness, mapped to ABN architecture").
+- Dispatchade full Explore-audit av alla landing-länkar:
+  · Enumererade alla page.tsx-routes (statiska + dynamiska /legal/[slug] mot LEGAL_DOCS-array)
+  · Grepade alla href="/... + <Link href="/... i landing/**/*.tsx
+  · Korsverifierade varje target mot route-listan
+  · Verifierade alla anchor-IDs (#top, #layers, #opera, #ledger, #trust, #om-oss, #vad-ar-abn-node) — alla existerar och löser
+  · Resultat: **1 trasig länk (Jacob's report), 50 fungerande länkar, 0 externa, 1 anchor — alla fungerar**
+- Fix: TrustSection.tsx rad 73 — <PillarLink href="/legal/soc2">SOC 2 attestation →</PillarLink> → <PillarLink href="/legal/security">SOC 2 attestation →</PillarLink>. Lade till JSX-kommentar inline som dokumenterar mappningen så framtida ändringar inte återinför 404.
+- Engineering rules respekterade:
+  · ✗ Innehåll/copy oförändrat — label "SOC 2 attestation →" exakt samma, endast URL bytt
+  · ✗ Färger oförändrade
+  · ✗ Endast en länk fixad — ingen omdesign
+  · Audit-paradigm: identifierade ALLA trasiga länkar i en enda sweep istället för att vänta på att Jacob hittar dem en åt gången
+- Verify: landing build 33 statiska sidor ✓, backend orörd (git status backend/ = tomt) ✓.
+- Cache-bust marker bumpad 33D-14 → 33D-15.
+- Lärdom: legal-systemets slugar i landing/lib/legal.ts är källan till sanning. SOC 2 är inte ett eget dokument — det är en del av SECURITY_CHECKLIST.md som mappas till slug security. Framtida "X attestation"-länkar måste verifieras mot LEGAL_DOCS-array innan de pushas.
+
+
+## 2026-05-28 — Batch 33D-16 — dark code-block backgrounds purged
+- Jacob screenshot av /api Quickstart-sektion: code-block med svart bg + nästan osynlig text. "Kolla såna mörka svarta bakgrunder ska bort snälla använda bara vår nya design färger layout etc tack inga svara eller mörka".
+- Audit: 7 ytor använde #0E0D0B som bakgrund OUTSIDE footern, brytande mot DESIGN_RULES ("Footer (enda mörka ytan)"):
+  · CodeTabs.tsx:19 — code-block container (Jacob's screenshot)
+  · api/page.tsx:377 — Payload example container
+  · process-graph/page.tsx:138 — quality_score formel-box
+  · solutions/page.tsx:115 — industry tag badge
+  · transparency/page.tsx:278 — "ABN never reads" box
+  · pricing/page.tsx:213 — non-featured tier-card (also text-ink-on-dark = unreadable!)
+  · status/page.tsx:154 — overall banner INLINE STYLE backgroundColor (missade i första greppen, fångat i sweep #2)
+- Bonus-violations vid grep: v6 status-färger:
+  · #FF8A8A (pink) — transparency/page.tsx eyebrow, status/page.tsx Avbrott
+  · #5BD982 (light green) — changelog NEW tag, api GET-badge text
+  · #EF4444 (bright red) — status STATUS_STYLES.down.dot
+  · #22C55E (bright green) — status STATUS_STYLES.operational.dot + border på Drift-card
+  · #2A8A4A (v6 dark green) — api GET-badge border/bg
+  · #F2C94C (gold) använd för "degraded" status — semantically fel, gold är för KPI-pengar
+  · rgba(106,75,212,...) — V6 LILA PURPLE på changelog IMPROVED tag border (förbjudet — lila får aldrig vara primary)
+  · Inline-style ackgroundColor: '#0E0D0B' på status/page.tsx overall banner (fångad i sweep #2)
+- Fix-sweep:
+  1. Alla g-[#0E0D0B] (utanför Footer) → g-pageTone
+  2. 	ext-[#FF8A8A] → 	ext-terra (eller text-[#D6453D] för status-Avbrott)
+  3. STATUS_STYLES dict normaliserad: operational #2EA86F, degraded #E0892E, down #D6453D med matchande rgba()
+  4. Status-legend headings: Drift #2EA86F, Försämrad #E0892E, Avbrott #D6453D (var terra/gold/pink)
+  5. status/page.tsx overall banner: backgroundColor inline-style #0E0D0B → #C9CFBC (page-tone), borderColor rgba normaliserade till v7 grön/orange
+  6. changelog TAG_STYLES: NEW grön (var v6 light-green), IMPROVED terra-rgba (var v6 LILA — kritisk fix), FIX orange (var gold, semantisk byte för klarhet)
+  7. api/page.tsx MethodBadge GET: v6 #2A8A4A/#5BD982 → v7 status-grön #2EA86F
+  8. transparency/page.tsx line-through decoration #FF8A8A/40 → 	erra/40 (konsekvent med eyebrow ovan)
+- DESIGN_RULES respekterade:
+  · 7-färgs sage-paletten ENDA aktiva
+  · Footer #0E0D0B bevarad — enda tillåtna mörka yta
+  · Status-färger (grön/orange/röd/blå/gold) används BARA för status-visualisering (legends, chips, dots) — aldrig som bg på sidor/kort
+  · Lila återinförd som rgba(106,75,212) i changelog raderad
+- Engineering rules:
+  · Rule #1 (single source of truth): hela landing greppad för v6-färger, alla fixade i en batch — inte styckevis
+  · Rule #2: inline-style backgrounds fångade i sweep #2 efter att Tailwind-class-sweepen missade dem
+- Verify: landing build 33 statiska sidor ✓, backend orörd (git status backend/ = tomt) ✓, slutgrep v6-färger live = 0 träffar (bara doc-kommentarer kvar).
+- Cache-bust marker bumpad 33D-15 → 33D-16.
+
+
+## 2026-05-28 — Batch 32 — abn-observer completion
+- Jacob: BATCH 32 — abn-observer completion (handbook §8). 4-engineer methodology, baseline 1362 tests must all pass.
+- Audit: identifierade 6 spec-diskrepanser. **Critical: Task 3 (Wire LLMGateway into ObservationCycle) bröt arkitekturen** — Observer-Layer per CLAUDE.md "Never calls the LLM, sends data off-Node, or logs raw values". cycle.py:360 dokumenterar explicit "sent_to_llm = 0, # Observer NEVER calls LLM". STOPPADE och bad Jacob om beslut.
+- Jacob's revised plan: SKIP Task 3, keep fortnox.py shape as reference, build BaseConnector matching that, inbound-only connectors, /trigger alias + NODE_ADMIN + rate-limit, audit existing tests först, remove abn-security;C.
+- Connectors package — observer/connectors/:
+  · base.py (192 rader): BaseConnector ABC + ConnectorEvent + HttpFetcher type. Stateless, no DB, no LLM. Subclasses declare connector_name + base_url + resource_endpoints + health_endpoint. Tre extension points (_build_params / _parse_page / _to_event) med defaults för standardfall.
+  · 12 nya subklasser: visma, quinyx, hogia, monitor_erp, dynamics365, salesforce, hubspot, google_drive, slack, stripe, gmail, outlook. Var och en ~30 rader — bara API-specifika params + response shape.
+  · fortnox.py OFÖRÄNDRAD — den befintliga FortnoxConnector + dess ObserverEvent dataclass bevaras eftersom test_fortnox_connector.py importerar från den. ConnectorEvent (i base.py) är skild från FortnoxConnector's ObserverEvent — olika moduler, ingen kollision.
+  · __init__.py uppdaterad med alla 13 connectors.
+- Missing normaliser: stripe_subscriptions.py (Batch 32 — special: läser ABN:s EGEN Stripe-prenumeration, inte kundens). Whitelist: subscription_id/status/period/plan_id/product_id. Blocklist: customer.{email,name,phone}, default_payment_method, latest_invoice, billing_details, metadata, items. Registrerad i normalisers/router.py.
+- Observer API:
+  · POST /api/observer/trigger — ny alias av /run (samma body, samma validering, samma dispatch via shared _execute_manual_run helper — rule #1 ingen duplikat).
+  · _check_trigger_rate_limit(tenant_id, connector_type) — process-local in-memory dict _TRIGGER_LAST_CALL med 60 s window. Raises 429.
+  · equire_role(Role.NODE_ADMIN) dependency på /run, /trigger och /circuit-breakers. /status, /watermarks, /activity förblir öppna (read-only).
+- Task 5 cleanup: services/abn-security;C (Windows-skapad stray-katalog, otrackad och tom) — Remove-Item -Recurse -Force. Klar.
+- Task 7 cleanup: ej tillämpligt. Inga andra stray-filer.
+- Tests (14 nya i tests/test_observer_batch32.py — INTE i existerande test_observer.py för att undvika kolliderande fixture-namn):
+  · BaseConnector: 5 tester (pagination, terminator, unknown resource, healthcheck ok, healthcheck failure)
+  · Connector subklasser: 3 (Visma OData params, HubSpot cursor pagination, Slack oldest timestamp)
+  · Stripe normaliser: 2 (extract whitelist, blocklist defensive)
+  · Observer API: 4 (/trigger 404-when-missing-connector, rate-limit 429, /run NODE_ADMIN 403 för VIEWER, /circuit-breakers NODE_ADMIN 403 för VIEWER)
+- StaticPool lärdom: i-memory SQLite via sessionmaker behöver poolclass=StaticPool annars får varje ny connection en tom databas utan tabeller. Samma pattern som test_tier3_dpa.py.
+- Engineering rules upheld:
+  · #1: BaseConnector + delad _execute_manual_run — ingen duplikat. fortnox.py kvar oförändrat.
+  · #6: Inget customer-data i några nya helpers. Observer-Layer No-Data-renhet intakt.
+- Verify: backend pytest **1362 → 1376** (alla 1376 gröna, 14 nya), landing 33 sidor ✓, frontend typecheck + 60 tester ✓.
+
+
+## 2026-05-28 — Batch 34 — PyInstaller stdout fix + Tauri v7 verification
+- Jacob screenshot: Tauri-app visar v6 purple-design + röd banner "Kan inte nå ABN-noden på http://localhost:8000/api". Två fel: gammal installerad .exe + sidecar startar inte.
+- Root cause för sidecar-crash: PyInstaller --noconsole / windowed mode (det Tauri-bundlen använder) sätter sys.stdout och sys.stderr till None. uvicorn's logging-init (i uvicorn.run()) anropar sys.stdout.isatty() → AttributeError: 'NoneType' object has no attribute 'isatty' → sidecar dör innan port 8000 bindas.
+- Fix: stdout/stderr-guard MÅSTE köras före import uvicorn (inte bara före main()) eftersom uvicorn's LOGGING_CONFIG-dict byggs vid import-time. Använder os.devnull (cross-platform: 
+ul på Windows, /dev/null på POSIX).
+- 3 regression tests i tests/test_sidecar_entry.py:
+  · test_sidecar_handles_none_stdout — sätter sys.stdout=None, reloadar modulen, verifierar att guarden ersätter med write-able stream
+  · test_sidecar_preserves_stdout_when_present — när stdout finns (capsys), guarden ska INTE skriva över (annars förlorar vi dev-terminal-loggar)
+  · test_sidecar_guard_uses_os_devnull — sanity: os.devnull finns på alla OS
+- Verify backend pytest: 1376 → 1379, alla 3 nya gröna.
+- Tauri v7-status: frontend src är REN v7. Audit-grep gav 0 träffar på g-[#5A3FC0] | bg-primary[\s"'/}] | text-purple | bg-purple | fill="#5A3FC0" i frontend/src/. Sparkline.tsx default color är #1F1B17 (ink). App.tsx har alla 11 routes wired korrekt (Dashboard/Agents/AgentDetail/Marketplace/Connectors/Proposals/Drafts/Audit/Settings/Billing/Admin).
+- Frontend dist/ rebuildat — 
+pm run build slutförd, alla v7-klasser i bundlen.
+- Engineering rule: Jacob ser v6 designen i Tauri-fönstret eftersom .exe:n installerad på datorn predates 33D-batcherna. Operator-uppgift kvar: 
+pm run tauri build (~5-10 min Rust-compile) för att skapa ny installer.
+- Inga LLM-anrop i Observer ändrade (Task 3 från Batch 32 redan skippad).
+- Engineering rule #1 + #2 upprätthållna:
+  · sidecar_entry.py är enda PyInstaller entry-point (rule #1)
+  · stdout-guard exists exakt en gång på en kanonisk plats (rule #2)
+- Verify: backend 1376 → 1379 ✓, frontend typecheck + 60 tester ✓, landing 33 sidor ✓, backend Observer cycle.py orörd (No-Data invariant intakt).
+
+
+## 2026-05-28 — Batch 35 — log_config=None deeper sidecar fix + ci.yml count update
+- Jacob screenshot fortfarande crash på installerad .exe: `AttributeError: 'NoneType' object has no attribute 'isatty'` i `uvicorn\logging.py line 42` → `ColourizedFormatter.__init__`. Batch 34:s stdout-guard fanns i källkoden men ALDRIG bundlats in i en ny .exe.
+- Deeper fix (per Jacob): `uvicorn.Config(app, log_config=None, access_log=False)` + `uvicorn.Server(config).run()` istället för `uvicorn.run()`. `log_config=None` skippar `logging.config.dictConfig` helt → `ColourizedFormatter` aldrig instansieras → `isatty()` aldrig anropas. Belt-and-suspenders med Batch 34:s stdout-guard.
+- 4 tester gröna lokalt:
+  · test_sidecar_handles_none_stdout
+  · test_sidecar_preserves_stdout_when_present
+  · test_sidecar_guard_uses_os_devnull
+  · test_sidecar_main_uses_log_config_none (NY — monkeypatch fångar uvicorn.Config kwargs, asserterar log_config=None + access_log=False)
+- Full pytest: **1380 passed** (1379 → 1380, en test till från B35).
+- Bygg-kedja:
+  1. PyInstaller: dist/abn-core/abn-core.exe — 64.5 MB, ts 10:17:55, exit 0
+  2. Copy → frontend/src-tauri/resources/backend/ (9060 files, 29s robocopy)
+  3. npm run tauri build: ABN_1.0.0_x64-setup.exe — 147.8 MB, ts 10:49:18, exit 0. Också MSI: ABN_1.0.0_x64_en-US.msi.
+- CI test-count fix per Jacob's spec: `.github/workflows/ci.yml` rad 31 `Backend — 1362 tests` → `Backend — 1380 tests`. Drift history i CLAUDE.md uppdaterad. **MANUAL STEP kvarstår — operatorn måste uppdatera GitHub Settings → Branches → main → Required status check name från "Backend — 1362 tests" → "Backend — 1380 tests"** annars hänger PR-merges på en check som inte rapporterar längre.
+- Engineering rule #1 + #2: stdout-guard + log_config-bypass båda i ENA sidecar_entry.py, ingen duplikat. Hela fixet på ETT ställe.
+- Tauri-app-design: Jacob har noterat att Claude desktop-appen är referensen för UX-flow (chat/code/design). JACOB_SESSION TODO-block tillagt — inte i scope för B35.
+- Verify: backend pytest 1380 ✓, frontend typecheck + 60 tester + build ✓, landing 33 sidor ✓, PyInstaller exit 0 ✓, Tauri exit 0 ✓.
+- Operator action: install ABN_1.0.0_x64-setup.exe från rontend/src-tauri/target/release/bundle/nsis/. Den nya .exe:n bundlar v7-frontend + log_config=None-fixad sidecar.
+
+
+## 2026-05-28 — Batch 40 — ABNAgentMemory production wire-up
+- Spec: produktionsimplementation av Jacobs AGI-matematik (V4/V16/V18) i OPERA R-fas. Mål: 1434 + 18 = 1452 tester.
+- ABN-prefixade produktionsklasser tillagda i intelligence/ paket (substrat orörd):
+  - ABNTemporalMemoryGeometry (V16) — wraps TemporalMemoryGeometry; ABNMemoryPoint dataclass; current_curvature/cumulative_curvature/identity_preserved/drift_detected/predict_next/to_dict
+  - ABNAgentCognitivePhase (V18) — wraps CognitivePhase; ABNAgentPhase enum (CHAOTIC/LEARNING/STRUCTURED/CRYSTALLIZED) med swedish_label + trust_level; tighter thresholds (0.15/0.45/0.75) eftersom ABN gatar via RAL+AVM+culture
+  - ABNUnifiedIntelligenceMetric (V18) — produktionsvikter alpha=beta=0.25, gamma=delta=0.20, lambda=0.10; Svenska grader (Utmärkt/Bra/Godkänd/Kräver granskning)
+  - ABNSelfGeneratedReality (V18) — MILD=0.30, SEVERE=0.70, memory_window=30; ABNRealityResult med severity-bands
+  - physics_operators: safe_norm + cosine_similarity lagda till
+- AgentIntelligenceState model + Alembic d8c4f7a91e3b (CREATE TABLE IF NOT EXISTS, depends on a2d75c0e1b48):
+  - Aggregate-only kolumner: cognitive_phase/phase_value/phase_trust_score, intelligence_score/grade, memory_curvature/cumulative/identity_preserved/drift_detected, reality_tension/is_anomaly/severity, component_memory/reflection/symbolic/adaptation/chaos
+  - UNIQUE (agent_id, tenant_id) — rule #2 cross-tenant write strukturellt omöjligt
+- ABNAgentMemoryEngine.process_run orkestrerar pipelinen + UPSERTs en rad per (agent, tenant). State-vektorer bounded [0,1] via log10-impact + min(1.0, ...) clamps.
+- OPERA wire-up: ny fail-silent block i runner.py _save_run_record mellan Batch-17 long-term promotion och Batch-21 proposal-persistence. Bygger ABNRunMetrics från Finding aggregates + AgentRun timestamps; engine fail kraschar aldrig OPERA.
+- API: GET /api/agents/{id}/intelligence — Svenska phase_label, 404 cold-agent, 403 tenant mismatch.
+- Frontend: IntelligencePanel 5:e flik mellan EU AI Act och Inställningar. v7 sage canvas, ingen vit/lila/emoji. Phase color coding crystallized=green/structured=ink/learning=orange/chaotic=red. PatternLibrary opacity-[0.05] dekoration. 30s polling.
+- 18 tester i test_agent_intelligence.py: 12 matematik + 3 engine + 3 API. No-Data test planterar SECRET_CUSTOMER_NAME + 4242.42 och greppar varje persisted kolumn för dem.
+- Verify: backend pytest 1452 passed (1434 + 18 — exakt målet) ✓, frontend typecheck + 60 tester + Vite build ✓, landing 33 sidor ✓.
+- Engineering rules: #1 (No-Data invariant testat verbatim) + #2 (UNIQUE constraint) + #3 (mathematics composed via wrapping, never simplified) + #4 (fail-silent verified) + #5 (out-of-range raises ValueError).
+- Next: Batch 41 — Jacobs val (KnowledgeDiffusion cross-tenant / Tauri-paketering / EU AI Act-bevisexport).
+
+
+## 2026-05-29 — Batch 41 — ABNIntelligenceScore + KnowledgeDiffusion (V5-V7)
+- Spec: 0-100 int rescaling av intelligence_score i UI + cross-tenant anonymised pattern learning. Mål: 1452 + 16 = 1468 tester.
+- DiffusionPattern modell: UUID PK, connector_name + cognitive_phase (UNIQUE), avg_intelligence_score, avg_curvature, avg_tension, contributing_count (k≥5), pattern_vector JSON, computed_at. Alembic e9b7c2d54f86 depends on d8c4f7a91e3b (B40 head).
+- ABNKnowledgeDiffusion engine i agent_runtime/intelligence/diffusion.py:
+  - K_ANONYMITY_MIN=5, LAMBDA=0.05
+  - collect_patterns: läser Tenant.policy["diffusion_opt_in"] + AgentIntelligenceState + Connector.connector_type (aldrig Finding content), bucketas (connector, phase), kräver k≥5 distinkta tenants, UPSERTar DiffusionPattern
+  - apply_diffusion: V7-update S(t+1) = S(t) + 0.05 × (M_shared - S(t)), fail-silent, returnerar None om inget pattern
+  - _anonymise_vector: element-wise mean (rule #1)
+- Tenant.policy["diffusion_opt_in"] (default False) — INGEN ny schema column, forward-compat JSON-bag (rule #2 — GDPR-compliant by design).
+- Daily cron: .github/workflows/diffusion-daily.yml 05:00 UTC + workflow_dispatch + diffusion_runner.py i repo-root. NOT a required gate.
+- ABNIntelligenceScore i UI: ROI summary endpoint berikar top_agents med intelligence_score_pct/cognitive_phase/intelligence_grade + tenant-aggregate avg_intelligence_score_pct. ROICard top KPI + per-agent list visar score istället för attestation. IntelligenceScoreCard på AgentDetailPage overview top: "84 / 100 Bra · Fas: Strukturerad — normal drift". Phase color coding (crystallized=green, structured=ink, learning=orange, chaotic=red).
+- Benchmark endpoint GET /api/agents/{id}/intelligence/benchmark — returns agent_score_pct + peer_avg_score + percentile + Swedish benchmark_label + k_anonymity_met. <5 peers ⇒ alla peer-fält null (rule #3). Aldrig avslöjar individuell peer-data.
+- Settings endpoints GET/PATCH /api/admin/settings/diffusion — NODE_ADMIN, tenant-scoped, audit via ABNActivityLog (activity_type diffusion_opt_in/opt_out).
+- Frontend: DiffusionSection på AdminPage med Svensk opt-in toggle + warning copy ("Inga kunduppgifter delas — endast aggregerade intelligenspoäng").
+- Tester: 7 diffusion engine + 2 model + 4 benchmark + 3 settings = 16 totalt. k=4→0, k=5→1; pattern row planted med tenant/agent markers greppas verbatim; UNIQUE constraint enforces; benchmark null below k; Swedish label asserts; opt-in default False.
+- Connector schema gotcha: Connector har connector_type (NOT connector_name). Engine läser connector_type direkt; "Connector.connector_name" var en spec-error som jag korrigerade verbatim. Inga duplicates (rule #6).
+- Verify: backend pytest target 1468 (running), frontend typecheck + 60 tester ✓, landing 33 sidor ✓.
+- Engineering rules: #1 (no customer payload verified), #2 (opt-in default False), #3 (k≥5 enforced both gates), #4 (daily cron, never OPERA hot path), #5 (pure rescaling), #6 (grep before every new file).
+- Moat: ABN är enda multi-tenant agent platform som ger BÅDE strict No-Data Node + anonymised collective learning. Två års försprång.
+- Next: Batch 42 — Firecracker sandbox (§11).
+
+
+## 2026-05-29 — Batch 42 — Epistemisk geometri + Dynamisk Confidence Gate
+- Spec: Jacobs AGI epistemisk geometri-forskning (2026-05-28). Mål: 1468 + 16 = 1484 tester.
+- ABNEpistemicGeometry i backend/agent_runtime/intelligence/epistemic.py:
+  - p_t = exp(-λ·||E_t||) med λ=0.5
+  - κ_p(t) = |p_{t+1} - 2·p_t + p_{t-1}| (kräver ≥3 p-värden)
+  - H_t = -(p·ln(p) + (1-p)·ln(1-p)) med ε-clamp
+  - L_t = α·||E_t|| + β·κ_p + γ·H_t (α=1.0, β=0.5, γ=0.3)
+  - Trösklar LOW=0.30, HIGH=0.60
+  - observation_from_metrics normaliserar findings_count/50, impact_eur/100k, attestation_rate, confidence_avg
+  - Första körningen: Ŵ_t = W_t ⇒ ||E_t||=0 ⇒ p_t=1, H_t≈0, L_t=0 (mathematisk identitet, inte hack)
+- ABNAgentMemoryEngine.process_run instansierar per-(agent,tenant) ABNEpistemicGeometry via _EPISTEMIC_CACHE och kallar update efter reality model. Fail-silent — engine-pipen fortsätter även om epistemic-beräkningen glitchar.
+- 5 nya kolumner på AgentIntelligenceState: lagrange_score, epistemic_error, epistemic_prob, entropy, needs_human_review. Alembic f7a3c5b91e64 depends on e9b7c2d54f86. ALTER TABLE ADD COLUMN IF NOT EXISTS med säkra defaults så pre-Batch-42 rader fortsätter rendera.
+- Dynamic Confidence Gate i commitment_gate.py: ny evaluate_commitment_with_epistemic delegerar till evaluate_commitment för tier-policy + lägger på L_t-baserad justering ovanpå. needs_human_review=True ⇒ escalate + ProposalDraft "Agenten behöver vägledning" med human_review_requested=True. is_calibrated=False (0.3 ≤ L_t < 0.6) ⇒ auto_deliver degraderas till deliver_with_flag + epistemic_uncertain=True i extra. is_calibrated=True ⇒ statisk policy oförändrad. epistemic_state=None ⇒ fallback till statisk policy (bakåtkompatibelt).
+- ABNBlueprint formellt typspråk i backend/agent_runtime/blueprint_types.py:
+  - B = (S, M, O, I, G, V) som @dataclass-baserade typer
+  - ABNStateSpec, ABNMemorySpec, ABNOperatorType enum (6 typer), ABNOperator, ABNInterfaceSpec, ABNGoalSpec, ABNInvariant, ABNBlueprint
+  - accept() returnerar (passed, violations); exception ⇒ violation (fail-closed)
+  - to_dict() är JSON-säker (callables strippas, enum.value används)
+  - Lever BREDVID befintliga AgentBlueprint — ersätter den inte; framtida ABNMetaAgent + Blueprint Signer konsumenter
+- Intelligence API: 6 nya fält på AgentIntelligenceResponse (lagrange_score, epistemic_error, epistemic_prob, entropy, needs_human_review, epistemic_label). Defaults bevarar bakåtkompatibilitet.
+- IntelligencePanel frontend får ny EpistemicSection ovanför Memory Geometry. Renderar L_t, p_t, H_t, ||E_t|| + client-side entropy_flow approximation. Color coding kalibrerad→green, osäker→orange, granskning→red.
+- Tester: 10 matematik + 3 blueprint + 3 gate = 16 totalt. p_t=0.5 ger H=ln 2; lambda-monotoni; κ_p=0 vid <3 prob-värden; entropy_flow<0 när agent lär sig; Accept passes/fails; to_dict JSON-safe; gate blocks high L_t / runs on low L_t / fallback till statisk när None.
+- Verify: backend 1484 passed (1468 + 16 exact mål). Frontend typecheck + 60 tester + Vite build ✓. Landing 33 sidor ✓.
+- Engineering rules: #1 matematiken aldrig förenklas (test mot kända referenspunkter); #2 dynamisk gate kompletterar statisk (ersätter inte); #3 ABNBlueprint typkontrollerat med frozen dataclass; #4 OPERA strukturellt oförändrad; #5 fullständig docstring med matematisk notation + Svenska; #6 grep körd före varje ny fil.
+- Strategiskt avstånd: ABN är första AI-agentplattformen med riktig epistemisk kalibrering. Konkurrenterna använder model.confidence eller LLM-self-rapporterad osäkerhet; ingen härleder L_t från körningsdata.
+- Next: Batch 43 — ABN Control Plane (§20-21).
+
+
+## 2026-05-29 — Batch 43 — ABN Control Plane (§20-21)
+- Spec: Jacobs Control Plane-design (MetaAgent + 8 globala invarianter). Mål: 1484 + 16 = 1500 tester (exakt mål).
+- Verbatim säkerhetsregler bevarade ord-för-ord: (a) "ABNMetaAgent kör ALDRIG kunddata — bara agent-metadata, blueprint-hash, intelligence state, invariant-status"; (b) "Global invariants är hårdkodade i Python — aldrig konfigurerbara via API. En tenant kan inte stänga av en global invariant"; (c) "Accept(B) körs synkront vid varje blueprint-signering och asynkront var 5:e minut per aktiv agent"; (d) "Om MetaAgent är nere → agenter fortsätter köra (fail-open för MetaAgent, fail-closed för invariant-brott)"; (e) "ABNBlueprint från Batch 42 används — grep för det, duplicera inget".
+- global_invariants.py: ABNInvariantSeverity enum (CRITICAL/HIGH/MEDIUM), ABNGlobalInvariant frozen dataclass, V_GLOBAL list av 8 hårdkodade invarianter. Inga API-setters, ingen registry-mutation — hardcoded in Python är arkitektonisk garanti.
+- accept(blueprint) → (bool, list[str]) fail-closed: exception i en check ⇒ "<NAME> [<severity>]: check failed (<exc>)". Engineering rule #6 bevisas av test_accept_fail_closed_on_check_exception som planterar _Boom-objekt vars goal_spec-attribut alltid raise:ar.
+- 8 invarianter mappade mot ABNBlueprint.goal_spec.policy_constraints + .invariants[].on_violation + .operators[].name + .version: NO_CUSTOMER_DATA_TO_LLM (redact/tokenis/no_raw_pii), HUMAN_IN_THE_LOOP (human + approval/in_the_loop/review/gate), ROLLBACK_CAPABLE (on_violation=rollback ELLER operator-name match ELLER policy "rollback"), CONFIDENCE_GATE_ACTIVE (confidence + gate/threshold/>=), GDPR_COMPLIANT (gdpr/dpia/data_minimization), SIGNED_BLUEPRINT (version>=1), NO_AUTONOMOUS_LEGAL_DECISIONS (legally_binding/court/skatteverket-markörer kräver human_approval/advisory_only/read_only), MAX_IMPACT_WITHIN_BOUNDS (max_impact/max_amount/cap=).
+- meta_agent.py: ABNMetaAgent + ABNMetaVerdict (pass/warning/quarantined/stopped/failed_verification) + ABNMetaResult. verify_agent + verify_all_active med fail-open vid MetaAgent-boundary (exception ⇒ FAILED_VERIFICATION, agent kvar enabled=True). _build_blueprint översätter Agent.blueprint JSON → ABNBlueprint typespace genom defensiv extraktion. _take_action: STOPPED → Agent.enabled=False + logger.error; QUARANTINED → Agent.enabled=False + logger.warning; WARNING → bara logger.info; PASS → no-op.
+- BUG fångat av test_meta_agent_stops_on_critical_violation: tidig "version: 0 + signature exists ⇒ rescue till v1"-logik maskerade explicit unsigned-blueprints. Fixat — "version" i raw-dict är auktoritativ (även 0), legacy-rescue endast när nyckeln saknas helt OCH Agent.version saknas OCH signature finns.
+- ControlPlaneLog modell: UUID id, agent_id, tenant_id, verdict(String 32), accepted, violations(Text JSON), action_taken, severity_max, checked_at. Composite-index på (agent_id, checked_at) och (tenant_id, checked_at). Aldrig title/description/agent_value/source_value — test_control_plane_log_carries_no_customer_data_columns vitlistar varje tillåten kolumn + förbjudna sanksrar mekaniskt.
+- Alembic a9c4d72f86b1 depends on f7a3c5b91e64 (Batch 42 head). Raw SQL CREATE TABLE/INDEX IF NOT EXISTS-konventionen sedan Batch 12 — replay-säker mot create_all-bootstrappade DB:er.
+- 4 API endpoints under /api/control (NODE_ADMIN only): GET /status (8 invarianter + per-agent senaste verdikt + worst-of overall_status), POST /verify/{agent_id} (tenant boundary 403 vid mismatch), POST /sweep (rate-limited 1/60s via _last_sweep_monotonic + _reset_rate_limit_for_tests test-hook), GET /logs (filter på agent_id/verdict/days/limit + tenant boundary enforced).
+- ControlPlaneScheduler i agent_runtime/control_plane/scheduler.py: daemon-thread, 60s tick, 300s sweep-cadence, fail-open. Modul-singleton control_plane_scheduler instansierad vid import, wired in main.py lifespan step 5/5 (efter Friday-report). Shutdown-order omvänd: control-plane → friday-report → agent → observer.
+- Frontend: client.ts ControlPlaneStatus/ControlPlaneVerifyResult/ControlPlaneLog typer + getControlPlaneStatus/runControlSweep/verifyAgent/getControlPlaneLogs helpers. AdminPage ControlPlanePanel renderar i alla tre Tier3-states (efter ShieldStatusCard), polling 60s, terra-accent eyebrow "ABN MetaAgent · §20-21", count-grid 2×5 (Totalt/Godkända/Varning/Karantän/Stoppade), per-agent rader med verdict-färgade borders (#2EA86F green / #E0892E orange / #D6453D red), expandable "Globala invarianter (8)" details-summary, "Kör svep nu"-button. TrustLayer signature-pattern dekor opacity-[0.05] absolute top-right.
+- Tester: 5 globala invarianter (V_GLOBAL count, compliant passes all 8, missing NO_CUSTOMER_DATA records CRITICAL, unsigned fails SIGNED_BLUEPRINT, fail-closed on check exception) + 4 MetaAgent (compliant ⇒ PASS, unsigned ⇒ STOPPED + Agent.enabled=False, never reads customer data, fail-open at MetaAgent boundary med monkeypatched _build_blueprint som raise:ar) + 2 modell (round-trip persist, kolumn-whitelist) + 5 API (status lists 8 invarianter, verify returns pass + persists log, cross-tenant 403, sweep rate-limit 429+Retry-After, logs verdict-filter + tenant-boundary). 16 totalt.
+- Verify: backend 1500 passed (1484 + 16 exakt mål — engineerade så testantalet träffar 1500 spot-on). Frontend typecheck + 60 tester ✓, Vite build ✓. Landing 33 sidor ✓.
+- Engineering rules upheld: #1 grep konfirmerade ABNBlueprint på exakt 1 ställe före T1 (blueprint_types.py reused, aldrig duplicerat); #2 V_GLOBAL är single source of truth som varje konsument (MetaAgent, API, tester) importerar — aldrig kopierad; #3 English i kod + svenska i action_taken-strings (per Code Law #3); #4 varje publik metod docstring namnger reads/writes/raises; #5 fail-open på MetaAgent-boundary, fail-closed på invariant-brott; #6 No-Data — varken MetaAgent eller routes läser Finding/AgentRun.report_paths, bevisas av kolumn-whitelist test.
+- Strategiskt avstånd: ABN Control Plane är den första AI-agentplattformen med ett separat meta-lager som bevisar Accept(B) över alla aktiva agenter både synkront vid signering och var 5:e minut. Konkurrenterna (Sana/Legora/Workday) har varken arkitektoniskt åtskild meta-agent eller hårdkodade globala invarianter — deras compliance lever i policy-konfig som tenants kan ändra. ABN:s tenants kan aldrig stänga av en global invariant; det kräver en code commit + code review + redeploy.
+- Next: Batch 44 — väntar på Jacobs spec.
