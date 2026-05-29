@@ -47,11 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch 44 klar — installer + updater
+Status: Batch 45a pågår — abn-security start_sandbox egress-vertikal byggd, väntar på säkerhetsgranskning + CI
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 1518 tester efter merge
-Senast: ABNInstaller + ABNUpdater + signatur-verifiering + atomisk rollback
-Nästa: Batch 45 — Firecracker sandbox (§11)
+Main-branch: 1518 tester (Batch 44); 45a ligger i öppen PR, ej mergad
+Senast: internal/firewall (nftables egress whitelist) + docker_dev-drivare + forbidden-egress integrationstest + THREAT_MODEL.md
+Nästa: Batch 45b — writeguard/adaptersproxy + run-step/stop/killswitch i sandbox-vertikalen
+VIKTIGT: PR öppen, INTE mergad — §32.2 kräver Jacobs säkerhetsgranskning före merge; Go ej kompilerat lokalt (ingen toolchain) → CI är grindvakten
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.

@@ -11,6 +11,33 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-29 — Batch 45a: abn-security start_sandbox egress vertical (§11)
+
+Jacob (Architect): "PROCEED to Phase 2" after a mandatory Phase-1 Discovery Report. Standing rule reaffirmed for every future batch: check what's already built, avoid duplication, only add genuine improvements, ignore anything already done or that doesn't fit ABN.
+
+**Discovery Report summary.** `services/abn-security` was already ~80% built: `/sandbox/start` + `/health` + run-step/stop/killswitch/writeguard/verify-blueprint endpoints, policy engine (JSON), HMAC-SHA256 verifiers (identity + blueprint), audit logger, MockDriver + Firecracker stub. **Net-missing for the §11 start_sandbox vertical:** the host-side egress whitelist (`internal/firewall` — the core of §11.2), a real driver that can prove a block, the forbidden-egress integration test, THREAT_MODEL.md, and a promoted CI gate. Go is NOT installed on this machine → cannot compile/test/measure coverage locally; CI is the gate (the §32.2 known-issue pattern).
+
+**Architect decisions (locked vs derived):**
+- **D5 OVERRIDDEN (derived from Discovery):** policies stay **JSON**, not YAML. The module's go.mod is deliberately stdlib-only ("zero supply chain in the most security-critical service"); YAML needs a 3rd-party dep. Stdlib-only posture wins.
+- **D1 OVERRIDDEN (derived):** kept the established `Boot/RunStep/Destroy/Kill` Driver interface; **added** `Name()` + `Available()` rather than rewriting to `Start/Stop+ctx`. ctx-threading noted as future cleanup, NOT 45a scope.
+- **D3 (locked):** firewall is greenfield → **nftables**, per-sandbox table `abn_sb_<id>`, applied to the docker bridge veth before the workload runs.
+- **Decision #3 nuance / documented deviation:** "replace MockDriver with a real driver" → I **added** the real `DockerDevDriver` and **kept** MockDriver as the unit-test double. Removing MockDriver would break 14 existing unit tests and force a real Docker daemon into the unit layer. `main.go` now selects docker_dev as the default dev driver (via `SelectDriver`), so the *role* is replaced; the test double stays. (Anti-duplication > literal rename.)
+- **#4 (locked):** JUST NU shape → **6 lines** (Status / Repo-sökväg / Main-branch / Senast / Nästa / VIKTIGT). Updated BOTH the CLAUDE.md rule and the live block. This reverses the Batch-43→44 "5-line, Senast folded into Status" decision per the Architect.
+
+**Built (all new files stdlib-only):** `internal/firewall/egress_filter.go` (+test) — `ParseEndpoint`, `TableName`, pure `BuildScript`, injectable `EgressFilter.Apply/Cleanup`; `internal/sandbox/docker_dev.go` (+test) — real driver, injectable docker runner + egress configurator, fail-closed rollback; `test/integration/forbidden_egress_test.go` — THE proof; `THREAT_MODEL.md` — STRIDE × 6 (VM escape, egress bypass, signature forgery, policy tampering, audit-log injection, shared-kernel side channel).
+
+**Extended, NOT duplicated (anti-duplication evidence, rule #1/#8):**
+- `internal/sandbox/sandbox.go` Driver interface — extended with `Name()`/`Available()` + new `SelectDriver` helper.
+- `MockDriver` / `FirecrackerDriver` — gained `Name()`/`Available()` (firecracker `Available()=false`; fail-closed until 45c).
+- `internal/api/server.go` — `health` now emits `drivers_available[]`; new `WithDrivers` builder (NewServer signature unchanged).
+- `cmd/abn-security/main.go` — driver wiring now selects docker_dev→firecracker→mock via `SelectDriver`; passes candidates to `WithDrivers`.
+- `internal/firewall` reuses the same HMAC/stdlib posture; no parallel firewall pattern introduced (none existed — only a comment in firecracker.go).
+- `.github/workflows/ci.yml` — the existing advisory `security-go` job was **promoted** (not duplicated) to required, with `-coverprofile` + a ≥95% gate over `./internal/...` and an integration step.
+
+**Forbidden-egress test outcome:** cannot be run locally (no Go, no Docker, Windows). The test self-skips unless docker + root + nft are all present; in unprivileged CI it compiles + runs + skips the live block, and a best-effort `continue-on-error` CI step attempts the real `sudo nft` enforcement. A leak (reaching example.com) fails the test hard. Coverage gate measures `./internal/...` only — `cmd/` wiring and the build-tagged firecracker are intentionally outside the unit-measured set.
+
+**Caveat (honest):** no Go toolchain here, so the code is unverified-locally — `go vet`/`build`/`test`/coverage are CI's job. PR stays OPEN; §32.2 requires Jacob's security-engineer sign-off (Discovery Report + THREAT_MODEL + forbidden-egress output + coverage) before any merge. Do NOT auto-merge.
+
 ## 2026-05-28 — ABN Code Law + AGI Mathematics
 
 Jacob: "Det här är en MEMORY UPDATE prompt. Bygg ingenting nytt på feature-sidan — uppdatera bara CLAUDE.md + DESIGN_RULES.md med de permanenta lagarna nedan + skapa intelligence-paketet med Jacobs AGI-matematik från agi.docx (V1–V18). Detta ÄR konkurrensfördelen."
