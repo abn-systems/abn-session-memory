@@ -11,6 +11,10 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-29 — Batch 45a merged + branch cleanup
+
+Jacob merged **PR #5** into `main` (mergedAt 2026-05-29T17:04:02Z) — the §32.2 security sign-off. `main` HEAD = `661f8e3 Merge pull request #5`. Standard post-merge cleanup: `git checkout main && git pull` (fast-forward `de11cfd..661f8e3`), then deleted the feature branch locally (`git branch -D`) and on origin (`git push origin --delete`). Verified PR #5 state = MERGED via `gh pr view 5` BEFORE deleting — deleting an unmerged branch would have closed the PR and orphaned the 45a commits, so the merge-state check is the safety gate. Backend untouched throughout (45a was all `services/abn-security` + docs + ci.yml). Session docs flipped from "in open PR, not merged" → merged: JUST NU block + the CLAUDE.md 45a section header/status. **Manual step still open:** add `abn-security — Go build & test (45a)` to GitHub branch-protection required checks.
+
 ## 2026-05-29 — Batch 45a: abn-security start_sandbox egress vertical (§11)
 
 Jacob (Architect): "PROCEED to Phase 2" after a mandatory Phase-1 Discovery Report. Standing rule reaffirmed for every future batch: check what's already built, avoid duplication, only add genuine improvements, ignore anything already done or that doesn't fit ABN.

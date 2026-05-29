@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch 45a pågår — abn-security start_sandbox egress-vertikal byggd, väntar på säkerhetsgranskning + CI
+Status: Batch 45a klar — abn-security start_sandbox egress-vertikal mergad till main via PR #5
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 1518 tester (Batch 44); 45a ligger i öppen PR, ej mergad
-Senast: internal/firewall (nftables egress whitelist) + docker_dev-drivare + forbidden-egress integrationstest + THREAT_MODEL.md
+Main-branch: 661f8e3 = sanning; 1518 backend-tester (oförändrat) + abn-security Go-svit (45a egress-vertikal mergad)
+Senast: internal/firewall (nftables egress whitelist) + docker_dev-drivare + forbidden-egress integrationstest + THREAT_MODEL.md — mergad, branch raderad
 Nästa: Batch 45b — writeguard/adaptersproxy + run-step/stop/killswitch i sandbox-vertikalen
-VIKTIGT: PR öppen, INTE mergad — §32.2 kräver Jacobs säkerhetsgranskning före merge; Go ej kompilerat lokalt (ingen toolchain) → CI är grindvakten
+VIKTIGT: Manuellt steg kvar — lägg till "abn-security — Go build & test (45a)" som required check i GitHub branch protection; Go ej kompilerat lokalt → CI är grindvakten
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
@@ -64,7 +64,7 @@ https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESS
 
 ## How Jacob uses this file
 In any new Claude chat, paste this URL and say "read this":
-https://raw.githubusercontent.com/abn-systems/ABN/main/JACOB_SESSION.md
+https://raw.githubusercontent.com/abn-systems/abn-session-memory/main/JACOB_SESSION.md
 
 ## What is built (as of 2026-05-25)
 - Backend: **1193 tests passing** + abn-security Go suite all-green (V1 baseline 939, then per-batch additions through Batch 22B; full per-batch accounting in the dated entries below), V1 feature-complete; TIER 3 EXECUTE_CHANGE now end-to-end functional (opt-in)
