@@ -52,7 +52,7 @@ Repo-sökväg: C:\Users\Jacob\Downloads\abn
 Main-branch: 661f8e3 = sanning; 1518 backend-tester (oförändrat) + abn-security Go-svit (45a egress-vertikal mergad)
 Senast: internal/firewall (nftables egress whitelist) + docker_dev-drivare + forbidden-egress integrationstest + THREAT_MODEL.md — mergad, branch raderad
 Nästa: Batch 45b — writeguard/adaptersproxy + run-step/stop/killswitch i sandbox-vertikalen
-VIKTIGT: Manuellt steg kvar — lägg till "abn-security — Go build & test (45a)" som required check i GitHub branch protection; Go ej kompilerat lokalt → CI är grindvakten
+VIKTIGT: Guardrails-config PR öppen på chore/guardrails-upgrade (väntar på Jacobs granskning); kvarstår även: lägg till "abn-security — Go build & test (45a)" som required check i GitHub branch protection
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
@@ -349,3 +349,12 @@ Rules:
 - Act as 4 engineers: Architect, Engineer, Reviewer, Optimizer
 - One batch at a time, green build before next (rule #8)
 - After every batch: update this file + CHAT_LOG.md and push to GitHub (see `## Session Management` in CLAUDE.md)
+
+## OPEN ITEMS
+Unfinished sub-tasks / open questions live here (referenced by CLAUDE.md §4.2 PRE-/clear HALT PROTOCOL). Empty = nothing pending.
+- Guardrails-config PR (chore/guardrails-upgrade) awaiting Jacob review — do NOT auto-merge; Jacob checks the 6 verification exit codes + the new CLAUDE.md §4.1/4.2/4.3 + deny[] for false positives before merging.
+- Manual (Jacob, GitHub UI): add "abn-security — Go build & test (45a)" as a required status check in branch protection.
+
+## CHANGES
+Operational-config change log (newest first).
+- guardrails upgrade applied — CLAUDE.md §4.1 continuous-save / §4.2 pre-/clear HALT protocol / §4.3 self-identity anchor; .claude/settings.json deny[] (15 durable-artifact entries) + PreToolUse Bash hook; .claude/hooks/guard.sh (extended BLOCK pattern). Guard verified: 4 BLOCKED (exit 2), 2 passed (exit 0). Config-only, no backend/services/tests/frontend/landing touched, no version bump, no ci.yml change.
