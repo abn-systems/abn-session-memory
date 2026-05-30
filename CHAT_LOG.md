@@ -11,6 +11,25 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-30 — fix: frozen alembic path (Release-Sync blocker #1) + a NEW blocker #2 surfaced
+
+Ran the spawned alembic-fix task. PR #10 had already merged to main (so the branch base has the bundled alembic data + 1.0.1 bumps).
+
+**Found the fix already drafted in the working tree** (from the spawned task): modified `main.py` (uses `build_alembic_config()`), new `core/alembic_config.py`, new `tests/test_sidecar_alembic_path.py`. Anti-duplication: reviewed instead of rewriting. The fix is clean + correct: `alembic_base_dir()` → `sys._MEIPASS` when `sys.frozen` else backend root; `build_alembic_config()` builds a `Config` with an **absolute** `script_location` override (the bare relative `alembic` in the ini is what broke the bundle). 4 tests pin the contract via monkeypatched `sys.frozen`/`sys._MEIPASS`.
+
+**Completed the fix (the shared module's whole point):** the `alembic_config.py` docstring listed `ABNInstaller._init_database` as a caller but it still did `Config("alembic.ini")` — same frozen bug. Wired it to `build_alembic_config()` (preserving its `sqlalchemy.url` override). Now both callers use the single resolver.
+
+**Validation — frozen-path fix WORKS.** Rebuilt `abn-core.exe` + smoke-tested: alembic now RUNS the migration chain inside the bundle (no more `No 'script_location'`). `pytest test_deployment.py + test_sidecar_alembic_path.py` = 22 passed.
+
+**⛔ NEW blocker #2 surfaced by the same smoke-test.** Past the path bug, startup crashes at migration `8f8acda9625d align_schema_drift` (Batch 12). Isolated it in dev (no bundle) — `DATABASE_URL=sqlite:// alembic upgrade head` →
+```
+sqlite3.OperationalError: near "EXISTS": syntax error
+[SQL: ALTER TABLE tenants ADD COLUMN IF NOT EXISTS policy JSONB]
+```
+The migration uses Postgres-only syntax (`ADD COLUMN IF NOT EXISTS`, `JSONB`). The desktop sidecar uses SQLite + `alembic upgrade head` on a fresh DB → can't initialise. The test suite never hits this (it uses `create_all`, not migrations). **Recommended fix (separate scoped PR):** dialect-aware startup — fresh SQLite → `Base.metadata.create_all()` + `alembic stamp head`; Postgres keeps `upgrade head`. **v1.0.1 must NOT be tagged until blocker #2 also lands.** Surfaced to Jacob for the architectural call before implementing.
+
+This PR ships blocker #1 (frozen path) only — correct + validated + exactly the requested deliverable; it does not by itself make the installer boot (blocker #2 remains).
+
 ## 2026-05-29 — Release-Sync: Tauri desktop build pipeline (operational, not a feature batch)
 
 Jacob: the customer-facing download at abnplatform.com/company/download still served the stale, crashing v1.0.0 build (no fresh release was ever cut after the Batch 34/35 sidecar fix + Batch 33D v7 design landed). "fixa det permanent ... lämna aldrig saker oklart eller slarvig." PROCEED — Väg 1 (fix the workflow permanently). **No tag this batch** — the workflow fix must land on main first, then Jacob tags v1.0.1 so the build uses the fixed pipeline.
