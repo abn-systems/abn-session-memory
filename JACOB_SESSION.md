@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch 46 — Augmented Lagrangian mergad till main via PR #9 (PR #5–#9 alla mergade)
+Status: v1.0.1 släppt — första kompletta fungerande installern (PR #10–14, dispatched build)
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: f98d0c6 (= sanning); 1518 backend-tester + abn-security Go-svit
-Senast: PR #9 — augmented Lagrangian (μ-multiplikatorer + penalty-schema), 13 nya tester, 0 regressioner
-Nästa: Release-sync PR öppen (build-release.yml PyInstaller-steg + spec-data + 1.0.1-bumpar)
-VIKTIGT: BLOCKERARE — tagga INTE v1.0.1 förrän separat alembic frozen-path-fix-PR (main.py sys._MEIPASS) landat; smoke-test visade att installern annars kraschar vid start ("No 'script_location'")
+Main-branch: 6190600 — 1518 backend-tester + abn-security Go-svit; build-release.yml dual-dialect + permissions/codesign/AppImage-fix
+Senast: Tauri release-pipeline klar + live install-test (Windows .exe ~130 MB uppladdad till v1.0.1-release)
+Nästa: Frontend Discovery Pass (denna PR) — inventering inför Batch 47, ingen produktionskod
+VIKTIGT: Produktnamnsbeslut — "Andromeda" är kundvänt namn; ABN förblir internt (repo/kod/moduler oförändrade)
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
