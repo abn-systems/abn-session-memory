@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: v1.0.1 släppt — första kompletta fungerande installern (PR #10–14, dispatched build)
+Status: Batch 47 pågår — landing polish (kod-kontrast, hover-dropdowns, footer, mobil); v1.0.1 släppt + Frontend Discovery Pass mergad
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 6190600 — 1518 backend-tester + abn-security Go-svit; build-release.yml dual-dialect + permissions/codesign/AppImage-fix
-Senast: Tauri release-pipeline klar + live install-test (Windows .exe ~130 MB uppladdad till v1.0.1-release)
-Nästa: Frontend Discovery Pass (denna PR) — inventering inför Batch 47, ingen produktionskod
-VIKTIGT: Produktnamnsbeslut — "Andromeda" är kundvänt namn; ABN förblir internt (repo/kod/moduler oförändrade)
+Main-branch: 1980e9a — 1518 backend-tester + abn-security Go-svit; docs/research/frontend-pass-1.md mergad (PR #15)
+Senast: Frontend Discovery Pass — 8 sektioner inventerade (kund-rename-yta, i18n, design-patterns, app-redesign)
+Nästa: Batch 47 — landing polish (4 fixar, ingen rename, ingen Tauri, ingen i18n)
+VIKTIGT: HÅRD GUARD — INGEN rename / INGEN Tauri / INGEN i18n i Batch 47; bara landing-presentation
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
