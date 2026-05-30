@@ -11,6 +11,25 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-30 — feat: permanent dual-dialect migrations (Release-Sync blocker #3, Väg C)
+
+Jacob REJECTED Väg A (fork the desktop init path). Chose **Väg C — permanent dual-dialect support** + an ARCHITECTURE LOCK. Stacked on PR #11 (frozen-path) so the bundle smoke-test reaches the migration step.
+
+**ARCHITECTURE LOCK (CLAUDE.md, new top NON-NEGOTIABLE section).** ABN runs on TWO databases by design: SQLite = desktop installer (Tauri sidecar `.exe`), Postgres = server/Hetzner. Neither removable without Jacob signoff (same bar as "never delete backend/"). Every migration MUST work on both dialects; CI enforces it.
+
+**Audit (all 24 migrations).** PG-only offenders: **5** with `ADD COLUMN IF NOT EXISTS` (8f8acda9625d/Batch 12, f7a3c5b91e64/42, a4e1d28c5f9b/29, b32c7e2ba5e5/22B, 10f575a96ce4/22C) — SQLite syntax error; **1** raw `JSONB` (Batch 12); **6** with bare `SERIAL` PK (05da8d0f9d26, 4b0b88e1b9f7, 7ab8394c998a ×3 tables, e0dde7bb974c, b32c7e2ba5e5, 10f575a96ce4) — SQLite parses SERIAL but inserts get NULL ids (proved empirically). `CREATE TABLE/INDEX IF NOT EXISTS` is portable → left as-is.
+
+**Fixes (semantics identical, now portable):**
+- Batch 12 (the one Jacob named): `op.batch_alter_table` + inspector guard for the Tenant JSON columns; `_JSON = sa.JSON().with_variant(postgresql.JSONB())`; the `drop_constraint` is now Postgres-only (SQLite can't ALTER-drop a constraint; its uniqueness rides on the UNIQUE INDEX). Downgrade made portable too.
+- 5 `ADD COLUMN` migrations → inspector-guarded `op.add_column(sa.Column(...))` with portable types (`sa.false()` boolean default, `sa.text()` numeric defaults, `sa.String/Text/DateTime/Numeric`).
+- 6 `SERIAL` tables → dialect-conditional PK: `INTEGER PRIMARY KEY` (SQLite rowid alias, auto-increments) vs `SERIAL PRIMARY KEY` (Postgres), via an f-string on the raw `CREATE TABLE IF NOT EXISTS`.
+
+**Validation.** `DATABASE_URL=sqlite:// alembic upgrade head` → **exit 0, all 24 revisions from scratch** (was: crash at Batch 12). Auto-increment verified: a converted table's schema is `id INTEGER PRIMARY KEY` and two inserts get ids `[1, 2]` (was `[NULL, NULL]`). Bundle rebuilt + smoke-tested → **HTTP 200 first attempt** (`{"status":"ok","services":{"database":"ok",...}}`); the log shows all 24 revisions ran on the bundle's SQLite and the app bound the port — the desktop sidecar finally boots end-to-end.
+
+**CI gate (new, required).** `.github/workflows/migrations-dual.yml` ("migrations — SQLite + Postgres dual") runs `alembic upgrade head` from scratch on fresh SQLite AND a fresh Postgres:16 service container; both must pass. Jacob adds it as a required status check (Settings → Branches → main) after merge. **CI follow-up:** the gate immediately earned its keep — it caught a *reverse*-dialect bug (Postgres-strict, SQLite-permissive) in 3 migrations NOT in the original 9: `BOOLEAN ... DEFAULT 0/1` (numeric default on a boolean) which Postgres rejects. Fixed `c8a4e72f1d36` (`had_unmapped`), `a2d75c0e1b48` (`used_llm`), `f4a91e6b27c3` (`no_data_guarantee` + `rollback_capable`) → `DEFAULT FALSE/TRUE`. SQLite still exit 0; Postgres validated by the re-run (Docker daemon was down locally).
+
+**Blocker chain now CLOSED:** #1 pipeline (PR #10, merged) · #2 frozen alembic path (PR #11) · #3 dual-dialect migrations (this PR). Safe to tag `v1.0.1` once all three are on main. This PR stacks on PR #11 (base = fix/alembic-frozen-path).
+
 ## 2026-05-30 — fix: frozen alembic path (Release-Sync blocker #1) + a NEW blocker #2 surfaced
 
 Ran the spawned alembic-fix task. PR #10 had already merged to main (so the branch base has the bundled alembic data + 1.0.1 bumps).
