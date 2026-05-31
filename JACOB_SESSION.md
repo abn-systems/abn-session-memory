@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Landing Mobile Discovery pågår — inventering av 4 flaggade landing-defekter (D1–D4) inför Batch 50; Batch 49 mergad (PR #18)
+Status: Batch 50 klar — landing mobil/hero-fixar (3 kirurgiska); väntar på Jacobs granskning (PR öppen). tsc ✓, build ✓ (24 sidor).
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: dee71fc — 1518 backend-tester + abn-security Go-svit; Batch 49 app polish mergad (PR #18)
-Senast: Batch 49 — app polish 6 fixar levererade (trasig logga, OPERA-tab, simulate-preview, Insikt L2, Intelligens-mening, språk-toggle)
-Nästa: Landing Mobile Discovery (denna PR) — hero tom box, mobil rubrik-klipp, illustration sned, mobilmeny-rytm; ingen produktionskod
-VIKTIGT: Discovery only — ingen kod i denna gren · INGEN rename · INGEN i18n · ALDRIG "AGI" i kundnära yta · inga nya design-tokens
+Main-branch: 5d3e6ee — 1518 backend-tester + abn-security Go-svit; Landing Mobile Discovery mergad (PR #19)
+Senast: Batch 50 — hero-figur self-sizar (h-auto, D1+D3) · main pt-[68px] + scroll-padding för fast header (D2) · mobilmeny-rytm/touch-targets (D4) · cache-bust-markör bumpad
+Nästa: Jacob granskar Vercel-preview vid 320/375/768/1024 (hero-figur synlig, rubrik ej klippt, mobilmeny luftig, ankare under header); merge manuellt
+VIKTIGT: endast landing/ · INGEN backend rörd · INGEN rename · INGEN i18n · 0 "AGI" i kundnära yta · inga nya design-tokens · research/Batch-50-PR auto-mergas INTE
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
