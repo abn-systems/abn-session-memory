@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Foundational doctrine-uppdatering — ABN Engineering Doctrine tillagd i CLAUDE.md; ingen produktionskod. Batch 51 fas 1 i18n mergad (PR #22)
+Status: Batch 52 klar — väntar på Jacobs godkännande. Landing engelska-endast, next-intl utrivet, INVARIANT 5 låst. Build grön (35 sidor).
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: f5a5cfc — 1518 backend-tester + abn-security Go-svit; Batch 51 fas 1 i18n mergad (PR #22)
-Senast: Batch 51 fas 1 (next-intl infra + legal per-locale + switcher) mergad (PR #22)
-Nästa: Doctrine-batch (denna PR), sedan Batch 51 fas 2 (huvudtratt-översättning)
-VIKTIGT: ABN Engineering Doctrine blir stående operativ regel för alla framtida batchar — läses först varje session · denna PR rör bara CLAUDE.md/JACOB_SESSION.md/CHAT_LOG.md
+Main-branch: 949850c — 1518 backend-tester + abn-security Go-svit; Batch 51 i18n (PR #22) + Doctrine (PR #23) mergade
+Senast: Rev ut [locale]/next-intl/LocaleSwitcher, översatte alla kundsträngar till engelska, middleware 78.3kB, INVARIANT 5 tillagd
+Nästa: Jacob granskar + mergar PR; därefter nästa batch enligt backlog
+VIKTIGT: Kund-UI = ENGELSKA ENDAST (INVARIANT 5) · backend/Tauri/docs-legal orörda · branch feat/batch-52-english-only, PR öppen
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.

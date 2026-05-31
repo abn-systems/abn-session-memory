@@ -11,6 +11,22 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-31 — feat(52): English-only conversion (rip out next-intl, translate all Swedish)
+
+Jacob's call: ABN goes **English-only** for every customer-facing surface (same posture as Anthropic/OpenAI/Linear/Vercel). He had merged PR #22 (next-intl + `/sv` root, `/en` paths, LocaleSwitcher). Batch 52 reverses ALL of it and translates every remaining Swedish string. `landing/` only — backend, `frontend/src-tauri/`, `docs/legal/*.md` untouched (verified: `git diff main..HEAD -- backend/ services/ frontend/ scripts/ docs/legal/` = empty).
+
+**Phase A — structural revert.** `git mv` every route from `app/[locale]/*` back to `app/*`. Deleted `app/[locale]/[...rest]/`, `app/[locale]/{not-found,layout}.tsx`, `i18n/`, `messages/`, `components/LocaleSwitcher.tsx`. `npm uninstall next-intl`. `middleware.ts` → Clerk-only. `next.config.mjs` → no `createNextIntlPlugin`. NEW vanilla `app/layout.tsx` (`<html lang="en">`, EN metadata, `openGraph.locale en_US`, Clerk preserved) + `app/not-found.tsx`. `sitemap.ts`/`robots.ts` single-locale.
+
+**Phase C — legal English slice (backend-safe).** `docs/legal/*.md` stay bilingual (`scripts/build_dpa_pdf.py` reads the Swedish half), so `app/legal/[slug]/page.tsx` slices the English section at render via `englishSection(content)`. No split, no delete.
+
+**Phase D — translation.** Chrome+home (SiteHeader/Footer/Hero/Layers/Opera/Ledger/Trust), detail pages (observer/process-graph/autonomous-engine/DetailPageShell), auth (sign-in/sign-up — Clerk logic preserved, field names namn→name/foretag→company/epost→email/meddelande→message), company (about/security/contact/legal-center/download+DownloadView), solutions hub + all 5 solution pages, status/subprocessors/changelog, CodeTabs aria-label "Språkval"→"Language selection". Faithful translations (no marketing rewrites, no exclamation marks, no emoji); brand/arch nouns literal (Observer Layer, OPERA, TIER 2, Nango, pm4py); Swedish month names converted. pricing/transparency/api were already English.
+
+**Phase F — INVARIANT 5.** Added to CLAUDE.md Doctrine §5 ("five locked invariants"): English-only on every customer surface; Swedish allowed ONLY in code comments + `docs/legal/*.md` source. Adding a locale framework requires Jacob signoff.
+
+**Remaining Swedish = comments only** (allowed per INVARIANT 5): file-header doc comments in `app/page.tsx`/`download` pages/illustration components, v7-design rationale comments in `status.tsx`/`changelog.tsx`, `globals.css` cache-bust markers. Zero rendered Swedish in `landing/app` + `landing/components` (åäö grep + Swedish-function-word grep both confirm comment-only).
+
+**Verify.** `npx tsc --noEmit` ✓, `npm run build` ✓ (35 static pages, all single-locale — no `/en` paths). Middleware 90.9kB→78.3kB (next-intl gone). 0 next-intl/useTranslations/LocaleSwitcher imports; 0 `Andromeda`/`AGI` in landing. Branch `feat/batch-52-english-only` off main `949850c`.
+
 ## 2026-05-30 — feat: permanent dual-dialect migrations (Release-Sync blocker #3, Väg C)
 
 Jacob REJECTED Väg A (fork the desktop init path). Chose **Väg C — permanent dual-dialect support** + an ARCHITECTURE LOCK. Stacked on PR #11 (frozen-path) so the bundle smoke-test reaches the migration step.
