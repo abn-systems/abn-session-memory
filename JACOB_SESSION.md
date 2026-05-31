@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: i18n Discovery Pass pågår — verifierar i18n-läge + scopar Batch 51 (språkväljare EN/SV); Batch 50 mergad (PR #20)
+Status: Batch 51 fas 1 klar — i18n-infra (next-intl) + legal per-locale + switcher; väntar på Jacobs granskning (PR öppen). Build ✓.
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 7c7434d — 1518 backend-tester + abn-security Go-svit; Batch 50 landing-mobil mergad (PR #20)
-Senast: Batch 50 — hero-figur self-sizar (D1+D3) · main pt-[68px] + scroll-padding (D2) · mobilmeny-rytm (D4) levererat
-Nästa: i18n Discovery Pass (denna PR) — bibliotek/routing/legal/persistence-beslut för riktig språkväljare; ingen produktionskod
-VIKTIGT: Discovery only — ingen kod i denna gren · grep innan "MISSING" hävdas · SEO/hreflang-fällor flaggas · Tauri-app-i18n = Batch 56 (ej nu)
+Main-branch: 0105755 — 1518 backend-tester + abn-security Go-svit; i18n Discovery mergad (PR #21)
+Senast: Batch 51 fas 1 — next-intl + [locale] as-needed + middleware (Clerk-komponerat) + sitemap/robots/hreflang; legal renderar EN/SV var för sig (slice av tvåspråkig källa — INGEN backend rörd); LocaleSwitcher på legal
+Nästa: Batch 51 fas 2 — översätt huvudtratt (SiteHeader/Footer/home/pricing/3 detaljsidor) + switcher i SiteHeader; långsvans 51b
+VIKTIGT: legal = 100% EN ELLER 100% SV (stacking borta) · /en/ marknadssidor visar ännu svenska (fas 2) · INGEN backend/docs-legal-md rörd · 0 "AGI"
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
