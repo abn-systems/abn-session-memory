@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch 50 klar — landing mobil/hero-fixar (3 kirurgiska); väntar på Jacobs granskning (PR öppen). tsc ✓, build ✓ (24 sidor).
+Status: i18n Discovery Pass pågår — verifierar i18n-läge + scopar Batch 51 (språkväljare EN/SV); Batch 50 mergad (PR #20)
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 5d3e6ee — 1518 backend-tester + abn-security Go-svit; Landing Mobile Discovery mergad (PR #19)
-Senast: Batch 50 — hero-figur self-sizar (h-auto, D1+D3) · main pt-[68px] + scroll-padding för fast header (D2) · mobilmeny-rytm/touch-targets (D4) · cache-bust-markör bumpad
-Nästa: Jacob granskar Vercel-preview vid 320/375/768/1024 (hero-figur synlig, rubrik ej klippt, mobilmeny luftig, ankare under header); merge manuellt
-VIKTIGT: endast landing/ · INGEN backend rörd · INGEN rename · INGEN i18n · 0 "AGI" i kundnära yta · inga nya design-tokens · research/Batch-50-PR auto-mergas INTE
+Main-branch: 7c7434d — 1518 backend-tester + abn-security Go-svit; Batch 50 landing-mobil mergad (PR #20)
+Senast: Batch 50 — hero-figur self-sizar (D1+D3) · main pt-[68px] + scroll-padding (D2) · mobilmeny-rytm (D4) levererat
+Nästa: i18n Discovery Pass (denna PR) — bibliotek/routing/legal/persistence-beslut för riktig språkväljare; ingen produktionskod
+VIKTIGT: Discovery only — ingen kod i denna gren · grep innan "MISSING" hävdas · SEO/hreflang-fällor flaggas · Tauri-app-i18n = Batch 56 (ej nu)
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
