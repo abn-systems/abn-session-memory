@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: App Discovery Pass 2 klar — rapport skriven (docs/research/app-pass-2.md), PR öppnad mot main; väntar på Jacobs granskning. Ingen produktionskod.
+Status: Batch 49 klar — app polish, 6 presentation-fixar; väntar på Jacobs granskning (PR öppen). 60/60 frontend-tester, build ✓.
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: b49a10a — 1518 backend-tester + abn-security Go-svit; Batch 47 landing polish mergad (PR #16)
-Senast: App Discovery Pass 2 — 3-lagers agent-värde (L1 klar / L2 tunn / L3 som siffror ej mening) + 8 dolda ting (1/8 fullt beräknat) + app-shell-inventering (bl.a. trasig sidebar-logga /logo.svg 404)
-Nästa: Batch 49 — presentation-only-ytor från rapportens prioriteringslista (fixa trasig logga → OPERA-körning-tab → simulate-preview); ALDRIG röra dataflödet
-VIKTIGT: research-PR får INTE auto-mergas; INGEN kod skriven än; agentens dataflöde ska ALDRIG ändras, bara presentationen förbättras
+Main-branch: 315dcd9 — 1518 backend-tester + abn-security Go-svit; App Discovery Pass 2 mergad (PR #17)
+Senast: Batch 49 — fix trasig sidebar-logga (ABNFlower) · OPERA-körning-tab · Förhandsgranska körning · Insikt L2-fakta · Intelligens "Vad det betyder" + AGI/intern-läckor bort ur kundtext · språk-toggle-förtydligande
+Nästa: Jacob granskar PR-diff (endast frontend + docs) + lokal build/Tauri-smoke; merge sker manuellt
+VIKTIGT: research-PR/Batch-49-PR får INTE auto-mergas · INGEN dataflödesändring gjord · INGEN rename · INGEN i18n · 0 "AGI" i kundnära yta (kvar endast i kodkommentarer)
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
