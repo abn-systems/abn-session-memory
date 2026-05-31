@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch 52 klar — väntar på Jacobs godkännande. Landing engelska-endast, next-intl utrivet, INVARIANT 5 låst. Build grön (35 sidor).
+Status: Batch 52 (engelska-endast) mergad till main. Batch 73 pågår — OPS auto-tag på version-bump.
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 949850c — 1518 backend-tester + abn-security Go-svit; Batch 51 i18n (PR #22) + Doctrine (PR #23) mergade
-Senast: Rev ut [locale]/next-intl/LocaleSwitcher, översatte alla kundsträngar till engelska, middleware 78.3kB, INVARIANT 5 tillagd
-Nästa: Jacob granskar + mergar PR; därefter nästa batch enligt backlog
-VIKTIGT: Kund-UI = ENGELSKA ENDAST (INVARIANT 5) · backend/Tauri/docs-legal orörda · branch feat/batch-52-english-only, PR öppen
+Main-branch: 1a5ca37 — Batch 52 (PR #24) mergad; 1518 backend-tester + abn-security Go-svit
+Senast: English-only conversion levererad (PR #24); landing engelska-endast, INVARIANT 5 låst
+Nästa: Batch 73 — ny auto-tag.yml som skapar git-tag + GitHub Release när tauri.conf.json "version" bumpas
+VIKTIGT: Kanonisk version = frontend/src-tauri/tauri.conf.json. ALDRIG package.json (drift på 1.0.0). branch feat/batch-73-auto-tag
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
@@ -354,7 +354,9 @@ Rules:
 Unfinished sub-tasks / open questions live here (referenced by CLAUDE.md §4.2 PRE-/clear HALT PROTOCOL). Empty = nothing pending.
 - Guardrails-config PR (chore/guardrails-upgrade) awaiting Jacob review — do NOT auto-merge; Jacob checks the 6 verification exit codes + the new CLAUDE.md §4.1/4.2/4.3 + deny[] for false positives before merging.
 - Manual (Jacob, GitHub UI): add "abn-security — Go build & test (45a)" as a required status check in branch protection.
+- Version lockstep drift (future OPS batch, not Batch 73): the canonical version is mirrored by hand in 3 places (frontend/src-tauri/tauri.conf.json, landing/.../DownloadView.tsx `CURRENT_VERSION`, backend/core/config.py `abn_version`) and the two package.json files are drifted at 1.0.0. A later batch could add a CI/pre-commit assert that the 3 mirrors match, and decide whether package.json should be synced or pinned-and-ignored. Do NOT scope-creep into Batch 73.
 
 ## CHANGES
 Operational-config change log (newest first).
+- Batch 73 GITHUB_TOKEN chaining gap — RESOLVED. Jacob created a fine-grained PAT (Contents: read/write on abn-systems/ABN) and stored it as repo secret `RELEASE_PAT`. `auto-tag.yml`'s release step now authenticates `gh release create` with `${{ secrets.RELEASE_PAT }}` (no GITHUB_TOKEN fallback — a missing PAT must fail loudly, never silently create a Release that cannot chain the installer build). The full chain (tauri.conf.json version bump → tag + Release → build-release.yml installer build) is now automatic end-to-end. PR #25.
 - guardrails upgrade applied — CLAUDE.md §4.1 continuous-save / §4.2 pre-/clear HALT protocol / §4.3 self-identity anchor; .claude/settings.json deny[] (15 durable-artifact entries) + PreToolUse Bash hook; .claude/hooks/guard.sh (extended BLOCK pattern). Guard verified: 4 BLOCKED (exit 2), 2 passed (exit 0). Config-only, no backend/services/tests/frontend/landing touched, no version bump, no ci.yml change.

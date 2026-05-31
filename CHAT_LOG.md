@@ -11,6 +11,23 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-05-31 — feat(73): OPS auto-tag + GitHub Release on tauri.conf.json version bump
+
+Automates the UPSTREAM half of releases. Before: Jacob bumps `tauri.conf.json` version, then manually creates a GitHub Release, which fires `build-release.yml` (`release: [created]`) to build installers. The manual tag/release step got forgotten → landing download links pointed at stale builds. Batch 73 automates only the tag+Release creation; `build-release.yml` is **untouched** and fires unchanged on `release: [created]`.
+
+**New file (the only product change):** `.github/workflows/auto-tag.yml`.
+- **Trigger:** `push` to `main`, path-filtered to `frontend/src-tauri/tauri.conf.json` (cheap first gate). The job then re-confirms the `"version"` field actually changed (compares `jq -r .version` of HEAD vs `HEAD~1`) — a push that touches the file without bumping the version is a clean no-op.
+- **Canonical version source = `frontend/src-tauri/tauri.conf.json` ONLY.** NEVER `package.json` (both drifted to 1.0.0 — Discovery-confirmed). Hard-swept: the workflow references `tauri.conf.json` and contains zero `package.json`.
+- **Re-tag guard (mandatory):** creates the Release ONLY when `git ls-remote --tags origin refs/tags/v<version>` finds no existing tag. Idempotent — re-running on an unchanged version, or when the tag exists, is a clean success, never an error.
+- **Least privilege:** `permissions: contents: write` and nothing else.
+- **No third-party actions:** `gh release create` (preinstalled CLI) + `actions/checkout@v4` only (Doctrine §4, fewer supply-chain surfaces). Creating the Release creates the tag.
+
+**The one real risk (Reviewer lens, verified) — RESOLVED.** GitHub deliberately does NOT chain workflow runs from events created by the default `GITHUB_TOKEN` (recursion guard), so a Release created with `GITHUB_TOKEN` would **not** auto-fire `build-release.yml`. **Resolution (follow-up commit on the same branch):** Jacob created a fine-grained PAT (Contents: read/write on abn-systems/ABN) and stored it as repo secret `RELEASE_PAT`; the release step now authenticates with `${{ secrets.RELEASE_PAT }}` (no GITHUB_TOKEN fallback — a missing/rotated PAT must fail loudly rather than silently create a Release that cannot chain the build). The full chain (version bump → tag + Release → installer build) is now automatic end-to-end. Moved from JACOB_SESSION ## OPEN ITEMS to ## CHANGES.
+
+**Lockstep Open Item (flagged, NOT fixed here):** the canonical version is hand-mirrored in 3 places (`tauri.conf.json`, `DownloadView.tsx CURRENT_VERSION`, `core/config.py abn_version`); `package.json ×2` drifted at 1.0.0. A future OPS batch could add a CI assert that the 3 mirrors match. Not scoped into 73.
+
+**Verify.** `auto-tag.yml` parses as valid YAML (PyYAML via backend venv): `on: push/paths`, `permissions: contents: write`, 5 steps. Dry-traced 4 branches: (a) push not touching the file → path filter skip; (b) file touched, version unchanged → no-op; (c) version bumped → Release created once; (d) re-run / tag exists → guard no-op. `git diff main..HEAD` = `auto-tag.yml` (new) + session logs only. `build-release.yml` untouched. No `backend/ services/ frontend/ landing/ scripts/ docs/` changes. Branch `feat/batch-73-auto-tag` off main `1a5ca37`.
+
 ## 2026-05-31 — feat(52): English-only conversion (rip out next-intl, translate all Swedish)
 
 Jacob's call: ABN goes **English-only** for every customer-facing surface (same posture as Anthropic/OpenAI/Linear/Vercel). He had merged PR #22 (next-intl + `/sv` root, `/en` paths, LocaleSwitcher). Batch 52 reverses ALL of it and translates every remaining Swedish string. `landing/` only — backend, `frontend/src-tauri/`, `docs/legal/*.md` untouched (verified: `git diff main..HEAD -- backend/ services/ frontend/ scripts/ docs/legal/` = empty).
