@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch 75b klar — väntar på Jacobs godkännande. 6 datumtester frysta + deterministiska; svit grön.
+Status: Batch 74 — PR #27 öppen; main inmergad (inkl. 75b klock-frys-fix) så Backend-gaten kör om grön.
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 688ede4 — backend-svit grön; PR #27 (Batch 74) öppen, avblockeras när 75b mergas
-Senast: Frös klockan (freezegun) i test_anomaly_trend + test_mind_agent via delad conftest-fixture; bevisad boundary-oberoende
-Nästa: Jacob mergar 75b (backend, CI grön valfri dag), rebasar/återkör PR #27 → Backend-gaten blir grön
-VIKTIGT: Riktig backend-svit = 1535 tester (ej 1518). CI-jobbnamnet "Backend — 1518 tests" är gammal label-drift, gatar ej på antalet. Ingen produktkod rörd.
+Main-branch: 590901d — Batch 75b (PR #28) mergad; backend-svit grön (1535 tester) på valfri kalenderdag
+Senast: Mergade main → feat/batch-74-dynamic-downloads för att ärva freezegun-fixen; CI kör om PR #27
+Nästa: Jacob granskar/mergar PR #27 (downloads) & PR #26 (figure+footer); mint MIRROR_PAT
+VIKTIGT: HUMAN STEP — mint MIRROR_PAT (contents:write på abn-releases). Source repo PRIVATE. Riktig backend-svit = 1535 (ej 1518 — gammal label).
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
@@ -354,8 +354,10 @@ Rules:
 Unfinished sub-tasks / open questions live here (referenced by CLAUDE.md §4.2 PRE-/clear HALT PROTOCOL). Empty = nothing pending.
 - Guardrails-config PR (chore/guardrails-upgrade) awaiting Jacob review — do NOT auto-merge; Jacob checks the 6 verification exit codes + the new CLAUDE.md §4.1/4.2/4.3 + deny[] for false positives before merging.
 - Manual (Jacob, GitHub UI): add "abn-security — Go build & test (45a)" as a required status check in branch protection.
-- Version lockstep drift (future OPS batch, not Batch 73): the canonical version is mirrored by hand in 3 places (frontend/src-tauri/tauri.conf.json, landing/.../DownloadView.tsx `CURRENT_VERSION`, backend/core/config.py `abn_version`) and the two package.json files are drifted at 1.0.0. A later batch could add a CI/pre-commit assert that the 3 mirrors match, and decide whether package.json should be synced or pinned-and-ignored. Do NOT scope-creep into Batch 73.
-- Stale CI gate label (flagged by Batch 75b — NOT fixed, out of test-only scope): the ci.yml backend job `name: "Backend — 1518 tests"` and the matching branch-protection required-check key both say 1518, but the real suite is 1535 (Batch 46 added +13, etc.). The name is cosmetic — pytest never asserts the count — so CI stays green; the recommended permanent fix (per CLAUDE.md's recurring count-drift note) is to rename the job to a count-free `"Backend — tests"`, which Jacob must change in ci.yml AND the GitHub Settings required-check key in lockstep. Until then leave both untouched so the check keeps reporting.
+- Version lockstep drift (future OPS batch): the canonical version is hand-mirrored in `frontend/src-tauri/tauri.conf.json` + `backend/core/config.py` `abn_version`; the two package.json files are drifted at 1.0.0. (Batch 74 removed the landing `DownloadView.tsx CURRENT_VERSION` mirror — the download page now reads the version dynamically from the public release, so that copy is no longer a drift risk.) A later batch could add a CI/pre-commit assert that the 2 remaining mirrors match.
+- **HUMAN STEP (Batch 74): mint `MIRROR_PAT`** — a fine-grained PAT with `contents: write` on `abn-systems/abn-releases`, stored as a repo secret named `MIRROR_PAT` on `abn-systems/ABN`. Without it, `mirror-release.yml`'s public-upload step fails loudly (by design). The mirror reads the private repo with the default GITHUB_TOKEN; only the public push needs the PAT.
+- Batch 74 follow-up: if `release-bandwidth-guard.yml` ever opens its "Release bandwidth approaching limit" issue, plan a CDN / object-store batch for installer hosting. The guard is a conservative proxy (no live GitHub bandwidth API), so treat the alert as a trend signal.
+- Stale CI gate label (flagged by Batch 75b — NOT fixed, out of test-only scope): the ci.yml backend job `name: "Backend — 1518 tests"` and the matching branch-protection required-check key both say 1518, but the real suite is 1535 (Batch 46 added +13, etc.). The name is cosmetic — pytest never asserts the count — so CI stays green; the recommended permanent fix (per CLAUDE.md's recurring count-drift note) is to rename the job to a count-free `"Backend — tests"`, which Jacob must change in ci.yml AND the GitHub Settings required-check key in lockstep. Until then leave both untouched so the check keeps reporting. (The Batch 74 freeze-clock open item is now RESOLVED — see CHANGES.)
 
 ## CHANGES
 Operational-config change log (newest first).
