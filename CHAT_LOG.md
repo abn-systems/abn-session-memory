@@ -11,6 +11,18 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-01 — chore: Dependabot cleanup arc (flood → conservative minor/patch-only)
+
+Batch 64 added Dependabot; its first run on a never-before-scanned repo opened ~20 PRs (#33–#52), then a second wave (#56–#64) as slots freed. Triaged + tamed over several config PRs; nothing auto-merged, every merge gated on the 6 required checks green (CodeQL red = ignored advisory noise — code scanning isn't enabled on this private repo), main re-verified GREEN after each wave.
+
+- **#53** — first tighten: open-pull-requests-limit 5→3 per ecosystem; minor+patch grouped into one PR/ecosystem (`patterns: ["*"]`); ignored a few break-prone majors (react, react-dom, vite, vitest, typescript, thinc, huggingface-hub).
+- **pydantic_core break diagnosed** — the backend minor/patch group (#49, regenerated #54) went red: `pip install` **ResolutionImpossible** because Dependabot bumped `pydantic-core` 2.46.4→2.47.0 alone while `pydantic==2.13.4` pins `pydantic-core==2.46.4`. The other 24 bumps were innocent (install died first). **#55** — full-ignored `pydantic` + `pydantic-core` (version-locked; never move alone). Dependabot auto-closed #49/#54.
+- **Second wave + #68** — more un-ignored majors appeared (#56–#64 + backend majors importlib-metadata, rpds-py). Rather than triage majors one-by-one, **#68** added a BLANKET semver-major ignore on every ecosystem → Dependabot now proposes ONLY minor/patch (grouped, limit 3). Merging #68 auto-closed every open major PR.
+- **Merged (12, gated green):** #33, #34, #37, #42, #38, #43, #45, #46, #47, #50 (individual/group bumps) + #69 (react-router-dom), #70 (@clerk/nextjs). The clean backend group regenerated as **#71** (27 updates, pydantic-core-free, 6/6 green) — pending merge at report time.
+- **Closed (auto, by the ignores):** all breaking/un-wanted majors — #35/#36/#39/#40/#41/#44/#48/#52 (react/vite/vitest/typescript/thinc), #51 (huggingface-hub), the second-wave #56–#64, and the backend majors.
+
+Net policy: **Dependabot = minor/patch only, grouped per ecosystem, limit 3; all majors are deliberate manual batches; pydantic + pydantic-core never move alone.** Codified in CLAUDE.md `## Dependabot policy`.
+
 ## 2026-06-01 — feat(64): Task 2 CI gap-fill (CodeQL + Dependabot + OWASP ZAP DAST)
 
 INFRA / Backend. Batch 64 Discovery (authoritative) found MOST of Task 2 already exists (Batches 26/27/45a): Semgrep SAST, Trivy SCA, gitleaks secrets (advisory), Shield adversarial (required), Backend-tests, migrations-dual, abn-security Go. This batch adds ONLY the three genuine gaps, all ADVISORY, INTO the ABN repo (abn-core stays untouched — decision locked: security tooling lives where the code is, no cross-repo tokens, one gate).
