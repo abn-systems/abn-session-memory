@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch 52 (engelska-endast) mergad till main. Batch 73 pågår — OPS auto-tag på version-bump.
+Status: Batch 75b klar — väntar på Jacobs godkännande. 6 datumtester frysta + deterministiska; svit grön.
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 1a5ca37 — Batch 52 (PR #24) mergad; 1518 backend-tester + abn-security Go-svit
-Senast: English-only conversion levererad (PR #24); landing engelska-endast, INVARIANT 5 låst
-Nästa: Batch 73 — ny auto-tag.yml som skapar git-tag + GitHub Release när tauri.conf.json "version" bumpas
-VIKTIGT: Kanonisk version = frontend/src-tauri/tauri.conf.json. ALDRIG package.json (drift på 1.0.0). branch feat/batch-73-auto-tag
+Main-branch: 688ede4 — backend-svit grön; PR #27 (Batch 74) öppen, avblockeras när 75b mergas
+Senast: Frös klockan (freezegun) i test_anomaly_trend + test_mind_agent via delad conftest-fixture; bevisad boundary-oberoende
+Nästa: Jacob mergar 75b (backend, CI grön valfri dag), rebasar/återkör PR #27 → Backend-gaten blir grön
+VIKTIGT: Riktig backend-svit = 1535 tester (ej 1518). CI-jobbnamnet "Backend — 1518 tests" är gammal label-drift, gatar ej på antalet. Ingen produktkod rörd.
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
@@ -355,8 +355,10 @@ Unfinished sub-tasks / open questions live here (referenced by CLAUDE.md §4.2 P
 - Guardrails-config PR (chore/guardrails-upgrade) awaiting Jacob review — do NOT auto-merge; Jacob checks the 6 verification exit codes + the new CLAUDE.md §4.1/4.2/4.3 + deny[] for false positives before merging.
 - Manual (Jacob, GitHub UI): add "abn-security — Go build & test (45a)" as a required status check in branch protection.
 - Version lockstep drift (future OPS batch, not Batch 73): the canonical version is mirrored by hand in 3 places (frontend/src-tauri/tauri.conf.json, landing/.../DownloadView.tsx `CURRENT_VERSION`, backend/core/config.py `abn_version`) and the two package.json files are drifted at 1.0.0. A later batch could add a CI/pre-commit assert that the 3 mirrors match, and decide whether package.json should be synced or pinned-and-ignored. Do NOT scope-creep into Batch 73.
+- Stale CI gate label (flagged by Batch 75b — NOT fixed, out of test-only scope): the ci.yml backend job `name: "Backend — 1518 tests"` and the matching branch-protection required-check key both say 1518, but the real suite is 1535 (Batch 46 added +13, etc.). The name is cosmetic — pytest never asserts the count — so CI stays green; the recommended permanent fix (per CLAUDE.md's recurring count-drift note) is to rename the job to a count-free `"Backend — tests"`, which Jacob must change in ci.yml AND the GitHub Settings required-check key in lockstep. Until then leave both untouched so the check keeps reporting.
 
 ## CHANGES
 Operational-config change log (newest first).
+- Batch 75b (test-hygiene, TEST-ONLY) — froze the clock in the 6 calendar-flaky tests: test_anomaly_trend.py::{direction_improving, alert_triggered} + test_mind_agent.py::{report_generated_correctly, suggestion_rollback_spike, suggestion_low_attestation, suggestions_are_swedish}. Added `freezegun==1.5.5` to backend/requirements.txt + a shared `tests/conftest.py::frozen_clock` fixture pinning `now` to 2026-06-17 (a Wednesday, mid-month); both modules opt in via `pytestmark = pytest.mark.usefixtures("frozen_clock")`. Root cause: the tests seed rows at `now - N weeks/days` and assert they fall inside a window the product computes from its own `datetime.utcnow()` read — on a Monday/month-start the seeded `now - 1 day` row drops into the previous ISO week. Product code (Batch 28 anomaly trend, Batch 30 Mind agent) is correct; only the tests were time-fragile. Proven both ways under a simulated ambient clock of 2026-06-01 (Monday + month-start = the real boundary that broke CI today): UNFIXED → exactly those 6 fail, 11 pass; FIXED → all 17 pass. `git diff main..HEAD` on backend/{agents,core,services,api} is empty — no product code touched; assertions unchanged. NOTE: the real backend count is 1535 (not 1518); the change is count-neutral (1535 collected with and without it). PR opened (do NOT auto-merge — Jacob merges this first to unblock PR #27's Backend gate).
 - Batch 73 GITHUB_TOKEN chaining gap — RESOLVED. Jacob created a fine-grained PAT (Contents: read/write on abn-systems/ABN) and stored it as repo secret `RELEASE_PAT`. `auto-tag.yml`'s release step now authenticates `gh release create` with `${{ secrets.RELEASE_PAT }}` (no GITHUB_TOKEN fallback — a missing PAT must fail loudly, never silently create a Release that cannot chain the installer build). The full chain (tauri.conf.json version bump → tag + Release → build-release.yml installer build) is now automatic end-to-end. PR #25.
 - guardrails upgrade applied — CLAUDE.md §4.1 continuous-save / §4.2 pre-/clear HALT protocol / §4.3 self-identity anchor; .claude/settings.json deny[] (15 durable-artifact entries) + PreToolUse Bash hook; .claude/hooks/guard.sh (extended BLOCK pattern). Guard verified: 4 BLOCKED (exit 2), 2 passed (exit 0). Config-only, no backend/services/tests/frontend/landing touched, no version bump, no ci.yml change.

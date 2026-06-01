@@ -11,6 +11,24 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-01 — fix(75b): freeze the clock in 6 calendar-flaky tests (TEST-ONLY)
+
+Backend test-hygiene. On 2026-06-01 (a Monday = new ISO week AND the 1st = new month) 6 tests failed in CI purely because of the calendar — they seed data relative to `now` and assert it lands in the freshly-computed current/last week window. The product code is correct (Batch 28 anomaly trend, Batch 30 Mind agent); only the tests were time-fragile, blocking PR #27 via the required Backend gate.
+
+**Root cause (Debug lens, confirmed).** Both test files seed rows with `datetime.now(timezone.utc) - timedelta(weeks=N, days=1)` and assert they fall inside a window the product computes from its OWN `datetime.utcnow()` read (anomaly-trend: `api/routes/agents.py:811`; Mind agent: `agent_runtime/mind_agent.py:147`). On a week/month rollover the two reads of `now` straddle the boundary: the seeded `now - 1 day` row falls into the *previous* ISO week and drops out of the current bucket. Green mid-week, red on Monday/the 1st.
+
+**Fix (freeze the clock, do not weaken assertions).**
+- Added `freezegun==1.5.5` to `backend/requirements.txt` (CI installs from there; test deps like pytest already live there).
+- New `backend/tests/conftest.py::frozen_clock` fixture — single source of truth — pins `now` to `2026-06-17T12:00:00Z` (a Wednesday, mid ISO week, 17th of a 30-day month).
+- Both files opt in at module level: `pytestmark = pytest.mark.usefixtures("frozen_clock")`. This freezes the whole module (not just the 6) so the sibling tests sharing the same fragile pattern (e.g. `direction_degrading`, `custom_multiplier`) become robust too — genuine improvement, zero count change.
+- freezegun patches `datetime`/`date` globally, so the product's `datetime.utcnow()` / `date.today()` read the frozen instant too — the seed and the window now agree. The fixture is opt-in (never autouse) so the rest of the suite is untouched.
+
+**Why a per-test fixture, not a module-wide `@freeze_time` import wrapper.** freezegun can't be active while `pydantic.v1.types` defines `class ConstrainedDate(date)` at import time (metaclass conflict). The fixture freezes only around each test body, after imports — the correct, robust design.
+
+**Proof (before/after, under the real boundary).** Simulating the ambient clock at 2026-06-01 (Monday + month-start): the UNFIXED tests fail exactly the 6 named tests (`test_anomaly_trend::{direction_improving, alert_triggered}`, `test_mind_agent::{report_generated_correctly, suggestion_rollback_spike, suggestion_low_attestation, suggestions_are_swedish}`) and 11 pass; the FIXED tests pass all 17. So the freeze makes them deterministic on any calendar day.
+
+**Scope + count.** `git diff main..HEAD` on `backend/{agents,core,services,api}` is empty — no product module touched; assertions unchanged. The change adds zero tests (1535 collected with and without it). NOTE: the real backend suite is **1535**, not 1518 — the "1518" in the CI job name + branch-protection key is pre-existing label drift (e.g. Batch 46 added +13). It's cosmetic (pytest never asserts the count), so the gate stays green; flagged as an Open Item for a future rename to a count-free `"Backend — tests"`. Do NOT auto-merge — Jacob merges 75b first, then rebases PR #27 so its Backend gate turns green.
+
 ## 2026-05-31 — feat(73): OPS auto-tag + GitHub Release on tauri.conf.json version bump
 
 Automates the UPSTREAM half of releases. Before: Jacob bumps `tauri.conf.json` version, then manually creates a GitHub Release, which fires `build-release.yml` (`release: [created]`) to build installers. The manual tag/release step got forgotten → landing download links pointed at stale builds. Batch 73 automates only the tag+Release creation; `build-release.yml` is **untouched** and fires unchanged on `release: [created]`.
