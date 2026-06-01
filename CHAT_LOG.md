@@ -27,7 +27,56 @@ Backend test-hygiene. On 2026-06-01 (a Monday = new ISO week AND the 1st = new m
 
 **Proof (before/after, under the real boundary).** Simulating the ambient clock at 2026-06-01 (Monday + month-start): the UNFIXED tests fail exactly the 6 named tests (`test_anomaly_trend::{direction_improving, alert_triggered}`, `test_mind_agent::{report_generated_correctly, suggestion_rollback_spike, suggestion_low_attestation, suggestions_are_swedish}`) and 11 pass; the FIXED tests pass all 17. So the freeze makes them deterministic on any calendar day.
 
-**Scope + count.** `git diff main..HEAD` on `backend/{agents,core,services,api}` is empty — no product module touched; assertions unchanged. The change adds zero tests (1535 collected with and without it). NOTE: the real backend suite is **1535**, not 1518 — the "1518" in the CI job name + branch-protection key is pre-existing label drift (e.g. Batch 46 added +13). It's cosmetic (pytest never asserts the count), so the gate stays green; flagged as an Open Item for a future rename to a count-free `"Backend — tests"`. Merged to main as PR #28; this branch (PR #27) merges main to inherit it.
+**Scope + count.** `git diff main..HEAD` on `backend/{agents,core,services,api}` is empty — no product module touched; assertions unchanged. The change adds zero tests (1535 collected with and without it). NOTE: the real backend suite is **1535**, not 1518 — the "1518" in the CI job name + branch-protection key is pre-existing label drift (e.g. Batch 46 added +13). It's cosmetic (pytest never asserts the count), so the gate stays green; flagged as an Open Item for a future rename to a count-free `"Backend — tests"`. Merged to main as PR #28; PR #27 then merged main to inherit it; this branch (PR #26) does the same.
+
+## 2026-05-31 — fix(footer): legibility + half-screen layout (dark-on-dark headings)
+
+Jacob: the footer "ser rörigt ut" (looks messy) — column headings and links were barely visible and the columns scattered at half-screen. **Root cause:** on the dark `#0E0D0B` footer (the one sanctioned dark surface), the column headings (`Product/Solutions/Company/Resources`), the brand "ABN" wordmark, and **every hover state** used `text-ink` (#1F1B17 — a *dark* colour). Dark text on near-black = invisible, so the structure read as a random scatter; worse, links *darkened to nothing on hover*. The half-screen mess came from the brand block sharing one grid with the 4 link columns (5 uneven cells at `md`).
+
+**Fix (`landing/components/Footer.tsx` only):**
+- Legibility: headings + brand wordmark → `text-page` (#E2E2D5, light); every `hover:text-ink` → `hover:text-page` (brighten, not vanish); social-icon hover border `ink/70` → `page/40`. Resting link text stays `#A6A096`.
+- Layout: the 4 link columns moved into their own sub-grid (`grid-cols-2 md:grid-cols-4`) separate from the brand, so they sit in clean order — 2-up on mobile, 4-up from half-screen up, beside the brand on `lg`. Solutions is now a uniform single-column list + "All solutions →" trailer (was a 2×3 grid that broke the rhythm).
+- **Bottom strip untouched ("rör ej"):** the `© 2026 · Reg. no · Stockholm` / `GDPR by architecture — built in Sweden 🇸🇪` / `Privacy · DPA · SLA` bar is byte-for-byte identical (diff shows zero hunks there).
+
+COLOR LAW respected: footer stays `#0E0D0B`; `page` is an allowed palette colour used as light text on the dark surface. `tsc` + `build` green (35 pages). On the same branch as the figure fixes (PR #26) so the Vercel preview shows the whole landing polish together.
+
+## 2026-05-31 — fix(52b cont.): more figure-label Swedish (KUND-NOD, agent name in API sample)
+
+Follow-up on the same `fix/batch-52b-opera-label-english` branch (PR #26). Jacob screenshotted the No-Data figure still reading **"KUND-NOD"** (= "customer node"). Like KÖRNING, it has no å/ä/ö → both the diacritic grep AND the function-word list missed it. Ran a deeper discovery (every SVG `<text>` node + diacritic-free Swedish content words) and found all remaining rendered Swedish:
+
+| file:line | Swedish | English | note |
+|---|---|---|---|
+| `illustrations/landing/FigNoData.tsx:33` | `KUND-NOD` | `CUSTOMER NODE` | home-page figure (the screenshot) |
+| `illustrations/NoDataBoundary.tsx:31` | `KUNDNOD` | `ABN NODE` | unmounted 120px decorative pattern; shorter label fits its 50px box without a layout change |
+| `illustrations/ConfidenceGate.tsx:56` | `0,50  0,70  0,90` | `0.50  0.70  0.90` | Swedish decimal commas |
+| `app/api/page.tsx:79` | `"Fraktfakturarevisor"` | `"Freight invoice auditor"` | agent name in the rendered webhook JSON sample |
+| `app/api/page.tsx:94` | `Granska faktura … +18,5 % avvikelse.` | `Review invoice … +18.5% deviation.` | sample recommendation + decimal comma |
+
+**Currency fix (same branch):** the OPERA figure's center metric read "2.4 **SEK** / RUN" — SEK is the Swedish krona, but ABN is euro-denominated everywhere (`impact_eur`, Culture Rules "quantify in EUR"). Per Jacob ("valuta bara €"), `FigOpera.tsx:66` `SEK` → `€`, so it now reads **"2.4 € / RUN"** (euro per run). Only SEK occurrence in `landing/`; layout unchanged.
+
+**Left untouched (per "rör inget annat"):** all Swedish **code comments** (not displayed — INVARIANT 5 carve-out), `lib/legal.ts` `titleSv` fields (dead data — verified never read by any renderer; removing the field is a type refactor), and LedgerSection's European number formatting (`284 400 €` — numbers, not Swedish words, and the styled `€` suffix is layout-coupled). Verified: `grep` (comment-excluded) returns **zero rendered Swedish tokens** and **zero SEK**; `tsc` + `build` green (35 pages).
+
+## 2026-05-31 — fix(52b): translate OPERA figure label KÖRNING→RUN + close EN-only sweep gap
+
+A customer-facing Swedish string slipped through Batch 52: the OPERA pentagon figure on the home page rendered "SEK / KÖRNING" ("körning" = "per run"). `landing/` only; no product code.
+
+**Root cause (Debug lens) — Batch 52's sweep had a gap.** Batch 52 verified English-only with an å/ä/ö grep + a list of Swedish *function* words. "KÖRNING" does contain Ö, but it lived in an SVG `<text>` node inside an illustration component (`landing/components/illustrations/landing/FigOpera.tsx`) — a figure/label surface the Batch 52 pass under-scanned. The gap class: uppercase Swedish *content* words and SVG/figure text nodes.
+
+**Fix (rendered):**
+| file:line | Swedish | English | kind |
+|---|---|---|---|
+| FigOpera.tsx:66 | `SEK / KÖRNING` | `SEK / RUN` | rendered SVG label |
+| FigOpera.tsx:59 | `2,4` | `2.4` | rendered — related locale fix (Swedish decimal comma → English point; otherwise the label would read the half-anglicized "2,4 SEK / RUN") |
+| FigOpera.tsx:4-5 | comment "2,4 SEK / körning" | "2.4 SEK / run" | comment, updated while in the file |
+
+**Sweep gap closed.** Re-ran a broadened scan across `landing/app` + `landing/components`: (a) uppercase+lowercase Swedish content words (KÖRNING/HÄNDELSE/RAPPORT/FÖRSLAG/GODKÄNN/INSTÄLLNINGAR/ÖVERSIKT/AVBRYT/SPARA/VISA/KÖR/STARTA/STOPPA …), and (b) SVG text-node pattern `>…körning|händelse|rapport|förslag…<`. **Zero rendered Swedish remains.** All other å/ä/ö hits are code comments (allowed per INVARIANT 5), left in place and catalogued:
+- `landing/components/illustrations/*.tsx` ×12 + `index.ts` — Swedish signature-pattern header comments (incl. `ROILedger.tsx:2` "OPERA-körning").
+- `landing/app/page.tsx`, `api/page.tsx:205`, `company/download/{DownloadView.tsx:29,238, page.tsx:8}` — Swedish file-header / inline comments.
+- `landing/app/globals.css` — Swedish cache-bust / token comments (out of the .tsx scan).
+
+**Prevention.** Added a one-line note to CLAUDE.md's Batch 52 section: future English-only sweeps must include uppercase Swedish content words AND SVG/figure text nodes, not just the å/ä/ö + function-word grep.
+
+**Verify.** `npx tsc --noEmit` ✓, `npm run build` ✓ (35 pages). `git diff --stat main..HEAD` = FigOpera.tsx + CHAT_LOG + CLAUDE + JACOB_SESSION only. No `backend/ services/ frontend/src-tauri/ scripts/ docs/` touch. Branch `fix/batch-52b-opera-label-english` off main `688ede4`.
 
 ## 2026-05-31 — feat(74): dynamic download page via public abn-releases mirror + bandwidth guard
 
@@ -44,6 +93,7 @@ Backend test-hygiene. On 2026-06-01 (a Monday = new ISO week AND the 1st = new m
 **Current state:** `abn-releases` is PUBLIC but EMPTY → the page shows PreparingState today; real assets appear after the first mirror run (or a manually-seeded test release). `v1.0.1` on the private repo has 8 assets ready to mirror.
 
 **Verify:** `tsc` ✓, `npm run build` ✓ (35 pages, `/company/download` static). Both workflow YAMLs parse. No backend/Tauri/scripts touched; `build-release.yml` untouched; no token literals committed. **HUMAN STEP:** mint `MIRROR_PAT` (contents:write on abn-systems/abn-releases). Branch `feat/batch-74-dynamic-downloads` off main `688ede4`.
+
 ## 2026-05-31 — feat(73): OPS auto-tag + GitHub Release on tauri.conf.json version bump
 
 Automates the UPSTREAM half of releases. Before: Jacob bumps `tauri.conf.json` version, then manually creates a GitHub Release, which fires `build-release.yml` (`release: [created]`) to build installers. The manual tag/release step got forgotten → landing download links pointed at stale builds. Batch 73 automates only the tag+Release creation; `build-release.yml` is **untouched** and fires unchanged on `release: [created]`.

@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch 74 — PR #27 öppen; main inmergad (inkl. 75b klock-frys-fix) så Backend-gaten kör om grön.
+Status: Batch 52b — PR #26 öppen (OPERA-label KÖRNING→RUN + footer-läsbarhet); main inmergad så CI kör om grön.
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 590901d — Batch 75b (PR #28) mergad; backend-svit grön (1535 tester) på valfri kalenderdag
-Senast: Mergade main → feat/batch-74-dynamic-downloads för att ärva freezegun-fixen; CI kör om PR #27
-Nästa: Jacob granskar/mergar PR #27 (downloads) & PR #26 (figure+footer); mint MIRROR_PAT
-VIKTIGT: HUMAN STEP — mint MIRROR_PAT (contents:write på abn-releases). Source repo PRIVATE. Riktig backend-svit = 1535 (ej 1518 — gammal label).
+Main-branch: 6fe3c43 — Batch 74 + 75b mergade (PR #27/#28); backend-svit grön (1535 tester) valfri kalenderdag
+Senast: Mergade main → fix/batch-52b-opera-label-english för att ärva freezegun-fixen; CI kör om PR #26
+Nästa: Jacob granskar/mergar PR #26 (figure+footer); mint MIRROR_PAT (Batch 74 HUMAN STEP)
+VIKTIGT: HUMAN STEP — mint MIRROR_PAT (contents:write på abn-releases). Riktig backend-svit = 1535 (ej 1518 — gammal label). Branch fix/batch-52b-opera-label-english.
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
