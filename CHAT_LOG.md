@@ -11,6 +11,22 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-01 — feat(59): U_notify interruption utility (MOAT Candidate 2)
+
+Second MOAT batch off Research Pass 1 (`docs/research/pass-1.md`, Candidate 2). U_notify decides WHETHER/WHEN to interrupt a human with a proposal-approval notification — the "good colleague" layer. `U_notify = V_insight − K_disruption`; send iff `(policy_allows AND U_notify > θ)`, θ = 0.
+
+**Two things this batch does (Discovery findings drove both).** (A) `notify_on` (the per-agent severity allowlist, Batch 2, on `AgentSettings`) was INERT — stored + validated by the settings API but NEVER read at dispatch; every pending proposal that cleared HMAC + a reachable channel pinged unconditionally. Batch 59 FINALLY wires it as the HARD policy veto. (B) Builds U_notify as the SOFT utility ON TOP. Order at the seam: hard gate first (`notify_on` / `policy_allows`), then soft gate (`U_notify > 0`). notify_on is the veto; U_notify never overrides it.
+
+**Single source of truth.** `backend/agent_runtime/intelligence/interruption.py`: `severity_from_impact(impact_eur, action_type)` — the ONE helper used both to consult `notify_on` and as a V_insight input (no second severity filter); `SEVERITY_THRESHOLDS` (10k→critical / 1k→warning / 100→ok / else info; a risk-class `agent_pause` floors at warning); `V_WEIGHTS` (impact 0.50 · severity 0.35 · action 0.15, sum 1.0); the K constants (base 0.15 + off-hours ≤0.35 + frequency ≤0.50); `U_NOTIFY_THRESHOLD = 0`. `ABNInterruptionUtility.evaluate(...)` is PURE math — no LLM call (unlike H_feel), no DB, no clock; the caller passes `now` + the pre-counted recent-dispatch count, so it's deterministic and frozen-clock-free in unit tests.
+
+**Jacob-locked: PROPOSAL-ROW signals only.** V_insight ← impact_eur, severity, action_type. K_disruption ← time-of-day (UTC-hour proxy for Swedish business hours, documented) + recent-notification frequency (from existing `NotificationDispatch` rows). NO agent confidence threaded from the runner, NO confidence column on `Proposal`, NO computing U_notify in the runner — the whole gate lives in `delivery/router.py` at the dispatch hook. Runner's Batch-18 loop is unchanged; the hook decides send-vs-suppress internally.
+
+**Fail-open BIASED TO NOTIFY (the inverted-correctly bit).** For H_feel, fail-open = deliver. For U_notify, "fail open" must mean DEFAULT TO NOTIFYING — a missed suppression is one extra ping; a wrongly-suppressed critical proposal is harmful. So any error in severity/notify_on/U_notify logic → send the proposal, log loud. A malformed/missing/empty `notify_on` is treated as ALLOW (never suppress on a malformed policy). `_proposal_interruption_allows` wraps everything in try/except → returns True on error.
+
+**Persistence (Jacob-locked).** Rolling columns on `AgentIntelligenceState`, mirroring Batch 58's hfeel add — NOT a new table, NOT log-only: `unotify_rolling_mean` NUMERIC(6,4) + `unotify_sample_count` INT + `notify_suppressed_count` INT (Alembic `d2f3a4b5c6e7`, inspector-guard + portable `op.add_column`, dual-DB; verified applying on fresh SQLite). Incremental mean `mean += (x−mean)/n`. Also adds an index `ix_notification_dispatch_tenant_dispatched` (tenant_id, dispatched_at) so the K_disruption frequency query never full-scans (Q2). The gate reuses the dispatch `db` (always present at this seam) for the upsert rather than opening a second SessionLocal — avoids SQLite write-lock contention + keeps test isolation (deviation from the prompt's D3, documented in the helper).
+
+**Tests.** `backend/tests/test_interruption.py` — 22 (utility 8, hard gate 4, soft+integration 6, persistence 4). Gate/integration tests pin the clock with the Batch-75b `frozen_clock` fixture (business-hours instant); utility + persistence buckets are clock-free. No new calendar-flaky tests. Backend suite: **1571 passed** (baseline 1549, +22). pass-1.md Candidate 2 marked IMPLEMENTED. notify_on / runner Batch-18 behaviour / humaneness.py untouched beyond the new hook.
+
 ## 2026-06-01 — feat(58): H_feel humaneness gate (MOAT Candidate 1)
 
 First real MOAT batch off Research Pass 1 (`docs/research/pass-1.md`, Candidate 1). H_feel scores the HUMANENESS of ABN's OWN outgoing message text and gates/rewrites it before delivery when it falls below `θ_human`.

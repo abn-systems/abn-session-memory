@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch 58 klar — väntar på Jacobs godkännande (PR #30); backend-svit grön 1549.
+Status: Batch 59 klar — väntar på Jacobs godkännande (PR öppen); backend-svit grön 1571.
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: adfd278 — all 2026-06-01 batches merged (52b/73/74/75b + #29); Batch 58 awaits PR #30 merge.
-Senast: H_feel humaneness gate — scorer + delivery gate (fail-open) + rolling persistence (PR #30).
-Nästa: Batch 59 (U_notify — interruption utility, pass-1 Candidate 2) — Discovery first.
-VIKTIGT: H_feel scores ABN's own text only (No-Data untouched), fail-open; PR #30 awaits 6 checks + merge; one batch = one PR.
+Main-branch: 463eb3a — Batch 58 H_feel merged (PR #30); Batch 59 awaits PR merge.
+Senast: U_notify interruption gate — notify_on hard veto (was inert) + soft U_notify + rolling persistence (Alembic d2f3a4b5c6e7).
+Nästa: Batch 60 — nästa MOAT/kategori-batch (Jacob väljer).
+VIKTIGT: U_notify fail-open BIASES TO NOTIFY (never suppress on error); proposal-only signals; one batch = one PR.
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
