@@ -11,6 +11,22 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-01 — feat(58): H_feel humaneness gate (MOAT Candidate 1)
+
+First real MOAT batch off Research Pass 1 (`docs/research/pass-1.md`, Candidate 1). H_feel scores the HUMANENESS of ABN's OWN outgoing message text and gates/rewrites it before delivery when it falls below `θ_human`.
+
+**The five dimensions / weights / θ — single source of truth.** `backend/agent_runtime/intelligence/humaneness.py`: `HUMANENESS_DIMENSIONS` = empathy 0.20 · respect 0.20 · clarity 0.25 · warmth 0.15 · professionalism 0.20 (sum 1.0); `THETA_HUMAN = 0.70`. No second copy anywhere. `H_feel(m) = Σ wᵢ·Eᵢ`.
+
+**Where it's wired — and why NOT in process_run (Discovery caught this).** The existing `ABNAgentMemoryEngine.process_run` (Batch 40) scores the agent's COGNITIVE STATE from aggregate run metrics, once per run, in the OPERA R-phase — it has no message text. H_feel scores the TEXT of one outgoing message at the A-phase / DELIVERY seam. So it MIRRORS the `intelligence/` package class idiom (frozen `ABNHumanenessResult` + weighted sum + threshold bands + Swedish labels) but is wired at `delivery/router.py::apply_humaneness_gate`, invoked from the single chokepoint `DeliveryRouter.deliver` + `deliver_with_priority` (reports only) — never inside the seven deliverers, never in `process_run`/`ABNRunMetrics`. H_feel is the TONE complement to `culture_rules` (STRUCTURE), sitting beside it.
+
+**Fail-open design (Reviewer lens).** score → if below θ rewrite once via the LLM gateway → re-score → deliver the best version (never dropped). The rewrite must stay culture-safe (`_rewrite_is_culture_safe`: no fabricated numbers — mirrors the DGE digit-guard; no collapse; no RULE-3 raw-data leak via `enforce_culture_rules`); if not, the culture-compliant original is kept and the low tone is logged. ANY scorer/gateway/DB error delivers the ORIGINAL message + logs — a tone gate that can halt all delivery on an LLM hiccup is a worse failure than an occasionally-stiff message.
+
+**No-Data + LLM routing.** Scores ABN's OWN prose only — INVARIANT 2 untouched. All LLM access goes through `LLMGateway.call` (rule #3); the message travels in `task_description` (verbatim to the LLM), empty payload, `policy_mode="full"`.
+
+**Persistence.** Rolling mean on `AgentIntelligenceState` — `hfeel_rolling_mean` NUMERIC(6,4) + `hfeel_sample_count` INT (Alembic `c1d2e3f4a5b6`, mirrors the Batch-42 epistemic add: inspector-guard + portable `op.add_column`, dual-DB; verified applying on fresh SQLite). Incremental mean `mean += (x−mean)/n` per (agent, tenant). Bounded growth at 1M — no per-message table (Jacob's locked decision).
+
+**Tests.** `backend/tests/test_humaneness.py` — 14 (scorer 6, gate 4, persistence 3, delivery wiring 1). No new calendar-flaky tests (count-based, not date-windowed; frozen_clock not needed). pass-1.md Candidate 1 marked IMPLEMENTED.
+
 ## 2026-06-01 — fix(75b): freeze the clock in 6 calendar-flaky tests (TEST-ONLY)
 
 Backend test-hygiene. On 2026-06-01 (a Monday = new ISO week AND the 1st = new month) 6 tests failed in CI purely because of the calendar — they seed data relative to `now` and assert it lands in the freshly-computed current/last week window. The product code is correct (Batch 28 anomaly trend, Batch 30 Mind agent); only the tests were time-fragile, blocking PR #27 via the required Backend gate.
