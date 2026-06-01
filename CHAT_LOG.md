@@ -11,6 +11,20 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-01 — feat(64): Task 2 CI gap-fill (CodeQL + Dependabot + OWASP ZAP DAST)
+
+INFRA / Backend. Batch 64 Discovery (authoritative) found MOST of Task 2 already exists (Batches 26/27/45a): Semgrep SAST, Trivy SCA, gitleaks secrets (advisory), Shield adversarial (required), Backend-tests, migrations-dual, abn-security Go. This batch adds ONLY the three genuine gaps, all ADVISORY, INTO the ABN repo (abn-core stays untouched — decision locked: security tooling lives where the code is, no cross-repo tokens, one gate).
+
+- **CodeQL** (`.github/workflows/codeql.yml`) — 2nd SAST engine (semantic dataflow) beside Semgrep. python + javascript-typescript, build-mode none. push/PR main + weekly Mon 07:00 UTC. Least-priv (security-events:write). Advisory (continue-on-error). SARIF categories `codeql-python` / `codeql-javascript-typescript` (no collision with semgrep/trivy-*). Go DEFERRED — nested stdlib-only module, autobuild fragility not worth fighting; abn-security already covered by go vet+build+race+95% firewall floor (required 45a gate) + Semgrep. Logged as Open Item.
+- **Dependabot** (`.github/dependabot.yml`, config only) — pip /backend, pip /services/abn-llm-gateway (beyond spec but a real manifest — flagged), npm /frontend, npm /landing, gomod /services/abn-security (no-op until deps land), github-actions /. Weekly, open-PR limit 5, grouped minor/patch. Complements Trivy (scan) vs Dependabot (bump PRs) — no overlap.
+- **OWASP ZAP DAST** (`.github/workflows/security-dast.yml`) — weekly Mon 09:00 UTC + dispatch ONLY (never per-PR). Boots FastAPI hermetically (fresh SQLite, dummy secrets, no real creds/egress), ZAP **api-scan** against the live `/openapi.json` (real endpoint coverage; baseline spider of a JSON API finds nothing). Advisory (continue-on-error + fail_action:false + allow_issue_writing:false). Report → workflow artifact `zap-dast-report`. ZAP has no native SARIF → Security-tab/SARIF surfacing deferred (no fragile converter); `zap-dast` category reserved.
+
+**SKIPPED (duplication/paid):** Snyk (covered by Trivy+Dependabot+CodeQL), trufflehog (covered by gitleaks). Not added.
+
+**Count drift — chose option (b):** did NOT rename the required `Backend — 1518 tests` job (renaming a required check leaves main un-mergeable until Jacob edits branch protection in the GitHub UI). Fixed ONLY the stale `1193` comment in ci.yml, made it count-free, logged the rename as an Open Item. Verified live required checks via `gh api`: Frontend build · Landing build · Shield · Backend — 1518 tests · abn-security Go 45a · migrations-dual.
+
+**Guards held:** existing 15 workflows untouched except the one ci.yml comment; all 3 new scans advisory (no merge-gate change); no required-check renamed; abn-core untouched; GITHUB_TOKEN only, no paid tokens. One PR; do NOT auto-merge.
+
 ## 2026-06-01 — feat(59): U_notify interruption utility (MOAT Candidate 2)
 
 Second MOAT batch off Research Pass 1 (`docs/research/pass-1.md`, Candidate 2). U_notify decides WHETHER/WHEN to interrupt a human with a proposal-approval notification — the "good colleague" layer. `U_notify = V_insight − K_disruption`; send iff `(policy_allows AND U_notify > θ)`, θ = 0.

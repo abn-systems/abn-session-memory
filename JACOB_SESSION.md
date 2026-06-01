@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch 59 klar — väntar på Jacobs godkännande (PR öppen); backend-svit grön 1571.
+Status: Batch 64 pågår — INFRA Task 2 CI gap-fill (CodeQL + Dependabot + ZAP DAST), advisory only.
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 463eb3a — Batch 58 H_feel merged (PR #30); Batch 59 awaits PR merge.
-Senast: U_notify interruption gate — notify_on hard veto (was inert) + soft U_notify + rolling persistence (Alembic d2f3a4b5c6e7).
-Nästa: Batch 60 — nästa MOAT/kategori-batch (Jacob väljer).
-VIKTIGT: U_notify fail-open BIASES TO NOTIFY (never suppress on error); proposal-only signals; one batch = one PR.
+Main-branch: 4285418 — Batch 59 U_notify merged (PR #31); backend-svit 1571 grön.
+Senast: Branch feat/batch-64-ci-codeql-dependabot-dast skapad; 3 nya CI-filer planeras in i ABN-repo (ej abn-core).
+Nästa: Batch 64 — skriv codeql.yml + dependabot.yml + security-dast.yml, alla advisory; öppna PR.
+VIKTIGT: rör EJ befintliga 15 workflows (utom en ci.yml-kommentar); inga required-checks döpta om; abn-core orört.
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
@@ -358,6 +358,7 @@ Unfinished sub-tasks / open questions live here (referenced by CLAUDE.md §4.2 P
 - **HUMAN STEP (Batch 74): mint `MIRROR_PAT`** — a fine-grained PAT with `contents: write` on `abn-systems/abn-releases`, stored as a repo secret named `MIRROR_PAT` on `abn-systems/ABN`. Without it, `mirror-release.yml`'s public-upload step fails loudly (by design). The mirror reads the private repo with the default GITHUB_TOKEN; only the public push needs the PAT.
 - Batch 74 follow-up: if `release-bandwidth-guard.yml` ever opens its "Release bandwidth approaching limit" issue, plan a CDN / object-store batch for installer hosting. The guard is a conservative proxy (no live GitHub bandwidth API), so treat the alert as a trend signal.
 - Stale CI gate label (flagged by Batch 75b — NOT fixed, out of test-only scope): the ci.yml backend job `name: "Backend — 1518 tests"` and the matching branch-protection required-check key both say 1518, but the real suite is 1535 (Batch 46 added +13, etc.). The name is cosmetic — pytest never asserts the count — so CI stays green; the recommended permanent fix (per CLAUDE.md's recurring count-drift note) is to rename the job to a count-free `"Backend — tests"`, which Jacob must change in ci.yml AND the GitHub Settings required-check key in lockstep. Until then leave both untouched so the check keeps reporting. (The Batch 74 freeze-clock open item is now RESOLVED — see CHANGES.)
+- Batch 64 (INFRA Task 2 CI gap-fill) follow-ups: (1) the count-free rename of the required `Backend — 1518 tests` job — SAME item as the line above; Batch 64 made the ci.yml *comment* count-free but deliberately did NOT touch the job name or the branch-protection key (lockstep rename is its own batch). (2) Add Go to CodeQL (`codeql.yml`) once the nested stdlib-only abn-security module's autobuild is proven stable. (3) Wire ZAP → SARIF to the Security tab (`security-dast.yml` currently surfaces via the `zap-dast` workflow artifact; native SARIF needs a converter — deferred to keep the advisory DAST job hermetic/never-red).
 
 ## CHANGES
 Operational-config change log (newest first).
