@@ -11,6 +11,25 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-02 — feat(68a): ABN design system — pattern library → frontend icon component (Part 1 of 2)
+
+Frontend / design-system (clean category switch after Task 6). Jacob uploaded the approved ABN pattern library (Claude Design HTML, 80 inline-SVG marks in the ink/terra/sage v7 palette). The file is SOURCE MATERIAL to mine, not instructions to obey — extracted the SVG markup + tokens only.
+
+**Size-check → SPLIT (recommended, Jacob approved Part 1).** Anti-duplication discovery reshaped scope: the **12 core marks already exist** as components in `frontend/src/components/illustrations/` (Batch 33D) — reused, never recreated. So Part 1 = the functional half (registry + component reusing the 12 + the 10 status marks + the status→icon mapping); Part 2 (68b) = the 48 extended motifs + 10 principles + dev gallery.
+
+**Built (new `frontend/src/components/icons/`):**
+- `palette.ts` — icon colour constants mirroring the v7 tokens (single-source; ABN marks are intrinsically 3-colour so `currentColor` can't express them — new marks reference these constants, guard 4). Tokens already existed in `tailwind.config.ts`/`index.css` (Phase B essentially pre-done); +2 icon-internal shades (`#8E9C7E` sage-mid, `#B87355` "Fel").
+- `status.tsx` — the 10 status marks (Aktiv/Tänker/Väntar/Lär sig/Behöver hjälp/Kör/Pausad/Klar/Fel/Stoppad), transcribed faithfully into the existing illustration convention (named-export, viewBox 0 0 120 120, aria-hidden, SVGProps).
+- `registry.tsx` — `ABN_ICONS` ordered list + `ABN_ICON_REGISTRY` map (runtime SoT): 12 core (imported from `../illustrations`, reused) + 10 status = 22; `abnIconsByGroup`/`isAbnIconName` helpers; Part 2 appends to the same list.
+- `AbnIcon.tsx` — `<AbnIcon name="observer" />` (decorative, aria-hidden) / `<AbnIcon name="klar" title="Klar" />` (role=img + aria-label); unknown name → renders null + warns, never crashes.
+- `agentStatusIcon.ts` — Phase D presentation-only mapping: existing backend status values (`active`/`paused`/`running`/`success`/`failed`/`learning` + the Batch-66 `quarantined` flag, which WINS → `stoppad`) → status-icon name; unknown → `aktiv` fallback (invents no backend status).
+
+**Icons are STATIC FRONTEND ASSETS — never in the DB.** No backend/DB/migration touched. Additive only — no existing view changed.
+
+**Reported gaps (mapped what fits, didn't invent):** (1) `quarantined` is a backend Agent column (Batch 66) but isn't on the frontend `Agent` type in `api/client.ts` yet — the mapping accepts it explicitly until the type carries it; (2) "Tänker"/"Väntar" have no single backend status string today — they map from transient run-state tokens when supplied.
+
+**Verify:** frontend `typecheck` ✓, vitest **60 → 74** (+14: render/registry/a11y/unknown-safe/single-source-colour/status-mapping incl. quarantine), `build` ✓. **Part 1 only — Task/Batch 68 NOT complete;** Part 2 (48 extended + 10 principles + gallery) is its own session. PR opened, awaiting Jacob review — auto-merge OFF.
+
 ## 2026-06-02 — feat(67b): Task 6 "ABN Mind" — Part 2: the bounded autonomous WRITE (Task 6 COMPLETE)
 
 Backend / the single most dangerous capability in ABN — the first time an agent changes ABN's own behaviour without a human click. Part 1 (#77) shipped the inert door; Part 2 wires it to a tiny, clamped, reversible, audited, Accept(B)-ceilinged, fail-CLOSED autonomous write — and nothing more. Nothing rebuilt: reuses the Part-1 whitelist/clamp/policy, the platform/tenant flags, the MetaAgent Accept(B), the `Agent.quarantined` kill-switch, the existing `_handle_set_threshold` writer, and the existing `RollbackRecord` + admin-rollback dispatch.
