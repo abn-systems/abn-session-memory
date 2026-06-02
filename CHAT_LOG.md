@@ -11,6 +11,17 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-01 — chore(66a): remove CodeQL workflow (GHAS not enabled; Semgrep covers SAST)
+
+Tiny surgical CI-config batch. CodeQL (added Batch 64) ran but FAILED on every PR at the SARIF-upload step because **GitHub Advanced Security (GHAS) is not enabled — a PAID add-on on private repos**. It was only a *second* SAST engine on top of Semgrep (free, green, present). Paying for GHAS pre-revenue to get a redundant SAST layer is the wrong spend, and a permanently-red advisory check erodes what "red" means. Decision (Jacob, locked): remove CodeQL now, re-add the day GHAS is enabled (reversible — workflow lives in git history).
+
+- **Removed:** `.github/workflows/codeql.yml` (deleted).
+- **Tidied (CodeQL-only references):** CLAUDE.md Batch-64 CodeQL subsection (marked removed) + Snyk rationale (now "Trivy + Dependabot + Semgrep") + the "advisory CodeQL check is red" Dependabot note + Open Item #2; the `security-dast.yml` cron *comment* (de-referenced CodeQL, cron unchanged); a new `## Batch 66a` section in CLAUDE.md; JACOB_SESSION ## OPEN ITEMS ("Re-add CodeQL when GHAS enabled").
+- **UNTOUCHED (verified):** Semgrep (`security-sast.yml`), Trivy (`security-sca.yml`), gitleaks (`security-secrets.yml`), Shield (`shield.yml`), the ZAP DAST job body, `ci.yml`. NB: the `github/codeql-action/upload-sarif` step inside Semgrep/Trivy is the *generic SARIF uploader*, NOT CodeQL — deliberately left as-is.
+- **Branch protection:** confirmed live via `gh api` that CodeQL is NOT in `required_status_checks.contexts` (the 6 required: Frontend, Landing, Shield, Backend, abn-security Go 45a, migrations-dual). Advisory → removal has zero mergeability impact; PRs simply stop showing the red CodeQL noise.
+
+Posture after removal (all free): Semgrep (SAST) + Trivy (SCA) + Dependabot + gitleaks + Shield (required) + Batch-65 gateway adversarial. One PR; do NOT auto-merge.
+
 ## 2026-06-01 — feat(65): Task 3 ABN-specific adversarial gap-hardening (no-data-leak + prompt-injection)
 
 Backend Infra / security — ABN's real security differentiator ("we attack our own agent and prove data can't leak and instructions can't be hijacked"). Batch 65 Discovery (authoritative) confirmed Task 3's two themes ALREADY have broad coverage across 3 layers, so this batch did NOT rebuild them and did NOT spin up a parallel suite — it EXTENDED `services/abn-llm-gateway/tests/test_gateway.py` with **11 new tests** closing the three genuine gaps. Shield conventions throughout: inverted contract (PASS = the attack failed), synthetic `*_TEST_*` data only, fail-closed.
