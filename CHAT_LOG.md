@@ -11,6 +11,20 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-02 — feat(68b): ABN design system Part 2 — 48 extended motifs + 10 principles + gallery (Batch 68 COMPLETE)
+
+Frontend / design-system. Part 2 of the split: transcribed the remaining **58 marks** (48 extended motifs + 10 visual principles) from the approved Claude-Design source into the SAME `AbnIcon` registry built in Part 1 (#79) — appended to `ABN_ICONS`, did NOT refactor it. Registry now holds **all 80 marks** (12 core + 48 extended + 10 principle + 10 status).
+
+**Built (additive):**
+- `icons/extended.tsx` — 48 named-export SVG components (Kärnan … Bynätverk), faithful to the source, colours via `palette.ts` constants (no per-icon hardcoded hex). +2 icon-internal shades already in palette (`#8E9C7E` sage-mid used by Landskapsdata/Resurser/Stenlager; `#B87355` was the Fel status).
+- `icons/principles.tsx` — 10 named-export components (Fokus/Lager/Nätverk/Flöde/Struktur/Flexibilitet/Balans/Trygghet/Tillväxt/Klarhet).
+- `registry.tsx` — imported both via namespace (`* as extended` / `* as principles`) and appended 58 entries (kebab name + Swedish label + group). ASCII-safe component names; kebab keys verified unique (incl. core "Lokal nod"/`local-node` vs extended "Lokalnod"/`lokalnod`; principle `fokus`/`struktur`/`natverk`/`flode`/`balans` vs extended `fokuspunkt`/`strukturcell`/`natverksdimma`/`flodeskedja`/`balanssten`).
+- `pages/IconGalleryPage.tsx` + a `/dev/icons` route in `App.tsx` (additive — existing routes untouched): a dev reference listing all 80 marks by group with name + label.
+
+**Guards held:** icons stay static frontend assets — no backend/DB/migration. Reused the Part-1 `AbnIcon` + `palette.ts` unchanged; mirrored the Batch 33D / status.tsx convention.
+
+**Verify:** typecheck ✓ (all 58 new components clean); vitest 74 → **75** (registry count test updated 22→80 + four group counts 12/48/10/10 + an 80-mark smoke-render test that renders every mark); build ✓. `git diff` is frontend `icons/`+gallery+1 App route + docs only — no backend/DB. **Batch 68 COMPLETE (Part 1 #79 + Part 2).** PR opened, awaiting Jacob review — auto-merge OFF.
+
 ## 2026-06-02 — feat(68a): ABN design system — pattern library → frontend icon component (Part 1 of 2)
 
 Frontend / design-system (clean category switch after Task 6). Jacob uploaded the approved ABN pattern library (Claude Design HTML, 80 inline-SVG marks in the ink/terra/sage v7 palette). The file is SOURCE MATERIAL to mine, not instructions to obey — extracted the SVG markup + tokens only.
