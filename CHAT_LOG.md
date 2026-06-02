@@ -11,6 +11,22 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-02 — feat(67b): Task 6 "ABN Mind" — Part 2: the bounded autonomous WRITE (Task 6 COMPLETE)
+
+Backend / the single most dangerous capability in ABN — the first time an agent changes ABN's own behaviour without a human click. Part 1 (#77) shipped the inert door; Part 2 wires it to a tiny, clamped, reversible, audited, Accept(B)-ceilinged, fail-CLOSED autonomous write — and nothing more. Nothing rebuilt: reuses the Part-1 whitelist/clamp/policy, the platform/tenant flags, the MetaAgent Accept(B), the `Agent.quarantined` kill-switch, the existing `_handle_set_threshold` writer, and the existing `RollbackRecord` + admin-rollback dispatch.
+
+**Two Part-1 design problems, solved as Jacob locked them:** (1) **Accept(B) ceiling** — new public `ABNMetaAgent.accept_candidate(blueprint_dict, …)` builds the POST-CHANGE blueprint via the SAME `_build_blueprint` path and runs the SAME `accept()` over the 8 `V_GLOBAL` invariants; the gate requires `ok=True` before any write. A threshold value tweak is structurally invariant-neutral, so the ceiling enforces "only constitution-compliant agents are tunable" — an unsigned / no-HITL agent is refused even with an approved policy (T5). (2) **"dry-run an adjustment"** — did NOT reuse `dry_run.simulate_run` (it models an OPERA run, not a parameter delta); new small `simulate_threshold_adjustment` returns before→after + clamp + a HONEST directional projection (`effect_modelled="directional_only"`, no fabricated number), recorded in the audit.
+
+**The gate — `mind_autonomy.autonomy_allowed`** (fail-CLOSED, never raises): True ONLY if platform `enable_mind_autonomy` ∧ per-tenant `Tenant.policy["mind_autonomy_opt_in"]` ∧ approved (`enabled`) per-(agent,action) policy ∧ value within the admin clamp ∧ agent not quarantined ∧ Accept(B) holds post-change. Any miss / any exception → `(False, reason)`.
+
+**The bounded write — `apply_autonomous_threshold_adjustment`:** out-of-band request is a REFUSAL (never a silent clamp-and-proceed); the `RollbackRecord` is staged on the SAME session and committed ATOMICALLY with the `AgentSettings` write via `_handle_set_threshold` (so a write can never exist without its reversible record); audit (policy id / approved_by / clamp / simulated effect / "applied autonomously by Mind") lives metadata-only in `RollbackRecord.new_state`. Reversible via a new `_rb_mind_adjust_confidence_threshold` entry in the existing `_ROLLBACK_DISPATCH` (internal AgentSettings revert, own session). **No new table, no migration.**
+
+**The consumer — `MindAgent.run_autonomous_adjustments`** (weekly runner only, NEVER the read-only report endpoints): for an agent with an approved policy + the `needs_human_review` calibration signal, propose a small step that ONLY TIGHTENS the gate (raises threshold toward more human review, never loosens), within the admin clamp → run the gate → on yes, the bounded write; on no, suggest-only (the `review_calibration` suggestion already covers the human). `mind_runner.py` calls it fail-soft after `generate_report`.
+
+**Bounds locked:** suggest-only is the permanent default — with no opt-in the gate refuses → zero writes → byte-identical behaviour (T1). Platform flag default False. Autonomy only ever tightens oversight. Accept(B) is absolute — admin opt-in cannot override the constitution.
+
+**Tests:** `tests/test_mind_autonomy_write.py` (19): dry-run helper (2); happy-path + reversibility (2); ⭐ refusal proofs (7 — platform off / tenant off / no policy / out-of-clamp / quarantined / non-whitelisted / Accept(B)-fail); ⭐ fail-closed (2 — writer error + gate internal error → no write); ⭐ Accept(B) ceiling overrides admin opt-in (1); consumer reuse + safe-direction + default-off (5). Backend **1617 → 1636** passed, 0 regressions. No schema change → migrations-dual N/A. **Task 6 COMPLETE (Part 1 + Part 2). PR opened, awaiting Jacob review — auto-merge OFF.**
+
 ## 2026-06-02 — feat(67a): Task 6 "ABN Mind" — Part 1 (safe half): enriched observation + opt-in autonomy-policy MODEL
 
 Backend / security-critical. Discovery established Mind ALREADY EXISTS (Batch 30) as a suggest-only weekly digest, so Task 6 = EXTEND it. Size-check (panel judgment) → **split**: Part 1 = enriched observation + the opt-in policy MODEL (pure-read + inert scaffold, zero mutation risk, ships alone); Part 2 = the autonomous write path (own focused session + review). Jacob approved building Part 1.
