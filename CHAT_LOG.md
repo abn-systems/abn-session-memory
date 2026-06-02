@@ -11,6 +11,23 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-02 — feat(66): Task 4 "ABN Shield in production" — Part 1: fail-SAFE quarantine spine
+
+Backend / security-critical. Task 4 was split (Discovery + size-check) into **Part 1 = the fail-safe halt spine** (this batch, branch `feat/batch-66a-quarantine-halt`) and **Part 2 = the active layer** (always-on detection + alert wiring, after Part 1 merges). Part 1 ships the mechanism Part 2 will trigger — nothing detects/auto-quarantines yet; that's Part 2.
+
+**The spine (foundation-first, bulletproof order — build the halt, prove it, then layer detection on top):**
+- **Schema:** `Agent.quarantined` (bool, default False, `server_default 0`) + `quarantine_reason` (str, nullable, **metadata-only**) + `quarantined_at` (ISO ts). Dual-DB migration `f1c6a9d4b2e8_add_agent_quarantine` mirroring the Batch-59 U_notify shape (inspector-guarded, dialect-neutral, `batch_alter_table` downgrade). Chains onto head `d2f3a4b5c6e7`.
+- **Two fail-SAFE halt gates, both at a SAFE boundary (block the NEXT run/write — never abort in-flight):**
+  - `scheduler._run_one` — a quarantined agent's scheduled run is SKIPPED before it starts.
+  - `runner._tier3_preflight_or_raise` — a quarantined agent's privileged (tier-3) write is REFUSED at pre-flight, BEFORE the Execute phase (new `AgentQuarantinedError`, caught by `run()` → run marked failed, no write). Fail-CLOSED on uncertainty, consistent with the existing tier-3 pre-flight.
+- **Reversible operator controls:** `POST /api/admin/agents/{id}/quarantine` + `/unquarantine` (NODE_ADMIN, **tenant-scoped** — cross-tenant → 404). Quarantine is a safety stop, not a death.
+
+**Fail-semantics note (the LOCKED split):** Part 1 is the ENFORCEMENT side — it honours an already-set flag and is fail-SAFE/fail-CLOSED. The fail-OPEN-on-detector-error half lives in Part 2's monitor (a Shield bug must never DoS agents). Documented as two opposite, clearly-commented paths.
+
+**Scope note for review (deliberate, flagged):** gate 2 refuses only the tier-3 *privileged write* (the harm vector); a manually-triggered tier-1/2 (read/propose, No-Data, no external mutation) of a quarantined agent still runs — scheduled runs of all tiers are stopped by gate 1. Trivially upgradable to "halt all tiers" (move the check before the tier<3 return) if you prefer that in Part 2.
+
+**Verification:** 12 new tests (`test_agent_quarantine.py`: T1 scheduler+tier-3+admin gates, T5 halt-before-Execute, T8 schema+migration-chain) — all green. Full backend suite **1571 → 1583** (+12), no regressions. Migration applies + downgrades clean on fresh SQLite (Postgres half in migrations-dual CI). Hold for Jacob review; do NOT auto-merge — Part 2 after Part 1 merges.
+
 ## 2026-06-01 — chore(66a): remove CodeQL workflow (GHAS not enabled; Semgrep covers SAST)
 
 Tiny surgical CI-config batch. CodeQL (added Batch 64) ran but FAILED on every PR at the SARIF-upload step because **GitHub Advanced Security (GHAS) is not enabled — a PAID add-on on private repos**. It was only a *second* SAST engine on top of Semgrep (free, green, present). Paying for GHAS pre-revenue to get a redundant SAST layer is the wrong spend, and a permanently-red advisory check erodes what "red" means. Decision (Jacob, locked): remove CodeQL now, re-add the day GHAS is enabled (reversible — workflow lives in git history).

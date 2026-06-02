@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: removing CodeQL (GHAS paid/not enabled; Semgrep covers SAST).
+Status: Task 4 Part 1 — fail-safe quarantine spine (Agent.quarantined + halt-gates).
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 4894870 — Task 3 adversarial merged (PR #73); gateway 42 / Shield 16 / backend 1571 grön.
-Senast: Task 3 adversarial merged (PR #73).
-Nästa: Batch 66a remove CodeQL → sen Task 4 (Shield in production).
-VIKTIGT: Semgrep STANNAR som SAST; CodeQL re-addable när GHAS aktiveras; rör EJ Semgrep/Trivy/gitleaks/Shield/ci.yml.
+Main-branch: ca50700 — CodeQL removed (PR #74); Task 3 adversarial (PR #73); gateway 42 / Shield 16 / backend grön.
+Senast: Batch 66 Part 1 KLAR — Agent.quarantined + 2 fail-safe halt-gates + reversibel un-quarantine endpoint; 12 nya tester; backend 1571→1583; migration dual-DB grön. PR öppen, väntar Jacob-review.
+Nästa: Jacob granskar + mergar Part 1 (auto-merge AV); sen Part 2 (always-on detect + attack-success + alert + persistence).
+VIKTIGT: fail-OPEN på guardian/detector-fel, fail-SAFE på bekräftad breach; halt blockerar NÄSTA run/write ALDRIG mitt i en write; No-Data aggregat/metadata-only.
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
@@ -361,6 +361,8 @@ Unfinished sub-tasks / open questions live here (referenced by CLAUDE.md §4.2 P
 - Batch 64 (INFRA Task 2 CI gap-fill) follow-ups: (1) the count-free rename of the required `Backend — 1518 tests` job — SAME item as the line above; Batch 64 made the ci.yml *comment* count-free but deliberately did NOT touch the job name or the branch-protection key (lockstep rename is its own batch). (2) [SUPERSEDED by Batch 66a — CodeQL was REMOVED (GHAS not enabled); re-adding it, and revisiting Go coverage, is gated on enabling GHAS — see the dedicated "Re-add CodeQL" item below]. (3) Wire ZAP → SARIF to the Security tab (`security-dast.yml` currently surfaces via the `zap-dast` workflow artifact; native SARIF needs a converter — deferred to keep the advisory DAST job hermetic/never-red).
 - Batch 65 (Task 3 adversarial gap-hardening) — KNOWN LIMITATION (surfaced, NOT a bug, NOT shipped red): the gateway regex PII scrubber (`services/abn-llm-gateway/.../pii_scrubber.py`) is plaintext-only by design, so obfuscated PII (base64 / unicode-homoglyph / IBAN) in a NON-tokenised free-text field reaches the provider in `redacted`/`full` mode — it is neutralised only in `no_data` mode (the abstractor drops all values to types). NOT a No-Data-guarantee violation: `no_data` tenants and every tokenised field are fully protected in all modes; tested in `TestObfuscatedPII`. Future hardening options for Jacob to weigh: (a) decode-then-scrub (base64/homoglyph-normalise before the regex pass), (b) an IBAN pattern, (c) document `no_data` as the recommended default for high-assurance tenants. Low urgency — defence-in-depth, not an open hole.
 - Re-add CodeQL if/when GHAS (GitHub Advanced Security) is enabled — removed in Batch 66a because its SARIF upload requires GHAS (a PAID add-on on private repos, not enabled), so it was red on every PR. SAST stays covered free by Semgrep (`security-sast.yml`). The `codeql.yml` workflow is preserved in git history (fully reversible); re-adding would also revisit CodeQL Go coverage for `services/abn-security`. Future OPTION, not a todo.
+- Batch 66 Task 4 Part 2 (after Part 1 merges) — the ACTIVE layer on the quarantine spine: always-on scheduling of the guardian, attack-SUCCESS detectors (reuse `ShieldGuardian.run_checks()`), alert wiring (reuse `deliver_alert`), metadata-only alert persistence, and the fail-OPEN-on-detector-error / fail-SAFE-on-confirmed-breach monitor that SETS `Agent.quarantined`. No-Data aggregate/metadata-only. Branch `feat/batch-66b-shield-runtime`.
+- Batch 66 Part 1 — DESIGN DECISION for Jacob to confirm in review (flagged, not a bug): the tier-3 halt gate (`runner._raise_if_quarantined`) refuses only the *privileged write* (tier 3 = the harm vector); a manually-triggered tier-1/2 run (read/propose, No-Data, no external mutation) of a quarantined agent still runs. Gate 1 (scheduler) stops all *scheduled* runs of every tier. If you want "quarantine = no run of any tier", move the check before the `tier < 3` early-return in `_tier3_preflight_or_raise` (one-line change; can fold into Part 2).
 
 ## CHANGES
 Operational-config change log (newest first).
