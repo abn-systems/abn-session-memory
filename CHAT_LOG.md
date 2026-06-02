@@ -11,6 +11,21 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-01 — feat(65): Task 3 ABN-specific adversarial gap-hardening (no-data-leak + prompt-injection)
+
+Backend Infra / security — ABN's real security differentiator ("we attack our own agent and prove data can't leak and instructions can't be hijacked"). Batch 65 Discovery (authoritative) confirmed Task 3's two themes ALREADY have broad coverage across 3 layers, so this batch did NOT rebuild them and did NOT spin up a parallel suite — it EXTENDED `services/abn-llm-gateway/tests/test_gateway.py` with **11 new tests** closing the three genuine gaps. Shield conventions throughout: inverted contract (PASS = the attack failed), synthetic `*_TEST_*` data only, fail-closed.
+
+- **Already-covered (NOT rebuilt):** Batch 27 Shield `test_shield_adversarial.py` (16 tests, required gate — left untouched), Observer No-Data `test_observer_cycle.py` (`sent_to_llm == 0`), gateway `TestNoDataGuarantee`/`TestPIIScrubber`/`TestAbstractor`.
+- **GAP 1 — gateway-boundary prompt injection** (`TestPromptInjectionRoleSeparation`, 4): hostile payload pushed through the FULL pipeline cannot mutate the bounded system prompt (asserted equal to the canonical `_TASK_SYSTEM_PROMPTS` constant), cannot exfiltrate the reverse-map, and in `no_data` mode is reduced to a bare type.
+- **GAP 2 — obfuscated-PII no-leak** (`TestObfuscatedPII`, 5): PII in field NAMES (scrubber serialises keys too, so it's caught), full-year `YYYYMMDD-NNNN` personnummer + `NNNNNN-NNNN` orgnr (same personal-id pattern), base64- and Cyrillic-homoglyph-obfuscated PII neutralised via `no_data` abstraction.
+- **GAP 3 — cross-layer canary** (`TestCrossLayerCanary`, 2): a synthetic canary in observer-shaped telemetry never reaches the provider prompt, the rebuilt response, or the audit entry — even when the provider echoes the token back (rebuilder → `ref:` not raw).
+
+★ **Role Separation frame** (from Jacob's research): prompt injection is illegal ROLE MUTATION — data-role content may never climb into the instruction role. ABN enforces it STRUCTURALLY (constant per-task system prompt; data only ever embedded as inert, fenced, tokenised/abstracted text). GAP-1 tests assert that barrier.
+
+**Honesty > green — no real hole found; every defence held.** One KNOWN LIMITATION surfaced + logged to Open Items (NOT papered over, NOT shipped red): the regex PII scrubber is plaintext-only by design, so obfuscated PII (base64/homoglyph/IBAN) in a *non-tokenised free-text* field is neutralised only in `no_data` mode (abstraction), not in `redacted`/`full`. This is not a No-Data-guarantee violation (no_data tenants + all tokenised fields are fully protected); flagged for a possible decode-then-scrub hardening or a "no_data = recommended default" note.
+
+**Verification:** new tests 11/11 green; full gateway suite 31→42; Shield required gate 16 (untouched); full backend suite 1571 passed (unchanged — changes are gateway-only, run by the `abn-llm-gateway — test` CI job, not the backend count). Tests-only, no product/runtime change. One PR; do NOT auto-merge.
+
 ## 2026-06-01 — chore: Dependabot cleanup arc (flood → conservative minor/patch-only)
 
 Batch 64 added Dependabot; its first run on a never-before-scanned repo opened ~20 PRs (#33–#52), then a second wave (#56–#64) as slots freed. Triaged + tamed over several config PRs; nothing auto-merged, every merge gated on the 6 required checks green (CodeQL red = ignored advisory noise — code scanning isn't enabled on this private repo), main re-verified GREEN after each wave.
