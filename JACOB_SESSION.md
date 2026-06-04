@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch 75 (MND) pågår — ABN Failure Taxonomy v1 (single-source failure-class catalog, reference-mapped, INGEN rewiring). Branch feat/batch-75-mnd-failure-taxonomy.
+Status: Batch 76 (DOC) — ABN Engineering Charter (approach A): standalone fil docs/ABN_ENGINEERING_CHARTER.md + kort referensblock i CLAUDE.md. Docs only. Branch feat/batch-76-doc-engineering-charter (ej mergad).
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 349c967 — 74 Critic+ESE on-path merged (#90). Suite-baslinje 1713.
-Senast: 74 mergad (#90). Före Build 2 (RAL) + Safety Spine: definiera ALLA fel-klasser EN gång (Jacobs canon p.19) — gemensam fel-vokabulär gör hela Safety Spine lättare.
-Nästa: 75 = failure-class-katalog (27 klasser × 6 fält) + reference-map till befintliga 73/74/generator-statusar; ingen live-path-ändring. Sedan Build 2 (RAL), P2(a) conformance floor + VariantConformanceMap, P2(b) SimulationGate.
-VIKTIGT: KATALOG ONLY — rör INTE 73/74-koden; reference-map måste vara SANN (verifiera tokens mot riktig kod, T4); auto_pause_weight = kalibrerbara placeholders (mekanism nu, kalibrera mot data). Ingen schema.
+Main-branch: b3f2072 — 75 Failure Taxonomy v1 merged (#91); 73/74/75 alla på main. 76 (this) på sin branch tills PR mergas.
+Senast: Jacob valde approach A → charter flyttad till egen fil docs/ABN_ENGINEERING_CHARTER.md (§0-8); CLAUDE.md får ENDAST ett 6-raders referensblock (0 borttagningar; LOCKED §0 + CODE LAW + Doctrine byte-identiska med main). Tidigare paste-in-CLAUDE.md (approach B) reverterad.
+Nästa: Merga #76; sedan Spår 1 Build 2 = RAL attestation + cross-reference + Finding.attested write-back (egen finding-shape Discovery först) → P2(a) conformance floor + VariantConformanceMap → P2(b) SimulationGate.
+VIKTIGT: charter följs FRÅN NU (verify-don't-assume, fail-closed, PR-only, hold at CLEAN, no temp/dup). CLAUDE.md-doktrinen orörd; charter complements + defererar till §0. Ingen kod/schema i 76.
 
 ## ABN ROADMAP v2 (authoritative — Jacob's nano-detail canon)
 THREE GUIDING STARS (apply to every track): (1) **3 master gates** —
