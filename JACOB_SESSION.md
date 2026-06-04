@@ -47,12 +47,44 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch 74 klar — väntar på Jacobs godkännande. Suite 1701→1713, 0 regressioner. Branch feat/batch-74-verify-onpath-critic-ese (ej mergad, ingen auto-merge).
+Status: Batch 75 (MND) pågår — ABN Failure Taxonomy v1 (single-source failure-class catalog, reference-mapped, INGEN rewiring). Branch feat/batch-75-mnd-failure-taxonomy.
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 142217f — 73 run() status honesty merged (#89). 74 ligger på sin branch tills PR mergas.
-Senast: 74 byggt — Critic+ESE wired i run() som fail-CLOSED pre-delivery verify-stage (anropade funktionerna, INTE executorn). _phase_act→build-only; nya _phase_verify + _phase_deliver. Crux: POSSIBLE_NAME-heuristiken false-positivar på ABN:s egen prosa → kategorisera (strong-PII/contradiction/policy=block; namn-heuristik+conf-vs-tier=soft flag).
-Nästa: Öppna PR för 74; sedan Build 2 = RAL attestation + cross-reference + Finding.attested write-back (fixar attestation_rate ~0; behöver capability finding-shape Discovery) → P2(a) conformance floor + P2(b) dry-run → DNA/Agent-OS-kartan (A–G).
-VIKTIGT: AAEA-executorn är fortf. INTE live-loopen; RAL ej på live-path än → Finding.attested strukturellt False → attestation_rate ~0 (Build 2 fixar). Empty-but-correct förblir success (≥0.50). Ingen schema.
+Main-branch: 349c967 — 74 Critic+ESE on-path merged (#90). Suite-baslinje 1713.
+Senast: 74 mergad (#90). Före Build 2 (RAL) + Safety Spine: definiera ALLA fel-klasser EN gång (Jacobs canon p.19) — gemensam fel-vokabulär gör hela Safety Spine lättare.
+Nästa: 75 = failure-class-katalog (27 klasser × 6 fält) + reference-map till befintliga 73/74/generator-statusar; ingen live-path-ändring. Sedan Build 2 (RAL), P2(a) conformance floor + VariantConformanceMap, P2(b) SimulationGate.
+VIKTIGT: KATALOG ONLY — rör INTE 73/74-koden; reference-map måste vara SANN (verifiera tokens mot riktig kod, T4); auto_pause_weight = kalibrerbara placeholders (mekanism nu, kalibrera mot data). Ingen schema.
+
+## ABN ROADMAP v2 (authoritative — Jacob's nano-detail canon)
+THREE GUIDING STARS (apply to every track): (1) **3 master gates** —
+GraphAdmissibility, AgentNeed, BlueprintReadiness — ALL other scores feed
+these three (anti score-chaos); (2) **hard floors > blended scores** (a junk
+sub-score must veto, not average away); (3) **unbroken chain of proof**:
+DNA→Graph→Genesis→Compiler→Simulation→Runtime→Verification→Audit→Tuari.
+Build weights as MECHANISM, calibrate against real data (no false precision).
+MND batches build nano-detail from canon; metaphors (Google-Translate =
+ABN-WIR; coffee-machine = Autonomous-Engine; chip/robot-kit =
+Component-Manifest) are quoted into the relevant track's prompt.
+
+- **Spår 1 — motor-integritet:** [73 ✅ run() status honesty] [74 ✅ Critic+ESE
+  on the live path] → **75 (this) Failure Taxonomy v1** → Build 2 (RAL
+  attestation + cross-reference + Finding.attested write-back) → P2(a) hard
+  conformance floor + VariantConformanceMap → P2(b) 5-level SimulationGate /
+  SafeFailureRate.
+- **Spår 2 — Safety Spine** (reads the Failure Taxonomy): PhaseContractValidator,
+  RunStatusReducer (weakest-link), RuntimeStateMachine + TransitionGuard,
+  RunLock, idempotency-key, Transactional Outbox, BlueprintQualityScore
+  hard-floors, Signed BrainProfile / ToolBinding, ABN-RCU snapshots,
+  AgentHealth (consumes auto_pause_weight), Safe Mode, Supervisor
+  Reconciliation.
+- **Spår 3 — DNA / Agent-OS:** A Observer Mode 0–6 / Event-Envelope / case-key /
+  no-loss / Permission-Manifest; B ABN-WIR (translation core) / 6 graph levels /
+  GraphAdmissibility / Work-Units / GenesisPackage; C Autonomous-Engine-as-
+  compiler / BrainProfile + BrainRiskFit / ToolFit-floors / Verification-
+  Compiler; D Trust-Kernel / Coordinator / Jurisdiction / File-Engine; E local
+  Control-Plane SQLite / AgentHealth; F Evolution / Shadow / Kill-switch /
+  Abstract-Feedback; G Tuari control room.
+- **Spår 4:** internal brains (17-step loop), agents-in-daily-tools
+  (Gmail/Teams/Slack), internal chat-panel, V1 launch → reshaped vision.
 
 ## TODO — Design-inspiration från Claude desktop-appen
 Jacob: "Ta inspiration från Claude-appen — de har chat, kod, design, fungerar utan problem. ABN-appen ska vara så snabb och bra." Den nya v7 sage-designen är på plats men UX-flowet (chat-tab på AgentDetailPage, kod-blocken på /api, navigationen i sidofältet) kan slipas mot Claude-appens kvalitet i en framtida batch. Notering för senare — inte i scope för Batch 35.
@@ -377,6 +409,7 @@ Unfinished sub-tasks / open questions live here (referenced by CLAUDE.md §4.2 P
 - **OPERA + Blueprint-creation integrity — Discovery DONE (read-only, authoritative). Engine-integrity queue (close in order, Discovery before build, one batch each):**
   - **[73 DONE — merged #89] run() status honesty.** `OPERARunner.run()` checked only Observe+Execute → a FAILED run persisted as "success" (Plan error swallowed → empty plan → masked success; Act failure read empty `{}` output → "success"). Fixed surgical: run() now checks Plan + Act status, fail-CLOSED → "failed" with a metadata reason; legitimately-empty plan stays a truthful success (the crux: `_phase_plan`'s only non-"success" path is its except → "partial"); Reason graceful-degrade + Observe/Execute untouched. No schema. Tests +9 (`test_opera_status_honesty.py`), suite 1692→1701.
   - **[74 DONE — PR open] P1(b) Build 1: Critic + End-State Evaluator on the live path.** Wired Dual-Brain Critic + ESE into `run()` as a fail-CLOSED pre-delivery verify stage — CALLED the functions, did NOT flip to the AAEA executor (avoids double-run / run_id collision / dashboard breakage). `_phase_act`→build-only; new `_phase_verify` + `_phase_deliver`. Crux: the critic's POSSIBLE_NAME heuristic false-positives on ABN's own bi-capitalised prose → categorise issues (strong-PII/contradiction/policy/unknown = fail-CLOSED block; POSSIBLE_NAME + confidence-vs-tier = soft flag). Verdict→honest status (extends 73): block→failed (not shipped), ESE flag 0.50-0.70→delivered+needs_review, ≥0.70→delivered; empty-but-correct still ≥0.50→success. No-Data (abstract-only LLM critic). No schema. Tests +12 (`test_verify_onpath.py`), suite 1701→1713.
+  - **[75 DONE — PR open] MND: ABN Failure Taxonomy v1.** `core/failure_taxonomy.py` — single-source `FailureClass` (27 canon classes) + `FailureSpec` registry with the six fields (severity/retryable/requires_human/auto_pause_weight/safe_to_show/safe_to_feedback) + truthful reference-map (`maps_to` real token or None + `emitted_by`). API get()/iter_all()/all_classes()/is_known(). CATALOG ONLY — no emitter rewiring, no live-path change, no schema; weights are calibratable placeholders. The shared failure vocabulary RAL/AgentHealth/Safe Mode/Supervisor/RunStatusReducer will read. Tests +20 (`test_failure_taxonomy.py`), suite 1713→1733.
   - **NEXT — P1(b) Build 2: RAL attestation + cross-reference + `Finding.attested` write-back.** The RAL `field_attestor` + `cross_reference_checker` + `attestation_report` are built (in `agent_runtime/`) but still NOT on the live path. **`Finding.attested` is structurally False in production** (no code anywhere sets it True; `findings_persistence.py:136` reads `raw.get("attested", False)`) → `attestation_rate_pct` reads ~0 for ALL agents (EU-AI-Act declaration, intelligence `attested_count`, `/instruct` report, agent trend/ROI endpoints). Build 2 must (a) shape capability findings to carry critical-field VALUES + a natural key (+ `source_a`/`source_b` for cross-ref), (b) run attest_fields/cross_reference/build_attestation_report in the verify stage, (c) **write the attestation result back onto each finding so `Finding.attested` reflects reality**. Needs its own small finding-shape Discovery first.
   - **P2(a): hard conformance/fitness floor.** `calculate_quality_score` (`process_graph/statistics.py:66-77`) blends fitness at only 25%; volume+confidence+algorithms reach ~0.72 with fitness=0.0 → crosses VERIFIED 0.70 → an acting agent from a graph whose model doesn't fit. No hard minimum-fitness gate.
   - **P2(b): dry-run-before-deploy.** `simulate_run` exists but is never called in `generate_blueprint` (confirmed by reading the full create path).
