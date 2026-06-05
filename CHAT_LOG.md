@@ -11,6 +11,33 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-06 — feat(S2F1-4 MND): retry loop + step-level idempotency (together) (SPAR 2 Fas 1, batch 4)
+
+Backend / TRUST-CRITICAL (execute loop). Retry + idempotency built TOGETHER —
+Discovery S2F1-4 proved a step key alone is 100% dormant (no re-execution path),
+and they are only meaningful together: a retry without idempotency double-acts;
+an idempotency key without retry is dormant. Today `MAX_EXECUTE_RETRIES`/
+`PHASE_TIMEOUTS` were DEFINED but referenced nowhere — the execute loop ran each
+step once, and the docstring/landing "max 2 attempts / 120 s" was target-as-live.
+
+**Action Risk Ladder (Jacob's locked PM decision):** retry ONLY safe/idempotent
+steps (read / analyze / local-report); NEVER auto-retry an external write /
+tier-3 EXECUTE_CHANGE / propose / unknown — a failed write goes straight to an
+honest failed + a human. The step-idempotency key is belt-and-suspenders (no
+double-action even if the boundary is ever crossed / on a future resume).
+
+**Built:**
+- `agent_engine/capabilities/__init__.py` — `is_retry_safe(capability)` (single source): whitelists the safe FUNCTIONS (read_invoices/analyze/detect_gaps/read_routes/read_gps_trips/generate_pdf|excel|word|csv/read_document/read_inbox); ALL aliases of a safe function are safe; writes/propose/send/UNKNOWN → False (fail-safe default).
+- `database.models.StepIdempotency` (`step_idempotency`): composite PK `(run_id, phase, step_id, tool_action)` = the idempotency key; `outcome`/`reason`/`recorded_at`. Migration `e2c8a4f1d9b6` (chains onto head `d4b9f1e7a2c6`, raw-SQL `IF NOT EXISTS`, dual-DB; applies from scratch on SQLite, Postgres half on CI).
+- `agent_runtime/step_idempotency.py` (single source): `compute_step_id(position, capability)` (stable hash, NOT the list index), `is_step_completed` (fail-OPEN → None on infra error), `record_step` (idempotent INSERT, never raises).
+- `runner.py`: stable `step_id` on each plan step; new `_execute_one_step` — idempotency short-circuit (a step already "ok" is not re-run) → SAFE step: retry up to `MAX_EXECUTE_RETRIES` with a per-step timeout (`asyncio.wait_for`+`to_thread`), each attempt against a COPIED context merged ONLY on success (findings-once) → NON-eligible step: run ONCE, never retried. Exhausted retries → honest failed (folded by the S2F1-1 reducer). The legacy (flag-off) path is untouched.
+
+**Fail-modes:** safe-retry-then-succeed, idempotency short-circuit, exhausted→honest-failed, write-never-retried (run once → human), unknown→not-retried (fail-safe), per-step-timeout→retried. Findings-once is structural: a failed/timed-out attempt's copied context is discarded, never merged. tier-3 coarse replay `(tenant_id, run_id, action_type)` UNTOUCHED (G6 — V2-gated, security-critical, separate mechanism).
+
+**Customer-Surface Sync §9 — CLOSED:** the retry copy is now TRUE for safe steps. `runner.py` docstrings + `landing/app/autonomous-engine/page.tsx` + `landing/components/OperaSection.tsx` reworded to the truth: safe read/analysis steps retry (up to 2) with a per-step timeout; an external write is never auto-retried — a failed write goes to a person.
+
+**Tests:** `tests/test_retry_idempotency.py` (17) — T1 safe-retry+findings-once, T2 short-circuit, T3 exhausted-honest, T4 write-never-retried, T5 unknown-not-retryable, T6 per-step-timeout, T7 happy-path-no-retry + full-run, T8 findings-not-double-counted, T9 write/read classification, helper round-trip + fail-open + No-Data columns. One merged test updated (`test_finding_production::test_sim_only_behind_flag` now uses a fresh runner per run = fresh run_id, since reusing one run_id now correctly short-circuits). Suite 1864 → 1881, 0 regressions.
+
 ## 2026-06-05 — feat(S2F1-3 MND): RunLock — dual-DB lease, per-agent run serialization (SPAR 2 Fas 1, batch 3)
 
 Backend / TRUST-CRITICAL (concurrency). The FIRST behaviour-changing concurrency
