@@ -11,6 +11,26 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-05 — feat(S2F1-2 MND): RuntimeStateMachine + TransitionGuard (SPAR 2 Fas 1, batch 2)
+
+Backend / TRUST-CRITICAL (the OPERA phase order). The phase order
+(Observe→Plan→Execute→Reason→Verify→Act/Deliver) was only the sequential CODE
+PATH in `OPERARunner.run()` — the Batch-74 verify-before-deliver order was coded,
+not guarded. S2F1-2 makes it ENFORCED with an explicit in-run FSM that ASSERTS
+the existing order and rejects a CLEAR forbidden transition, while staying
+FAIL-OPEN on any uncertainty so a guard bug can never block a legit run.
+
+**Built:**
+- `agent_runtime/runtime_state_machine.py` (new, single source): `OPERA_PHASE_SEQUENCE` + `ALLOWED_TRANSITIONS` (the order declaration), `evaluate_transition` (never raises; BLOCK only the 3 legit-path-impossible violations, ALLOW everything else), `ForbiddenTransitionError`, `TransitionVerdict`, `is_live_order_transition`.
+- `runner._append_phase` (the S2F1-1 seam): evaluates the transition (belt-and-suspenders fail-open if the guard itself raised), appends audit-first, validates the S2F1-1 contract, then raises `ForbiddenTransitionError` on a clear block; `run()` catches → honest `failed` with `forbidden_transition` reason.
+- `core/failure_taxonomy.py`: +1 class `FORBIDDEN_TRANSITION` (maps_to "failed"); CANON_V1 30→31.
+
+**The 3 BLOCK categories** (each PROVABLY impossible on the legit path): no-resurrect (terminal failed phase already recorded), deliver-before-verify (deliver without a recorded non-blocked verify), backward/repeat (next index ≤ prev recognised index). **FAIL-OPEN** on unrecognised phase / START / forward-skip / guard-internal error — the central guard (G3), double-protected (`evaluate_transition` self-wraps + `_append_phase` swallows a raising guard).
+
+**Decisions:** ASSERT-EXISTING-ORDER-ONLY (no reorder, no schema, in-run only — G2/G7). Forward-skip deliberately left fail-open (only the deliver jump is caught, by category 2) to avoid the table-typo fragility G3 warns about. The "deliver after blocked verify" sub-rule is near-dead in practice (a blocked verify has status `failed` → no-resurrect catches it first) but kept defensive + tested.
+
+**Verify:** +18 tests (`test_runtime_statemachine.py`: T1 legit order passes, T2 deliver-before-verify blocked, T3 no-resurrect, T4 fail-open [unrecognised / forward-skip / guard-internal-error / raising-guard-live], T5 live block→honest failed, T6 7-phase order intact, T7 No-Data) + `test_failure_taxonomy` CANON+counts 30→31. Full suite **1831 → 1849**, 0 regressions. No schema, no new deps, No-Data. PR opened, held at CLEAN — Jacob reviews + merges (auto-merge OFF). NEXT: S2F1-3 RunLock (own Discovery).
+
 ## 2026-06-02 — feat(68b): ABN design system Part 2 — 48 extended motifs + 10 principles + gallery (Batch 68 COMPLETE)
 
 Frontend / design-system. Part 2 of the split: transcribed the remaining **58 marks** (48 extended motifs + 10 visual principles) from the approved Claude-Design source into the SAME `AbnIcon` registry built in Part 1 (#79) — appended to `ABN_ICONS`, did NOT refactor it. Registry now holds **all 80 marks** (12 core + 48 extended + 10 principle + 10 status).
