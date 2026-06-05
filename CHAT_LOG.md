@@ -11,6 +11,29 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-05 — feat(S2F1-3 MND): RunLock — dual-DB lease, per-agent run serialization (SPAR 2 Fas 1, batch 3)
+
+Backend / TRUST-CRITICAL (concurrency). The FIRST behaviour-changing concurrency
+piece + the first Fas-1 schema. Discovery S2F1-3 confirmed: only the scheduler had
+a guard (best-effort, per-tenant, in-process); manual `/run`, `/instruct`, the
+orchestrator, and the auto-trigger had NONE — so the SAME agent could run
+concurrently across entry points (double-acting, racing side-effects). RunLock is
+a dual-DB lease lock keyed on `agent_id`, acquired at the single `OPERARunner.run()`
+choke (covers all 5 entry points at once), released in the existing `finally`.
+
+**Built:**
+- `database.models.RunLock` (`run_locks`): `agent_id` PRIMARY KEY (the honest lock key — PK uniqueness serializes the same agent; different agents never contend), `tenant_id`/`domain`/`holder_run_id`/`acquired_at`/`expires_at` (audit/denormalized). Mirrors the `OAuthState` key-as-PK + TTL shape.
+- Migration `d4b9f1e7a2c6_add_run_locks` (chains onto head `c5e9b1a7f3d2`): raw-SQL `CREATE TABLE/INDEX IF NOT EXISTS`, dual-DB replay-safe; verified applying from scratch on SQLite (Postgres half on CI migrations-dual).
+- `agent_runtime/run_lock.py` (single source): `acquire_run_lock` (INSERT=acquired; `IntegrityError`→ stale `expires_at<now`? reclaim-once : contention; any other exception→ `infra_error`, never raises), `release_run_lock` (idempotent DELETE by `(agent_id, holder_run_id)` — only ever deletes OUR lease), `RUN_LOCK_TTL = 30 min`.
+- `runner.run()`: acquire BEFORE the `try` (contention → benign `run_lock_contention` result, NO AgentRun persisted, return); release in the existing `finally` AFTER `_save_run_record`, only if we ACQUIRED. tenant_id/domain read via `getattr` (audit-only — a missing domain must never crash the lock).
+- `core/failure_taxonomy.py`: +1 class `RUN_LOCK_CONTENTION` (INFO, retryable, `auto_pause_weight=0.0`, `maps_to="run_lock_contention"` — NOT "failed"); CANON_V1 31→32.
+
+**Jacob's locked decisions:** **A** no-persist-on-contention (the in-flight sibling records its own row; contention never reaches SafeFailureRate/dashboards). **B** fixed generous TTL (~30 min, calibratable) — must EXCEED max run wall-clock so a live long run's lease is never stolen; heartbeat = future upgrade. **C** the two fail-modes are OPPOSITE on purpose: HELD lock → fail-CLOSED refuse-fast (the lock doing its job); lock-INFRA error (table missing / DB error during evaluation) → **fail-OPEN, log loud + PROCEED** — a broken lock must never DoS all agents. This is a CORRECTNESS gate, deliberately unlike the security gates (quarantine/pending/RAL/verify/CanSign) which stay fail-CLOSED-on-DB-error and are untouched.
+
+**Kept:** the scheduler's `_running_tenants` set (complementary per-tenant scheduling throttle, NOT replaced). RunLock layers under it as the authoritative cross-entry-point per-agent lock.
+
+**Tests:** `tests/test_run_lock.py` (15) — contention-benign-no-AgentRun (T1), different-agents-concurrent (T2), stale-reclaim (T3), live-lease-not-stolen (T4), release-on-success + release-on-exception (T5), fail-open-on-infra (T6), 5-trigger choke coverage (T7), No-Data columns (T8); `test_failure_taxonomy` CANON + counts 31→32. Suite 1849 → 1864, 0 regressions. **TARGET (logged):** the ideal key (`work_unit`/`case_key`/`action_scope`) + a heartbeat for runs exceeding the TTL.
+
 ## 2026-06-05 — feat(S2F1-2 MND): RuntimeStateMachine + TransitionGuard (SPAR 2 Fas 1, batch 2)
 
 Backend / TRUST-CRITICAL (the OPERA phase order). The phase order
