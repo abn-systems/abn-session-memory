@@ -11,6 +11,33 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-06 — feat(S2F1-5a MND): transactional outbox + OutboxPoller (SPAR 2 Fas 1, batch 5a — substantively closes Fas 1)
+
+Backend / TRUST-CRITICAL (crash-safe external delivery). Discovery's sharp,
+scope-shrinking finding: of all run side-effects, the **proposal notification**
+(Slack/Teams) is the ONLY real live external send on the per-run path — internal
+DB writes (#1-7) are already per-run_id idempotent (crash-safe-enough),
+`_deliver_reports` (#9) is a logging STUB, Friday (#10) has its own
+`(tenant, week)` idempotency + cron. So only the proposal notification had the
+real crash-loss + double-fire risk. This batch builds the general transactional
+outbox + an OutboxPoller daemon and migrates THAT one sender; internal writes are
+deliberately NOT outboxed (the over-reach to avoid).
+
+**Built:**
+- `database.models.OutboxEvent` (`outbox_events`): payload-free — `event_id` (uuid PK), `event_type`, `aggregate_id` (proposal id), `tenant_id`, `channel`, `status` (pending|sent|skipped|dead), `attempt_count`, `next_attempt_at`, `idempotency_key` (UNIQUE), `last_error`, timestamps. Migration `f3a9c1e8b524` (chains onto head `e2c8a4f1d9b6`, raw-SQL `IF NOT EXISTS`, dual-DB; UNIQUE(idempotency_key) + index (status, next_attempt_at); applies from scratch on SQLite, Postgres half on CI).
+- `agent_runtime/outbox.py` (single source): `enqueue_outbox` (adds the intent row to the CURRENT session, NO commit — commits atomically with the Proposal), `claim_due_events`, `mark_sent`/`mark_skipped`/`mark_failed` (exponential backoff → dead-letter). Constants: poll 30s, max 5 attempts, base backoff 60s.
+- `agent_runtime/outbox_poller.py` — `OutboxPoller` daemon (mirrors `FridayReportScheduler`; start/stop/status + singleton), wired in `main.py` lifespan as step 6 (stop first in shutdown). Re-derives content at delivery from the Proposal row; send-dedups via the existing `NotificationDispatch`; no-channel → terminal skip.
+- `delivery/router.py`: `has_proposal_channel(...)` helper (the poller's no-channel pre-check, reuses `_resolve_active_with_connection_ids`).
+- `proposals_persistence.save_proposal_from_run`: the transactional seam — `db.add(row); db.flush()` (assign id w/o commit) → `enqueue_outbox(...)` → `db.commit()` (both atomic) → `db.refresh`. The existing rollback covers both → no orphan.
+- `runner.py`: the inline Batch-18 dispatch block (2289-2325) REMOVED — the run no longer sends inline.
+
+**Exactly-once = at-least-once + dedup:** the outbox `idempotency_key` (`event_type:proposal_id:channel`) dedups ENQUEUE (pre-send); the existing `NotificationDispatch` row (written on first successful send) is the SEND-dedup token — the poller checks it before sending, so a crash between the external send and the status-mark never double-sends. Crash-loss is fixed because the intent row commits with the Proposal (survives a crash → poller delivers). Repeated failures back off then dead-letter (honest surfacing, never a silent drop); no applicable channel → benign terminal skip (no dead-letter noise — the common case).
+
+**No-Data:** the outbox row is payload-free by construction (ids/status/timestamps); content is re-derived at delivery from the Proposal row (`action_type` + `impact_summary` aggregates). **`NotificationDispatch` kept** as the post-send correlation record (G7). **Internal writes NOT outboxed** (G9). tier-3 replay untouched.
+
+**Split:** 5b (report-delivery #9 when it becomes a real send / Friday #10 migration onto the same outbox) DEFERRED, logged not built.
+
+**Tests:** `tests/test_outbox.py` (13) — atomic intent + rollback-no-orphan (T1), poller delivers (T2), exactly-once dedup no-resend (T3), crash-survivor delivered (T4), backoff→dead-letter + no-channel-skip (T5), payload-free (T6), only-proposal-notification-enqueued + no-double-enqueue (T7), claim-due. One merged test updated (`test_proposal_wiring::test_notification_dispatch_fires_on_proposal` → asserts the outbox enqueue instead of the removed inline query). Suite 1881 → 1894, 0 regressions. **Substantively closes Safety Spine Fas 1.**
 ## 2026-06-06 — canon: ABN V1 AUGUST RELEASE PLAN + S2F1-5 Discovery
 
 **Two decisions recorded (no code change):**
