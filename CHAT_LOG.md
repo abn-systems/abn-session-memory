@@ -11,6 +11,59 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-06 — fix(Bridge-2 MND): RAL domain-vocabulary alignment (one domain→family source of truth)
+
+Backend / TRUST-CRITICAL (RAL attestation — the proof delivered values are
+anchored to source). Fixes the THIRD root-hole the E2E-2 confirm-Discovery found:
+RAL's `DOMAIN_TO_FIELDMAP` (field_attestor.py) recognised `invoicing`/`carrier_billing`
+but NOT the DETECTED-domain vocabulary the industry detector emits
+(`invoice_audit`/`shift_planning`/`delivery_matching`), so
+`resolve_domain_field_map("invoice_audit")=None` → `_attest_informational` SKIPPED
+attestation → a no-pattern generated agent's findings came back `attested=False` →
+general delivered an UNATTESTED report and any RAL-required industry fail-CLOSED at
+76b. Same class of vocabulary drift Bridge-1 fixed (the capability map), now in the
+RAL attestation map.
+
+DECISION: full single-source consolidation (G3 preferred). The thing that drifted
+is the domain→family GROUPING; the family→target maps genuinely differ (capability
+vs FIELD_MAPS key; `logistics`≠`delivery` in RAL FIELD_MAPS but they share logistics
+capability functions). So:
+- **NEW `core/domain_family.py`** — `DOMAIN_FAMILY` + `resolve_domain_family` = the
+  ONE domain→family grouping (invoice_audit/invoicing/carrier_billing/project_billing/
+  billing→invoicing; shift_planning/scheduling/clinical_scheduling/payroll→scheduling;
+  logistics→logistics; delivery_matching/delivery→delivery; unknown/sales_pipeline→None).
+- **`field_attestor.py`** — `DOMAIN_TO_FIELDMAP` replaced by `_FAMILY_TO_FIELDMAP`
+  (family→FIELD_MAPS key); `resolve_domain_field_map(d)=_FAMILY_TO_FIELDMAP.get(resolve_domain_family(d))`.
+  Signature + every Batch-76a `test_domain_resolver` case preserved; the detected
+  vocabulary now resolves.
+- **`generator.py` (Bridge-1)** — `_DOMAIN_CAPABILITY_FAMILY` removed; `_runtime_capability_for_step`
+  now calls `resolve_domain_family`; `_FAMILY_RUNTIME_CAP` gains `delivery`→logistics
+  caps (capability behaviour preserved — delivery still gets logistics functions).
+
+So both consumers resolve the grouping through ONE map → no fourth map can drift.
+
+ATTESTATION RUNS, NO GATE WEAKENED (G4): the fix only lets the detected domain
+RESOLVE so attestation runs. A finding genuinely lacking its RAL fields still
+fail-CLOSES. Domain-correct (G5): invoice_audit→invoicing field family (NEVER
+logistics — the false-proof guard); unknown→None (honest empty, never a wrong
+family).
+
+Empirical (3 probes, deleted): (A) general clean-invoicing → `attested=[True×4]`
+(was [False×4]), status=success, report written, attestation non-empty → DELIVERS
+VERIFIED; (B) finance clean-invoicing (ral_required=[invoice_number,total_amount])
+→ status=success, attested, delivered (was blocked); (C) carrier_invoice_audit/
+logistics (ral_required needs distance_km/route_id the invoicing findings lack) →
+status=failed, NO report → **the gate STILL bites**.
+
+Tests: `tests/test_ral_domain_bridge.py` (5 functions, T1-T6 with T1+T2 combined —
+T1/T2 attested+verified general, T3 finance passes 76b, T4 carrier/logistics still
+fail-CLOSES, T5 domain-correct/never-wrong-family/false-proof-guard, T6 single-source
++ 76a cases preserved).
+RAL thresholds + `attest_and_stamp` logic, finding shape, sim data, gates, schema
+all UNCHANGED. No-Data (string→string metadata). No migration. No new vendor deps.
+Bridge-1 (capability) + Bridge-2 (attestation) together make a generated agent
+fully runnable AND verifiable.
+
 ## 2026-06-06 — fix(Bridge-1 MND): capability vocabulary bridge (Option 1c)
 
 Backend / TRUST-CRITICAL (the generator's signed output — the create→run seam).
