@@ -11,6 +11,69 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-06 — fix(Bridge-1 MND): capability vocabulary bridge (Option 1c)
+
+Backend / TRUST-CRITICAL (the generator's signed output — the create→run seam).
+Fixes the E2E-2 HALT root-hole. The canonical `generate_blueprint` emitted the
+domain-AGNOSTIC action_map vocabulary ONLY on the no-pattern-match fallback
+(`generator.py:600` `sorted({s["action"] for s in steps})` = `fetch_data.fortnox`/
+`analyze.pattern_matching`/`report.excel`), which the DOMAIN-SPECIFIC runtime
+`CAPABILITY_REGISTRY` couldn't resolve → silently skipped → 0 findings. A
+pattern match already emitted legacy resolvable names; this batch makes the
+no-pattern path do the same, domain-correctly.
+
+DECISION: Option 1c — domain-aware mapping at GENERATION time, BEFORE signing.
+REJECTED 1a (flat registry alias — domain-blind: the same `analyze.pattern_matching`
+must be `invoicing.analyze` for an invoicing agent but `logistics.analyze` for a
+logistics one) and 1b (post-sign `_phase_plan` translation — would make
+signed ≠ executed).
+
+WHAT LANDED (all in `blueprint_generator/generator.py`, before `build_blueprint`):
+- `_DOMAIN_CAPABILITY_FAMILY` (detected/explicit domain → invoicing | scheduling
+  | logistics; covers industry_detector `_DOMAIN_HINTS` outputs invoice_audit/
+  shift_planning/delivery_matching + explicit carrier_billing/project_billing/
+  clinical_scheduling/payroll/delivery), `_FAMILY_RUNTIME_CAP` ((family,category)
+  → the registry read/analyze cap — every value EXISTS in the registry),
+  `_SYSTEM_RUNTIME_READ` (domain-agnostic file_system/gmail/outlook readers),
+  `_REPORT_RUNTIME_CAP` (report.pdf/excel/word/csv → report.generate_*).
+- `_runtime_capability_for_step(step, domain)` — maps one step to its
+  domain-correct runtime capability; report = domain-agnostic flat map;
+  fetch_data = domain family wins (so the domain analyzer sees the rows the read
+  populates), else a source-specific reader, else HONEST no-op (keep the
+  action_map id → logged skip — NEVER a wrong-domain cap, G6); analyze = by
+  domain family else honest no-op; propose/execute/dashboard left as-is.
+- `_bridge_capabilities(steps, domain)` — STEP-ORDER (not the old alphabetical
+  `sorted`), deduped, so read → analyze → report (invoicing.analyze sees the
+  context['invoices'] invoicing.read_invoices populates).
+- `capability_list` (the no-pattern fork) now calls `_bridge_capabilities`; the
+  pattern-match branch (`pattern.capabilities`) is UNCHANGED.
+- `agent_engine/capabilities/__init__.py`: flat aliases `report.pdf`/`.excel`/
+  `.word`/`.csv` → reporting.generate_* (G3 — reports are domain-agnostic, so a
+  flat alias is correct here).
+
+COHERENCE (Fas-2): the bridge runs in `build_blueprint` BEFORE the gates +
+`sign_blueprint` (generator.py:1025-1133), so the SIGNED `capabilities` ARE the
+resolvable runtime names — signed = executed; blueprint-signature verify stays
+coherent. Empirically: a no-pattern invoicing agent's capabilities went from
+`[analyze.pattern_matching, fetch_data.fortnox, …]` (0 findings) to
+`[invoicing.read_invoices, invoicing.analyze, report.generate_excel,
+report.generate_pdf]` (signed, Accept(B)=True, 4 findings / €266).
+
+SCOPE / OUT OF SCOPE (G7): RAL/AVM/76b UNTOUCHED. The second gap — the
+RAL-required-fields ↔ finding-shape mismatch (a logistics-industry invoicing
+agent still fails 76b verify because logistics RAL needs distance_km/route_id
+the invoicing findings lack) — is the separate E2E-2 family/RAL decision (target
+a 76b-consistent finance/retail invoicing family). `propose.*` +
+`fetch_data.generic_api` have no clean runtime target → left as honest no-ops
+(documented, tier-2 concern). No-Data unaffected (resolution, not data flow).
+No migration. Legacy test-only generator + registry legacy entries untouched.
+
+Tests: `tests/test_capability_bridge.py` (10 — T2 domain-correct + never-
+cross-domain, T4 report aliases, T6 honest no-op, step-order/dedup, T1/T3/T5
+no-pattern agent runnable+signed+Accept(B), T1 run produces real findings via
+_phase_execute, T7 pattern path unchanged, T8 legacy entries intact). No new
+vendor deps.
+
 ## 2026-06-06 — feat(E2E-1 MND): report edge — a real report file on the live OPERA path
 
 Backend / TRUST-CRITICAL (touches the live run() path). V1-plan 🟢 #6 (one agent
