@@ -11,6 +11,58 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-06 — feat(NoPayload-1 MND): NoPayloadProof SchemaClean (classification-driven schema scan)
+
+Backend / TRUST-CRITICAL (the moat's proof). V1-plan 🟢 #5 (No-Data PROVABLE) — the
+SchemaClean leg. Discovery confirmed ABN's No-Data redaction is REAL + enforced (the
+gateway strips/tokenises/abstracts before any external call; the outbound prompt is
+payload-free by construction) — but the PROOF was ASSERTED, not measured:
+`abn_llm_calls` hardcodes `raw_values_sent=0`, the gateway audit has no payload-clean
+field, and the "no payload columns" guarantee lived in 7 SCATTERED per-table tests with
+NO unified CI-enforced scan (a payload column on a table whose author forgot a bespoke
+test would slip through). This batch builds the SchemaClean leg — it PROVES what exists;
+it builds NO redaction.
+
+**Built:**
+- `core/no_payload_proof.py` (single source): `TABLE_CLASSIFICATION` buckets EVERY
+  `Base` model (53) into `MUST_BE_PAYLOAD_FREE` (23 — cross-tenant/telemetry/proof/
+  transparency surfaces) or `ALLOWED_LOCAL_OPERATIONAL` (30 — the customer's/operator's
+  own local data + config). `is_clean_column_shape` = an allow-list heuristic (numeric/
+  bool/temporal types always clean; String/Text clean only via curated `_ALLOW_SUFFIX`/
+  `_ALLOW_EXACT`); `COLUMN_EXCEPTIONS` = documented per-(table,col) reasons for the
+  genuinely-free-text-but-clean metadata columns (shield_alerts.message, pulse spec_diff/
+  error_message, mind suggestions, control_plane violations/action_taken, ai_act
+  intended_purpose/human_oversight/capabilities/data_sources, diffusion pattern_vector,
+  long_term fact_payload, llm_calls sent_event_types/sent_statistics, roi formula).
+  `scan_schema()` + `schema_clean()` factor + `assert_table_payload_free()`.
+- **THE CRITICAL DISTINCTION:** No-Data = EGRESS (leaving the node / reaching an external
+  LLM), NOT the customer's own local DB. So `Finding`/`AgentRun`/`Proposal`/`Event`
+  (which legitimately hold customer-derived values) are `ALLOWED_LOCAL_OPERATIONAL` and
+  NEVER false-flagged — protected by the egress controls, not this scan.
+- **FAIL-CLOSED:** an UNCLASSIFIED new table fails (the permanent guard — forces
+  classification); a payload-shaped column on a must-be-clean table fails. A justified
+  exception is an explicit documented entry, never a loosening of the heuristic.
+- **No-Data meta:** the scan reads column METADATA only (names + types + classification)
+  — it never queries a row or samples a value (`scan_schema()` takes no DB).
+- Consolidated the 7 scattered per-table tests to the one single source (kept the
+  DiffusionPattern cross-tenant ANONYMITY check + the value-grep tests as distinct
+  coverage). `schema_clean()` = the first REAL factor of the multiplicative
+  NoPayloadProof canon (other factors = batch 2 / 🟡, NOT faked).
+
+**Scope (locked):** SchemaClean ONLY. Batch 2 = gateway runtime/redaction proof (legs
+3.2+3.3: emit a payload_clean signal into LLMGatewayLog + assert task_description is
+token/abstract-only — prove existing enforcement). 🟡 ExportClean + an auditor-queryable
+proof endpoint (will use the design system). AuditClean ⊂ SchemaClean (transparency
+tables are must-be-clean tables); do NOT over-scope to the full 5-leg formula.
+
+**Tests:** `tests/test_no_payload_proof.py` (15) — clean-pass (T1), allowed-local-not-
+flagged (T2, the critical distinction), payload-column-fails (T3, real scan), unclassified-
+fails (T4, the permanent guard), exception-honoured (T5), 7-test consolidation (T6),
+proof-payload-free (T7, no-DB), SchemaClean factor (T9). + 7 consolidated files green.
+Backend suite +15. No migration, no model change, no run-path change, no new vendor deps.
+Customer-Surface: internal proof — no customer-copy change (No-Data is now CI-proven, not
+merely asserted; WHAT not HOW).
+
 ## 2026-06-06 — feat(Compliance-1 MND): ComplianceGate (risk-class as a gate + auto-forge declaration)
 
 Backend / TRUST-CRITICAL (a compliance gate at the sign-time choke). V1-plan 🟢 #4
