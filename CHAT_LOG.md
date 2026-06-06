@@ -11,6 +11,27 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-06 — feat(S2F3-1 MND): AgentHealth auto-pause (SPAR 2 Fas 3, batch 1)
+
+Backend / TRUST-CRITICAL (agent lifecycle). The first Fleet-integrity batch — the
+V1-plan 🟢 subset that makes "controlled" TRUE: an operationally-degraded agent is
+AUTO-PAUSED by the system, not only on a security breach (Batch 66 Shield) or by a
+human. Discovery S2-Fas3 confirmed auto-pause existed ONLY for confirmed security
+breaches; there was no auto-pause on operational degradation (an agent could fail
+run after run and keep being scheduled).
+
+**Built (reuse, don't reinvent):**
+- `agent_runtime/agent_health.py` — `evaluate_agent_health(db, agent_id)` reuses the P2b-i `can_sign_blueprint.history_safe_rate` signal (same window `HISTORY_WINDOW_RUNS=50`, `MIN_SAMPLE=5`; unsafe = failed/error runs ∪ rolled-back records; fail-open `(None,0)`); pause iff `safe_rate < HEALTH_SAFE_RATE_FLOOR (0.50, a sibling const, calibratable)` over ≥ MIN_SAMPLE runs. `AgentHealthMonitor.run_tick` mirrors the Shield monitor (interval gate `HEALTH_MONITOR_INTERVAL_SECONDS=300` + whole-tick fail-OPEN), wired into `scheduler._tick` beside the Shield monitor — cleanly SEPARATE (health ≠ security).
+- DISTINCT `Agent.health_paused` + `health_pause_reason` + `health_paused_at` columns (migration `a7d2f4c9e1b6`, inspector-guard `op.add_column` + `sa.false()`, dual-DB; chains onto `f3a9c1e8b524`). `quarantined` (security) untouched.
+- Enforcement WIDENED to `quarantined OR health_paused` (no new mechanism): scheduler `_run_one` skip, manual `/run` 409, run() pre-flight `_raise_if_quarantined` (raises a DISTINCT `AgentHealthPausedError` → run() except → honest `failed`). Matches quarantine's exact coverage.
+- `+1` taxonomy class `agent_health_paused` (HIGH, requires_human, not-retryable, maps_to "failed"), CANON 33→34.
+- Reversal: manual `POST /admin/agents/{id}/un-health-pause` (mirror unquarantine). **Recovery-auto rejected** — a paused agent runs no new good runs, so it can never auto-recover; manual reversal only (fail-safe).
+- Audit: the agent columns (reason = "SafeFailureRate X below floor Y over N runs" + timestamp, queryable) + `logger.warning` — mirrors quarantine's audit.
+
+**Posture:** fail-OPEN on eval/monitor error (a health bug pauses NOTHING — never a self-inflicted fleet DoS, mirrors the Shield tick); fail-SAFE only on a successfully-computed floor breach. MIN_SAMPLE guard → a new/low-history agent is never false-paused. No fixture sweep (health_paused defaults False — transparent to all existing agents). Customer-Surface Sync §9: no customer copy describes agent auto-pause → none to sync. **Decisions:** distinct column (not overloading `quarantined` — ABN Code Law #6); Safe Mode + Supervisor Reconciliation = 🟡 deferred (S2F3-2/-3 — tier-1/2 agents are already human-gated on risk, so per-agent auto-pause is the V1-sufficient "controlled" mechanism).
+
+**Tests:** `tests/test_agent_health.py` (14) — degraded-paused, low-sample-never, healthy-untouched, no-history-not-paused, tick auto-pause + audit + separation, fail-OPEN-on-eval-error, skips-already-paused/quarantined, run()-preflight refuses, scheduler skips, separation, reversible, No-Data; `test_failure_taxonomy` CANON+counts 33→34. Suite 1902 → 1916.
+
 ## 2026-06-06 — feat(S2F2-1 MND): runtime blueprint-signature verification, all agents (SPAR 2 Fas 2, batch 1)
 
 Backend / TRUST-CRITICAL (a security gate on the live run path). FIRST Blueprint-
