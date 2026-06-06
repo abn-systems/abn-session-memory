@@ -11,6 +11,73 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-06 — feat(E2E-1 MND): report edge — a real report file on the live OPERA path
+
+Backend / TRUST-CRITICAL (touches the live run() path). V1-plan 🟢 #6 (one agent
+family end-to-end), batch 1 of a 2-batch SPLIT (E2E-1 = the report edge; E2E-2 =
+the full-chain proof test). Discovery confirmed the chain's MIDDLE (compile →
+OPERA-V → verify → approval → audit) is fully BUILT, hardened, and already
+exercised live; the one real gap was a real REPORT FILE — the live
+`_generate_reports` (runner.py:1732-1750) was a stub (filename strings + a
+"Report queued" log, no file), while the real DGE renderer is orphaned (called
+only by the un-wired AAEA `executor.py:490` + the deprecated
+`integrated_runner.py:491`).
+
+GO/FALLBACK DECISION (Step 1, the headline) → **FALLBACK** (deterministic
+Markdown, stdlib, no LLM). DGE is closer than feared (`_attestation_passed`
+accepts a dict-with-`summary`, orchestrator.py:76-90; `genome` accepts a plain
+dict, 334-348) but still **heavier than a drop-in**: (1) `_build_findings_from_
+attestation` (131-194) renders from `attestation["field_attestations"]` rows,
+but the live `_attest_informational` (runner.py:1361) returns only a summary
+dict (no field rows) → DGE would render unattested findings unless I re-thread
+the full report out of the verify stage; (2) DGE calls the LLM gateway for
+narrative on every run (orchestrator.py:268) — an external call on the protected
+deliver path; (3) it resolves per-domain templates + multi-format renderers
+(weasyprint, forbidden by G8). The fallback hits the success criterion (a real
+file from findings, on the live path) more robustly. DGE stays the future richer
+path (E2E-2+ can thread the full attestation report).
+
+WHAT LANDED:
+- **`agent_runtime/report_render.py`** (NEW, single source) — `render_markdown_
+  report(output, *, run_id, agent_name, tenant_id, domain)` (deterministic, NO
+  clock/LLM/network — renders the run's own findings to Markdown: header +
+  summary + recommendation + a findings table with type/severity/impact/attested/
+  reference) + `write_report_file(content, *, tenant_id, run_id, ext="md")`
+  (writes under `settings.report_storage_path/<tenant>/<run_id>.md` — the same
+  root the reports API serves + traversal-guards, so the artifact is
+  downloadable for human approval; `_slug` sanitises the filename).
+- **`_generate_reports` rewired** (runner.py) — the stub's "build strings + log"
+  replaced with a real render + write returning `[path]`. `report_paths`
+  persistence already wired (run() :334 → AgentRun :2073) — NO schema change.
+- **`_deliver_reports` stays a stub** (external send = a separate 🟡 concern).
+- The invoicing family `generate_report` marker (invoicing.py:108) is left
+  untouched — the file is produced at the RUNNER level (`_generate_reports`); the
+  marker is a harmless context artifact.
+
+GUARDS:
+- **Runs THROUGH the gates (G4):** generation is in `_phase_deliver`, AFTER
+  `_phase_verify` approved the output — a report is produced ONLY for a run that
+  passed every gate; a blocked/failed run never reaches it (no report, honest).
+- **Fail-isolated (G5):** a render/write error propagates to `_phase_deliver`'s
+  existing try/except → honest `failed` (Batch 74) — never a crash, never a fake
+  pass.
+- **No-Data (G6):** deterministic, NO LLM; the .md is a local
+  ALLOWED_LOCAL_OPERATIONAL artifact (NoPayload-1), never egress.
+- **Customer-Surface Sync (Charter §9):** `landing/app/autonomous-engine`
+  "Deliver" stage reworded — "a verified report produced for your review" (now
+  true: a real verified file is produced), removed the imprecise "report signed".
+  WHAT not HOW, no AGI, no target-as-live.
+
+Substrate: Invoice Auditor (carrier_billing) on seeded events + the invoicing
+sim — no live connector (correctly deferred). No migration (`report_paths`
+exists; `backend/reports/` is gitignored).
+
+Tests: `tests/test_report_edge.py` (10 — T1 real file on the live path, T2
+content-from-findings, T3 through-the-gates (pass→report / block→none), T4
+fail-isolated, T5 no-LLM/local-artifact, T6 report_paths persisted, T7
+deterministic + empty-renders + phase-order-unchanged). The full-chain
+end-to-end proof is E2E-2. No new heavy vendor deps.
+
 ## 2026-06-06 — feat(NoPayload-2 MND): gateway runtime/redaction proof (measured, per-call)
 
 Backend / TRUST-CRITICAL (a security gate at the LLM egress choke). V1-plan 🟢 #5
