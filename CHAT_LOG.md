@@ -11,6 +11,72 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-06 — feat(NoPayload-2 MND): gateway runtime/redaction proof (measured, per-call)
+
+Backend / TRUST-CRITICAL (a security gate at the LLM egress choke). V1-plan 🟢 #5
+(No-Data PROVABLE), batch 2. NoPayload-1 made the SchemaClean leg a CI-enforced
+fact; NoPayload-2 proves the RUNTIME legs. The gateway already strips/tokenises/
+abstracts before any external call (real, fail-CLOSED) and the outbound prompt is
+payload-free BY CONSTRUCTION — the abstractor emits only `_#`-token strings +
+type-labels + `task_description`. Until this batch the only verbatim free-text
+seam, `task_description`, was concatenated raw (abstractor.py:168) and NOT
+redacted, and the payload-clean guarantee was ASSERTED, not measured. This batch
+closes that seam (redact `task_description` with the EXISTING redactor) + adds a
+post-assembly fail-CLOSED residue re-scan + records a MEASURED `payload_clean`
+(+ residue count) per call. It builds NO new redaction — it PROVES the existing one.
+
+WHAT LANDED:
+- **B1 — migration `b1f4d7c2e9a3`** (revises `a7d2f4c9e1b6`): two columns on
+  `llm_gateway_logs` — `payload_clean` BOOLEAN NOT NULL server_default true +
+  `payload_residue` INTEGER NOT NULL server_default 0. Mirrors the S2F3-1
+  health-pause pattern (inspector-guard + `op.add_column` + `sa.true()`/
+  `sa.text("0")` + batch_alter_table downgrade). Dual-DB; verified applying on a
+  fresh SQLite chain (head → `b1f4d7c2e9a3`). Model columns on `LLMGatewayLog`
+  (metadata-only: a boolean + a count, never a value sample).
+- **B2 — redact task_description (G2)**: in `gateway.call`, before assembly, run
+  the EXISTING `PIIRedactor.redact_value(task_description)`. Strong-PII only
+  (personnummer/email/IBAN/phone/card/address); NO name heuristic → H_feel's own
+  message prose is never false-flagged and the parser path (REDACTED_* sentinels)
+  is idempotent. No engine change, no new redaction.
+- **B2 — post-assembly residue re-scan (G3)**: between `tokens_sent` (:252) and
+  `_call_provider` (:256), `_count_pii_residue(redactor, prompt)` counts NEW
+  `REDACTED_` sentinels the redactor introduces over the assembled prompt (a clean
+  token-only prompt with an already-redacted task_description yields 0). Residue > 0
+  → `LLMGatewayError(stage="payload_scan")` — fail-CLOSED via the SAME error path
+  (no provider call; mapping wiped at :324). New `"payload_scan"` in PIPELINE_STAGES.
+- **B3 — measured record (G4)**: `payload_clean: bool` + `payload_residue: int` on
+  `LLMGatewayResult`; threaded into `GatewayAudit.log` / `log_gateway_call` (audit.py)
+  → recorded per call. Happy path = True / 0 but MEASURED, not hardcoded. local_only
+  (no network, G6) records True / 0 and is otherwise byte-identical.
+- **B4 — measured factors (G10)**: `runtime_policy_clean(...)` + `llm_payload_clean(...)`
+  added to `core/no_payload_proof.py` (the single NoPayloadProof source), mirroring
+  `schema_clean()` — legs 3.2 + 3.3 are now REAL measured factors. ExportClean /
+  AuditClean stay 🟡 (not faked).
+- **B4 — Customer-Surface Sync (Charter §9)**: `landing/app/company/security/page.tsx`
+  LLM-policy intro now states the No-Data guarantee is MEASURED per call (checked +
+  recorded before any prompt leaves; the unexpected fails closed) — WHAT not HOW, no
+  component named, no AGI.
+
+LOCKED DECISIONS:
+- TWO fail-postures: the residue scan is fail-CLOSED (a SECURITY gate); the redaction
+  of task_description is REDACT-then-measure, NOT a fail-CLOSED name-scan (safe for all
+  4 callers incl. H_feel prose). Fail-CLOSED is reserved for UNEXPECTED residue (a
+  construction bug), never for task_description itself.
+- abn_llm_calls' hardcoded `raw_values_sent=0` is DELIBERATELY UNTOUCHED — that is the
+  deferred 2b (it threads through 4 callers, 3 of which route via the SEPARATE HTTP
+  service with no in-process prompt to measure → a mixed measured/asserted state).
+- 🟡 unchanged: ExportClean + the auditor-queryable proof endpoint.
+
+DEFERRED: 2b (abn_llm_calls raw_values_sent measured — mixed in-process/
+separate-service coverage); 🟡 ExportClean + auditor proof endpoint (design system);
+full data-class taxonomy.
+
+Tests: `tests/test_no_payload_proof_gateway.py` (16 — T1 clean/measured, T2 seam
+redacted, T3 residue fail-CLOSED, T4 H_feel not flagged, T5 idempotent re-redact,
+T6 all modes + local_only, T7 No-Data meta even on detection, T8 measured-not-asserted
++ real factors, T9 abn_llm_calls untouched, T10 pipeline + stages intact, T11 dual-DB
+model columns). No new vendor deps. Redaction pipeline unchanged — this PROVES it.
+
 ## 2026-06-06 — feat(NoPayload-1 MND): NoPayloadProof SchemaClean (classification-driven schema scan)
 
 Backend / TRUST-CRITICAL (the moat's proof). V1-plan 🟢 #5 (No-Data PROVABLE) — the
