@@ -11,6 +11,58 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-06 — feat(Compliance-1 MND): ComplianceGate (risk-class as a gate + auto-forge declaration)
+
+Backend / TRUST-CRITICAL (a compliance gate at the sign-time choke). V1-plan 🟢 #4
+(Compliance as runtime) MUST-subset — NOT the Legal Kernel. Discovery confirmed ABN
+already DOCUMENTS compliance (Batch 37 `ABNRiskClassifier` + `ABNComplianceDeclaration`)
+and already ENFORCES a constitutional compliance subset at sign-time (V_GLOBAL Accept(B):
+GDPR_COMPLIANT, NO_AUTONOMOUS_LEGAL_DECISIONS, HUMAN_IN_THE_LOOP, NO_CUSTOMER_DATA_TO_LLM)
+— but the two never met: `risk_class` was a pure PDF field that gated nothing, and
+`forge()` was API-on-demand only (a signed, running agent could have NO declaration until
+someone opened the dashboard). This batch is the THIN gate that joins them.
+
+**Built (compose, don't reinvent):**
+- `agent_runtime/compliance_gate.py` — `evaluate(blueprint) -> (ok, risk_class, violations)`.
+  Reuses the EXISTING Batch-37 `ABNRiskClassifier.classify` (single classifier — no new one).
+  FAIL-CLOSED predicate: (a) risk-class ceiling — refuse if classifiable above `{limited,
+  minimal}` (transparent today, the cheap-now forward-guard); (b) high-risk vector (tier-3 /
+  EXECUTE) must declare the human-oversight posture in `policy_constraints` (EU-AI-Act Art. 14).
+  Non-dict / classifier error → fail-CLOSED.
+- `generator.py` — `ComplianceRefusedError(BlueprintValidationError)` + the gate call AFTER
+  Accept(B), BEFORE `sign_blueprint` (the single create choke; gate returns a tuple, generator
+  raises — no circular import). On refusal: not signed, not persisted, not run.
+- AUTO-FORGE (fail-SOFT) — after the agent is persisted, `_forge_compliance_declaration` calls
+  the EXISTING `ABNComplianceDeclaration.forge` so every agent ships its Art.11/Annex-IV
+  declaration AT CREATION + writes a `compliance_evaluated` `ABNActivityLog` audit row. Any
+  error logs + rolls back + continues (documentation never blocks a gated agent). Re-`refresh`
+  the agent after (forge's commit expires it) — preserves the prior "returns a loaded agent".
+- `data_class` DERIVED from `domain` (single-source `risk_classifier.derive_data_class`, NO
+  column) — surfaced in the gate, the audit row and `to_dict()` (computed at read time).
+- `+1` taxonomy class `compliance_blocked` (HIGH, requires_human, not-retryable, maps_to
+  "failed", safe_to_feedback False), CANON 34→35.
+
+**Two fail-postures (deliberate):** the GATE is fail-CLOSED (refuse-to-sign over-posture — a
+compliance/safety gate); the AUTO-FORGE is fail-SOFT (documentation, never blocks creation).
+
+**Legal Kernel stays OUT (🔴):** the classifier is rule-based over declared properties
+(tier + domain + steps) — no law fetched, no autonomous interpretation, no obligation atoms,
+no autonomous filing. `NO_AUTONOMOUS_LEGAL_DECISIONS` remains the constitution; this batch
+reinforces it. ABN documents + gates + proves; it never interprets law.
+
+**Composes existing primitives:** human-oversight = 72b pending; audit = ABNActivityLog
+(`compliance_evaluated` row); data-min = No-Data + GDPR_COMPLIANT. The gate READS these as
+already-satisfied proofs; reimplements none.
+
+**Tests:** `tests/test_compliance_gate.py` (17) — transparent-pass+signed+forged (T1/T3),
+over-posture refused fail-CLOSED + risk-class-input proof (T2), forge fail-SOFT (T4),
+audit-row written (T5), Legal-Kernel boundary intact (T6), data_class derived (T7),
+generated-agent still Accept(B)+verifies (T8), No-Data (T10). Taxonomy count 34→35. Backend
+suite +17. No migration, no new classifier, no new crypto, no new vendor deps. Customer-Surface
+Sync: landing `company/security` compliance copy now states each agent is risk-classified +
+documented at creation (WHAT not HOW, no AGI). Fixture transparency held (the 4
+generate_blueprint-invoking test files stayed green).
+
 ## 2026-06-06 — feat(S2F3-1 MND): AgentHealth auto-pause (SPAR 2 Fas 3, batch 1)
 
 Backend / TRUST-CRITICAL (agent lifecycle). The first Fleet-integrity batch — the
