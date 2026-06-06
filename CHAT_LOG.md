@@ -11,6 +11,59 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-06 — feat(S2F2-1 MND): runtime blueprint-signature verification, all agents (SPAR 2 Fas 2, batch 1)
+
+Backend / TRUST-CRITICAL (a security gate on the live run path). FIRST Blueprint-
+integrity batch. Discovery S2-Fas2 found the one real Fas-2 gap: the live
+`OPERARunner` verified the blueprint signature ONLY for tier-3 EXECUTE_CHANGE
+runs (`runner.py` tier-3 preflight → Go service). For tier-1/2 — every V1 agent
+(tier-3 is V2-gated) — there was NO runtime signature check, so an `Agent.blueprint`
+mutated in the DB after signing (tier, thresholds, capabilities,
+policy_constraints, tools_used) ran UNDETECTED, bypassing every sign-time gate
+(Accept(B), CanSign, conformance, create-gate).
+
+**Built:** a `_verify_blueprint_signature_or_raise()` gate at the top of
+`OPERARunner.run()` — after the create-gate (`_raise_if_pending_approval`) + the
+tier-3 preflight, before Observe — for ALL agents at the single choke (covers all
+5 entry points). It loads the `Agent` row and verifies the STORED `agent.blueprint`
+dict via the EXISTING `trust.blueprint_signer.verify_blueprint` (HMAC-SHA256 over
+the canonical form — the same scheme production signs with at `generator.py:1080`,
+and the same check the dormant AAEA `mission_layer` already did, now on the live
+path). **No new crypto, no migration** (the signature is already on
+`agent.blueprint`). Fail-CLOSED on BOTH missing AND invalid (a deleted signature
+is a tampered agent) and on uncertainty (agent absent / DB error). New
+`BlueprintSignatureError` (`agent_engine/errors.py`) → new `except` in `run()` →
+honest `failed` with the `blueprint_signature_invalid` reason (S2F1-1 reducer);
+no phase runs, nothing written.
+
+**Decisions:** of the three canon candidates, only this is built — BlueprintQualityScore
+= already-covered (P2a conformance floor + P2b-i CanSign); signed BrainProfile =
+BrainProfile doesn't exist (build first, later); signed ToolBinding = subsumed
+(tool bindings live inside the signed blueprint); ArtifactSet RCU = premature
+(single signed artifact today). Empty/placeholder key: sign+verify are symmetric
+on `node_signing_key`, so the gate is transparent for a correctly-signed
+blueprint in an unkeyed dev/CI env YET still detects a mutation — enabled
+everywhere, no bypass flag. The tier-3 Go-service preflight STAYS as the
+cross-process layer beneath this universal in-process gate. `core/failure_taxonomy.py`
++1 class `blueprint_signature_invalid` (HIGH, requires_human, not-retryable,
+maps_to "failed", safe_to_feedback False); CANON 32→33.
+
+**Test-fixture signing sweep (the real blast radius):** `AgentBlueprint.to_dict()`
+omits the signature, so test harnesses that seeded bare `Agent` rows ran agents
+the gate now refuses. Fixed (NOT weakened) by signing the seeded blueprint with
+the REAL `sign_blueprint` (single source) in every run()-invoking seeder:
+`_make_agent_and_blueprint` in test_opera_status_honesty / test_opera_runner /
+test_verify_onpath (each has its own copy), `_add_agent` in test_create_gate +
+test_agent_quarantine, and test_finding_production's full-run seed.
+
+**Tests:** `tests/test_blueprint_verify_onpath.py` (8) — valid-runs (T1),
+mutated-refused (T2 ×2), missing-refused (T3), tier3-preflight+gate-both-wired
+(T4), empty-key-transparent-yet-biting (T5), honest-taxonomy + gate-raises (T6);
+`test_failure_taxonomy` CANON + counts 32→33. No migration, no new deps. Suite
+1894 → 1902, 0 regressions. **Makes TRUE:** the agent that runs is provably the
+exact agent that was compiled, gated, and signed. NEXT per the V1 plan: re-check,
+then Fas 3 (Fleet) MUST-subset.
+
 ## 2026-06-06 — feat(S2F1-5a MND): transactional outbox + OutboxPoller (SPAR 2 Fas 1, batch 5a — substantively closes Fas 1)
 
 Backend / TRUST-CRITICAL (crash-safe external delivery). Discovery's sharp,
