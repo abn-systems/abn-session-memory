@@ -47,12 +47,84 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch S2F1-4 (MND) klar — väntar på Jacobs godkännande. 1881 tester gröna (baseline 1864 + 17). Branch feat/batch-s2f1-4-mnd-retry-idempotency, hålls CLEAN (PR ej auto-mergad).
+Status: Mellan batcher — S2F1-4 merged (#103). Safety Spine Fas 1: 4/5 klar (S2F1-1/2/3/4); S2F1-5a Outbox återstår för att stänga Fas 1. 1881 tester på main. Inga öppna PR.
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 450c9f0 — S2F1-3 RunLock merged (#102). S2F1-4 (denna) på sin branch tills PR mergas.
-Senast: retry+idempotency LIVE — retry-loop (MAX_EXECUTE_RETRIES + per-steg-timeout, ENDAST säkra/idempotenta steg via is_retry_safe; externa writes/tier-3/propose/unknown ALDRIG auto-retried → honest failed + människa) + step-idempotency (StepIdempotency composite PK, migration e2c8a4f1d9b6, findings-once via copy-merge); stänger retry Customer-Surface-Sync copy-gapet (docstring + landing synkad till sanning).
-Nästa: S2F1-5 Transactional Outbox (egen Discovery; delivery-layer-idempotens, skild från step-execution). SEDAN Fas 2 (Blueprint), Fas 3 (Fleet).
-VIKTIGT: Action Risk Ladder (låst) — retry ENDAST read/analyze/local-report; ALDRIG writes/tier-3/propose/unknown (fail-safe default). Findings-once = strukturell (misslyckat/timeout-försök körs mot en KOPIA, merge:as bara vid success). tier-3 coarse replay ORÖRD (G6). Per-steg hård timeout via thread+wait_for (kan ej avbryta en äkta hängd sync-call → TARGET).
+Main-branch: ef55398 — S2F1-4 retry+idempotency merged (#103).
+Senast: AUGUSTI-RELEASEPLANEN mottagen + förankrad som canon (se sektionen nedan). S2F1-5 Discovery klar → rekommendation SPLIT: 5a nu = generell transaktionell outbox + OutboxPoller-daemon + migrera proposal-notification (enda RIKTIGA live externa sändningen — _deliver_reports är en logg-stub, Friday har egen idempotens; interna per-run_id-idempotenta DB-writes outboxas EJ = over-reach).
+Nästa: **S2F1-5a Outbox** (stänger Fas 1) per AUGUSTI-PLANEN → Fas 2 MUST-subset → Fas 3 MUST-subset → Compliance-runtime MUST → NoPayloadProof → en agentfamilj end-to-end → Tuari → ops-todos (interleave). Väntar på S2F1-5a MND-prompt (bygger ej okallat).
+VIKTIGT: AUGUSTI V1 = bygg 🟢 MUST-pile tills shippable; 🟡 om tid; 🔴 ALDRIG före launch. Risken är scope creep, ej tid. Re-check planen vid varje Fas-gräns; aldrig kapa en 🟢 (gör löftet till en lögn), aldrig dra fram en 🔴. Se "## ABN V1 — AUGUST RELEASE PLAN (canon)" nedan.
+
+## ABN V1 — AUGUST RELEASE PLAN (canon / kistan)
+The compass for EVERY scope decision until launch (target: August 2026).
+Standard unchanged: ship nothing poor; the moat is trust. August = focus, not
+haste. Re-check this plan at each Fas boundary.
+
+**THE V1 PROMISE (must be CODE-TRUE to ship honestly):** "ABN is a local,
+verifiable, controlled AI workforce for business work: it observes approved
+systems, maps processes, compiles agents that prove every value, and never acts
+on risk without human approval. Data never leaves the node." V1 may be NARROW
+(few connectors, few agent types, insight/report/draft + controlled low-risk
+action) but every word above must be true. A narrow trustworthy V1 beats a broad
+shaky one.
+
+**🟢 MUST for V1 (cannot ship without — never cut):**
+  1. Safety Spine **Fas 1 (Runtime)** — S2F1-1 status honesty ✅, S2F1-2 order
+     guard ✅, S2F1-3 RunLock ✅, S2F1-4 retry+idempotency ✅, **S2F1-5a
+     transactional outbox ⏳** = reliability foundation.
+  2. Safety Spine **Fas 2 (Blueprint integrity)** MUST-subset — BlueprintQualityScore
+     hard floors, signed BrainProfile/ToolBinding, ArtifactSet RCU pinning (the
+     parts that make "compiles agents that prove every value" true; not every
+     refinement).
+  3. Safety Spine **Fas 3 (Fleet)** MUST-subset — AgentHealthScore hard floors +
+     auto-pause, Safe Mode levels (the parts that make "controlled" true;
+     Supervisor Reconciliation = BORDE).
+  4. **Compliance as runtime** — EU AI Act risk classification + ComplianceGate
+     (no activation beyond reporter without human-oversight defined + audit +
+     data-minimization proof) + basic Legal Centre docs (MUST-subset, NOT the
+     full Legal Intelligence Kernel).
+  5. **No-Data PROVABLE** — NoPayloadProof (schema scan + runtime payload-policy
+     + LLM-gateway redaction proof): the moat must be demonstrable, not asserted.
+  6. **One agent family END-TO-END** (observe → graph → compile → OPERA-V →
+     verify → report/draft → human approval → audit) on real-ish data (e.g.
+     Finance Invoice Auditor or Logistics) — proves the whole chain.
+  7. **Tuari (customer-control surface)** — Trust Card per agent, Run Inspector
+     /"Why" view, approval UX, pause/autonomy controls. "Humans keep control"
+     must be visible + usable.
+  8. **OPS-TODOS (gate live operation — schedule, don't leave to last week):**
+     Hetzner `alembic upgrade head`; Fortnox org-nr + API key (first live run);
+     Stripe live 4 env-vars + webhook; Google OAuth verify hello@abnplatform.com;
+     code-signing EV cert (~$300/yr) for the Windows installer; Tauri
+     install/verify; release-sync stale landing download links.
+
+**🟡 BORDE (strong, non-blocking — add if time):** more connectors, more agent
+types, Supervisor Reconciliation, drift monitor, deeper Tuari polish, ABN Eval
+Harness (adversarial suites), broader Failure Containment Map.
+
+**🔴 AFTER V1 (deferred — NEVER pull forward):** Sentinel Prime (premium
+security family; cross-customer = separate deep review vs No-Data; offensive
+NEVER); Hidden Value Engine + 50-industry/200-agent demand map (engine
+GENERATES agents, never hand-built); LMA/AIR-V (LLM minimization & routing);
+full Legal Intelligence Kernel (auto-fetch FLAGS, human approves obligation
+atoms, never autonomous legal interpretation); P2b-ii deep OPERA dry-run sim
+harness; agent chat-panel; agents-in-daily-tools (Gmail/Teams/Slack);
+customer-built agents; quantum (NIST PQC principle only).
+
+**THE PATH (ordered, never jump):** S2F1-5a Outbox (closes Fas 1) → Fas 2
+MUST-subset → Fas 3 MUST-subset → Compliance-runtime MUST → NoPayloadProof →
+one agent family end-to-end → Tuari control surface → ops-todos (interleave,
+don't defer) → V1 launch-readiness check → ship. Each step: Discovery before
+big/behaviour-changing batches; one batch = one PR; hold at CLEAN; never
+auto-merge; honest naming; Customer-Surface Sync Rule + Technical-Confidentiality
+Rule (WHAT not HOW on public surfaces) apply throughout.
+
+**TIMELINE:** June→August ≈ 2.5 months — feasible for a NARROW excellent V1 IF
+scope holds to 🟢. Risk = scope creep, not time (pace proven: one batch = one PR,
+~14 merged this session, zero regressions). Schedule risk = ops-todos + Fas 2/3
+MUST-subset + the one end-to-end agent family — sequence those.
+
+**DISCIPLINE:** 🟢 only until shippable; 🟡 if time; 🔴 never before launch.
+Re-check at each Fas boundary: is 🟢 still the minimum true V1? Cut 🟡 ruthlessly
+under pressure; never cut a 🟢; never pull a 🔴 forward.
 
 ## ABN ROADMAP v2 (authoritative — Jacob's nano-detail canon)
 THREE GUIDING STARS (apply to every track): (1) **3 master gates** —

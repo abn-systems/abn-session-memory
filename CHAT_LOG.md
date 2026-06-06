@@ -11,6 +11,43 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-06 — canon: ABN V1 AUGUST RELEASE PLAN + S2F1-5 Discovery
+
+**Two decisions recorded (no code change):**
+
+1. **ABN V1 — August Release Plan** ratified as canon (recorded in
+   `JACOB_SESSION.md` → "## ABN V1 — AUGUST RELEASE PLAN (canon)"). Target ship
+   August 2026; a NARROW, trustworthy V1 over a broad shaky one. The V1 PROMISE
+   must be code-true. Three piles govern every scope call: **🟢 MUST** (Safety
+   Spine Fas 1 incl. S2F1-5a outbox, Fas 2/3 MUST-subsets, compliance-as-runtime,
+   NoPayloadProof, ONE agent family end-to-end, Tuari control surface, the
+   ops-todos) · **🟡 BORDE** (more connectors/agent types, Supervisor
+   Reconciliation, drift monitor, Eval Harness, deeper Tuari) · **🔴 AFTER V1**
+   (Sentinel Prime, Hidden Value Engine + 50-industry map, LMA/AIR-V, full Legal
+   Intelligence Kernel, P2b-ii sim harness, agent chat-panel, agents-in-daily-
+   tools, customer-built agents, quantum). Discipline: 🟢 until shippable, 🟡 if
+   time, 🔴 never before launch; risk = scope creep, not time; re-check at each
+   Fas boundary; never cut a 🟢, never pull a 🔴 forward.
+
+2. **S2F1-5 Transactional Outbox Discovery** (read-only) complete →
+   recommendation **SPLIT**. The sharp finding: the **proposal notification**
+   (`_save_run_record` Batch-18 block) is the ONLY real, live external send on
+   the per-run path — `_deliver_reports` (runner.py:1707) is a logging STUB, and
+   the Friday email has its own `(tenant_id, week_ending)` idempotency + cron. No
+   single run-wide transaction exists (piecemeal commits, `autocommit=False`);
+   `NotificationDispatch` dedups POST-send (on the returned message id) so it
+   can't prevent a double-SEND — it is a correlation record, not an outbox. The
+   notification content is already re-derivable at delivery from the persisted
+   Proposal row (`action_type` + `impact_summary`, both No-Data aggregates) → the
+   outbox row stays payload-free. **S2F1-5a (next):** a general transactional
+   outbox table + an `OutboxPoller` daemon (mirror `FridayReportScheduler`) +
+   migrate the proposal notification — intent row written in the Proposal's
+   transaction; poller re-derives content, delivers, marks sent; `idempotency_key`
+   (event_type:proposal_id:channel) = pre-send exactly-once; backoff + dead-letter.
+   Internal per-run_id-idempotent DB writes are NOT outboxed (over-reach).
+   **S2F1-5a substantively closes Safety Spine Fas 1**; S2F1-5b (report-delivery
+   /Friday migration onto the same outbox) deferred until those become real sends.
+
 ## 2026-06-06 — feat(S2F1-4 MND): retry loop + step-level idempotency (together) (SPAR 2 Fas 1, batch 4)
 
 Backend / TRUST-CRITICAL (execute loop). Retry + idempotency built TOGETHER —
