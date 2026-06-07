@@ -11,6 +11,51 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-06 — test(E2E-2 MND): the full-chain end-to-end proof (honest, post Bridge-1/Bridge-2) — V1 #6 COMPLETE
+
+Backend / TRUST-CRITICAL (the proof the whole chain composes). V1-plan 🟢 #6
+(one agent family end-to-end), the proof batch. The earlier E2E-2 attempt HALTed
+because the chain didn't compose; the three root-holes are now fixed (E2E-1 real
+report file, Bridge-1 capability vocabulary, Bridge-2 RAL attestation vocabulary),
+so a canonically-generated agent now runs the whole chain on sample data AND
+delivers a VERIFIED (attested) report. This batch is the additive proof test.
+
+ADDITIVE — no production code changed. NO fourth gap found (the chain delivers).
+
+`tests/test_e2e_invoice_auditor.py` (3 tests):
+- **Happy path (T1-T5):** seed a clean-invoicing graph → the CANONICAL
+  `generate_blueprint` (the REAL Accept(B)/Compliance/CanSign/create-gate/sign —
+  NOT a manual sign, NOT the legacy generator: the prior blind spot) → OPERARunner.run()
+  on the invoicing sim → asserts every stage's real artifact in order: ProcessGraph
+  row, SIGNED agent (`agent.signature`; pattern_id=None → the no-pattern path
+  Bridge-1 fixed; tier=1; Accept(B) re-confirmed accepts the signed blueprint),
+  AgentRun row, real Finding rows (impact>0), **finding.attested=True** (Bridge-2
+  payoff — was [False×4]), a real report FILE on disk (non-empty, contains
+  `billing_deviation` + the attested column), a **non-empty ABNAttestation** +
+  `attestation_summary` ≠ "no attestations", ABNActivityLog rows, and **0 Proposals**
+  + `pending_human_approval=False` (tier-1 auto-deliver).
+- **Negative path (T6):** carrier_invoice_audit/logistics → the agent is signed +
+  produces findings, but logistics RAL requires distance_km/route_id the invoicing
+  findings lack → verify fail-CLOSES → status=failed, `report_paths==[]`, no `.md`
+  under the storage root. The gate BITES end-to-end (the happy path is no fluke).
+- **No-Data + deterministic (T7):** monkeypatch `LLMGateway.call` to raise → the
+  delivered chain still succeeds + writes the report (the E2E-1 renderer uses NO
+  LLM); a second independent run yields the same findings_count (repeatable); the
+  report file is a local ALLOWED_LOCAL_OPERATIONAL artifact under the storage root.
+
+Tier-1 ANALYZER honesty: a read-only agent takes no risky action, so "never acts
+on risk without human approval" holds by construction; the risky-action human
+gate is a tier-2/PROPOSE concern (72b/ComplianceGate) — the Proposal/approval
+artifact in one run is E2E-3 (deferred). No live connector (sample substrate);
+No-Data; `backend/reports/` gitignored + the test uses tmp_path (no pollution);
+no migration; no new vendor deps. Customer-surface: internal proof — no copy
+change (the "complete verified workflow" claim is now PROVEN, attested).
+
+**V1 #6 (one agent family end-to-end) COMPLETE.** The full V1 MUST list is done:
+#1-3 Safety Spine, #4 Compliance, #5 NoPayloadProof, #6 one family end-to-end.
+NEXT: 🟢 #7 Tuari (the customer-control surface / first frontend, ABN design
+system) + #8 ops-todos (Fortnox LAST, after ABN org-nr).
+
 ## 2026-06-06 — fix(Bridge-2 MND): RAL domain-vocabulary alignment (one domain→family source of truth)
 
 Backend / TRUST-CRITICAL (RAL attestation — the proof delivered values are
