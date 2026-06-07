@@ -11,6 +11,57 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-07 — feat(AUTH-3a MND): node-wide WRITE gating + attribution + anonymous allowlist
+
+Backend / SECURITY-FOUNDATION. Step 3a of the permanent JWT auth foundation
+(AUTH-1 bootstrap ✅ → AUTH-2 login ✅ → AUTH-3a writes → AUTH-3b reads). Closes
+the un-authenticated WRITE exposure — the headline V1 vulnerability (on the
+server tier / 0.0.0.0 anyone could approve/run/delete/connect). AUTH-1 (operator
+exists) + AUTH-2 (login + token-bearing client) shipped, so enforcing now works
+end-to-end. No migration, No-Data.
+
+WHAT LANDED — 43 write/action/destructive routes gated, mirroring the proven
+in-repo `email_drafts` pattern (`current: User = Depends(require_role(...))`):
+- **AGENT_MANAGER** (write/action): proposals approve/reject; agents run/pause/
+  resume/settings(PUT)/simulate/generate-from-process/instruct; connectors
+  create/patch/sync/connect/authorize/callback/api-key/fortnox-configure; flows
+  run; reports deliver; delivery config/test; tenant_settings; dna_phase
+  start/approve-agents; friday_report send; onboarding start/1-5/preflight.
+- **NODE_ADMIN** (destructive/sensitive): connectors delete + revoke-credentials;
+  tenants create/patch/delete; gdpr export/erase/verify-payload; agents
+  rollback; billing checkout-session/portal-session.
+- **decided_by from the authenticated user**: proposals approve/reject now pass
+  `current.email or current.user_id` to `_record_decision` and **drop the
+  spoofable `decided_by` from ApproveRequest/RejectRequest** (a client can no
+  longer claim another approver). Mirrors `email_drafts.py:300`.
+- **Anonymous allowlist LOCKED** (small + intentional): auth login/refresh/setup/
+  setup-needed; `/health` + `/flows/health` (the pre-login BackendBanner polls
+  it — the no-lockout fix); the Stripe/Slack/Teams webhooks (signature/bearer-
+  verified — their own auth, NOT double-gated with require_role); /deployment/
+  version. Nothing customer/action-bearing is anonymous.
+
+GUARDS: require_role(AGENT_MANAGER) admits AGENT_MANAGER + NODE_ADMIN (the
+always-allowed rule); require_role(NODE_ADMIN) admits only NODE_ADMIN. 401 (no
+token, via get_current_user) ≠ 403 (wrong role) — the AUTH-2 interceptor acts
+only on 401, so a 403 is calm, never a logout (preserved, not changed).
+onboarding confirmed to have NO pre-login caller (the frontend uses getAudit) →
+gated. Reads stay open for AUTH-3b. No migration.
+
+TESTS: `tests/test_auth3a_write_gating.py` (NEW, 9) — a STRUCTURAL none-missed
+guard (introspect every route's dependency tree: get_current_user present on
+all 43 write routes, absent on the 10-route allowlist) + behavioural 401/403/200
++ decided_by-from-user (spoofed body ignored) + the webhooks-not-401 proof.
+Extends-not-breaks: ~23 existing write-test files got the get_current_user
+fixture (inject a NODE_ADMIN — role-tiering is asserted in the new file); the
+one direct-call test (test_create_gate run_agent_now) passes db by keyword since
+`current` was inserted before `db`. The stale test asserting a body-supplied
+decided_by now asserts the authenticated user. Backend 2016 → 2025 (+9), 0
+regressions.
+
+NEXT: AUTH-3b — require_auth on all GET reads (~15 routers) + the soft flags
+(/health/detailed, connectors catalogue/preview → require_auth) — completes the
+auth foundation.
+
 ## 2026-06-07 — feat(AUTH-2 MND): frontend login (in-memory tokens, the secure V1 choice)
 
 FRONTEND / SECURITY-FOUNDATION. Step 2 of 3 in the permanent JWT auth foundation
