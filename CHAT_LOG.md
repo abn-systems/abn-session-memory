@@ -11,6 +11,65 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-06 — feat(Tuari-1 MND): Evidence Ribbon / Run Inspector — V1's first frontend
+
+FRONTEND / TRUST-CRITICAL (ABN's distinguishing surface — making proof visible).
+V1-plan 🟢 #7 (Tuari), the first customer-facing frontend. The full V1 MUST
+backend is done (E2E-2 proved a generated agent runs the chain through every gate
+and produces ATTESTED findings + a real report), but that proof was INVISIBLE —
+it lived in the DB + an unconsumed `/verification` endpoint. This batch makes it
+visible: an Evidence Ribbon in a Run Inspector showing the curated WHAT, never the
+HOW.
+
+ADDITIVE — frontend only; NO backend/endpoint/gate/migration change.
+
+WHAT LANDED:
+- **`client.ts`** — `getAgentRunVerification(agentId, runId)` + `RunEvidence`/
+  `EvidenceStatus` types + a pure `curateRunEvidence` (exported, testable). This
+  is the SINGLE CURATION POINT for Technical-Confidentiality: it maps the raw
+  `/verification` response to the SAFE WHAT subset and DROPS the HOW — the
+  attestation `signature` hash, per-field `domain` field-map internals, raw
+  `sample_mismatch` before/after values, and `cross_references` are never read, so
+  they can never reach the view. Derives status (verified / verified_with_caveats
+  / unverified), verified_count/total_count, sources_count, corrected_count (a
+  COUNT, never raw), and `unchecked` field names (checked==0 — the honest
+  "missing").
+- **`components/agents/EvidenceRibbon.tsx`** (NEW) — built from the ABN design
+  system (ui.tsx Card via the host panel, the `TrustLayer` icon mark, the v7 sage
+  palette, Geist). Renders the curated WHAT for a completed run: status (st-green/
+  st-orange tone), "Bevis: Stark/Måttlig/Begränsad · N av M värden verifierade mot
+  godkända system", Källor, Ej kontrollerat (the unchecked fields), Korrigerade
+  värden (count). Honest decision-support (Score-Honesty): strength shown WITH
+  context + the limits, never a bare number; an honest empty state on 404.
+- **`AgentDetailPage.tsx`** — upgraded the shallow `AttestationPanel` (which only
+  listed each run's `attestation_summary` string) into the Run Inspector: it
+  renders the `EvidenceRibbon` for the latest attested run; removed the old
+  `attestationBadge` helper. Per-finding drill-down stays in the adjacent
+  `FindingsListSection` (FindingTraceView, reused). The OverviewTab caller passes
+  `agentId`. Existing tabs/panels untouched.
+
+GUARDS:
+- WHAT-not-HOW (G3) — curation in the client helper (defence-in-depth) + the
+  component renders only `RunEvidence`; the moat-guard test asserts signature/
+  domain/sample_mismatch/cross_refs are dropped.
+- Voice Constitution (G4) — Swedish: verifierad / bevis / godkända system /
+  attestering / ej kontrollerat / källor; no scan/autonom/hype/AGI (rendered).
+- Built from the design system (G2); EXTEND not replace (G6); read-only, No-Data,
+  no backend change (G7/G10); frontend build green (G11).
+
+Tests: `components/agents/EvidenceRibbon.test.tsx` (4 — curation drops the HOW +
+derives the WHAT; verified-status; component renders N-of-M/sources/unchecked +
+voice/no-hype; honest empty state). Updated `AgentDetailPage.test.tsx` (mock +
+the attestation test now asserts the Evidence Ribbon's curated WHAT) +
+`insights.test.tsx` (mock the new helper). Frontend: typecheck ✓, **79 tests ✓**,
+`npm run build` ✓ (the required gate). Backend unchanged (still 1992). No new
+vendor deps.
+
+Deferred 🟡: a server-side curated `/runs/{id}/evidence` read-model (defence-in-
+depth — the more robust WHAT/HOW boundary; a frontend can change, a server gate
+can't be bypassed); the remaining Tuari surfaces (Approval Center for tier-2
+PROPOSE [needs E2E-3], Mission Control overview).
+
 ## 2026-06-06 — test(E2E-2 MND): the full-chain end-to-end proof (honest, post Bridge-1/Bridge-2) — V1 #6 COMPLETE
 
 Backend / TRUST-CRITICAL (the proof the whole chain composes). V1-plan 🟢 #6
