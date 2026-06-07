@@ -11,6 +11,60 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-07 — feat(AUTH-3b MND): require_auth on reads + soft-flag hardening (auth foundation COMPLETE)
+
+Backend / SECURITY-FOUNDATION. The FINAL step of the permanent JWT auth
+foundation (AUTH-1 bootstrap ✅ → AUTH-2 login ✅ → AUTH-3a write gating ✅ →
+AUTH-3b reads). Closes the last un-authenticated surface — the read routes. No
+migration, No-Data.
+
+WHAT LANDED — every GET/read not on the anonymous allowlist now requires an
+authenticated user (VIEWER+):
+- **Router-level `APIRouter(dependencies=[Depends(require_auth)])`** on 15
+  routers with no public route (intrinsic — travels to test apps, miss-none
+  guaranteed; also covers the 2 read-like POST soft flags
+  preview/inquire): proposals, agents, connectors, connector_generator,
+  reports, tenants, transparency, delivery, tenant_settings, dna_phase,
+  friday_report, roi, agent_memory, onboarding, mind. The per-route
+  require_role on writes (AUTH-3a) still applies on top (get_current_user is
+  request-cached, so it runs once).
+- **Per-route `require_auth`** where the router has an intentionally-anonymous
+  route: gdpr records + retention (LEAVE /transparency — a static public legal
+  declaration, no customer data); flows /runs + /runs/{run_id} (LEAVE
+  /flows/health — the pre-login banner); billing /subscription (LEAVE /webhook);
+  main.py /api/status (LEAVE / — the node-identity root probe).
+- **Soft flags hardened**: /api/health/detailed → require_auth (GET /health
+  stays anonymous for liveness); connectors /catalogue + connector_generator
+  /generate/preview → require_auth (docstrings corrected from "no auth"); reports
+  /{id}/download → require_auth (its path-traversal guard remains).
+
+ANONYMOUS ALLOWLIST (unchanged + the 2 deliberate keeps): auth
+login/refresh/setup/setup-needed, /health, /flows/health, the Stripe/Slack/Teams
+signature-verified webhooks, /deployment/version, gdpr /transparency (public
+declaration), and the bare `/` root probe. The ground-truth scan confirms
+exactly 6 ungated GETs remain — all intentional.
+
+GUARDS: 403≠401 unchanged (require_auth → 401 no token; a VIEWER passes every
+read — reads are the lowest bar, no over-gating). The AUTH-2 interceptor's
+401-only clear path is untouched; zero frontend raw-fetch bypass (3a) → no read
+dead-ends.
+
+TESTS: `tests/test_auth3b_read_gating.py` (NEW, 7) — a STRUCTURAL none-missed
+guard over the REAL app (every non-allowlist GET has get_current_user; the
+6-route allowlist does not; the 2 soft-flag POSTs gated) + behavioural 401
+(no token) / 200 (VIEWER) + the soft flags 401 (with /health still anonymous) +
+the allowlist reachable without a token (incl. the webhook not-401). Extends-
+not-breaks: read-only test files got the get_current_user fixture; the opt-in
+discipline (the 3a /me lesson) preserved — gdpr /transparency stays public so
+its test keeps the real path.
+
+THE AUTH FOUNDATION IS COMPLETE: a fresh node bootstraps its first operator
+(AUTH-1), the operator logs in (AUTH-2), every write is role-gated with real
+attribution (AUTH-3a), every read is authenticated (AUTH-3b). The server-tier
+(0.0.0.0) un-authenticated exposure is fully closed — the permanent JWT model,
+same on desktop + server, no localhost bypass. NEXT: the go-live ops chapter
+(Jacob, by hand, live last) + the deferred 🟡/🔴 backlog.
+
 ## 2026-06-07 — feat(AUTH-3a MND): node-wide WRITE gating + attribution + anonymous allowlist
 
 Backend / SECURITY-FOUNDATION. Step 3a of the permanent JWT auth foundation
