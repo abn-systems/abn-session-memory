@@ -11,6 +11,74 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-07 — feat(AUTH-2 MND): frontend login (in-memory tokens, the secure V1 choice)
+
+FRONTEND / SECURITY-FOUNDATION. Step 2 of 3 in the permanent JWT auth foundation
+(AUTH-1 bootstrap ✅ → AUTH-2 frontend login → AUTH-3 node-wide gating). Today the
+frontend had ZERO auth (bare axios, no login, no token); this batch builds the
+real operator login on the complete backend. Frontend-only, additive, gates NO
+route (AUTH-3 does) → main stays working; no backend change, no migration, No-Data.
+
+JACOB'S LOCKED DECISION — IN-MEMORY TOKENS ONLY (the securest V1 posture): access
++ refresh tokens live ONLY in a module ref (authStore), NEVER persisted (no
+localStorage / disk / OS store / Tauri plugin). What isn't stored can't be stolen.
+Silent refresh keeps the session alive DURING use (the 8 h access token covers a
+workday); on reload/restart the tokens are gone → re-login. NO new dependency.
+Stay-logged-in (a secure Tauri store plugin) is a deferred post-foundation
+enhancement that layers ON in-memory, never localStorage.
+
+WHAT LANDED:
+- **`lib/authStore.ts`** (NEW) — the single in-memory token source the axios
+  interceptor reads + the AuthProvider drives. `setOnCleared` is the one wire from
+  the non-React interceptor into React state (a failed refresh → back to login).
+  Never logs a token.
+- **`client.ts`** — the ONE interceptor seam (loop-safe, G3). Request attaches
+  `Authorization: Bearer <access>` when present. Response on 401: IF a refresh
+  token exists AND the request isn't already `_retry` AND it isn't an auth path
+  (/login·/refresh·/setup) → single-flight `/refresh` (raw axios, never re-enters
+  the interceptors) → retry ONCE with the rotated token; else (no refresh / refresh
+  failed / already retried) → clear auth (→ AuthGate shows login). Three guards
+  (`_retry` flag + auth-path exclusion + single-flight) make a refresh storm /
+  infinite loop impossible. + auth types (LoginResponse/AuthUser/SetupNeeded/
+  SetupResponse) + helpers (getSetupNeeded/setupFirstOperator/loginRequest/
+  logoutRequest/getMe).
+- **`lib/auth.tsx`** (NEW) — minimal `AuthProvider` + `useAuth` (G4): `user` (from
+  /me), `status`, `login`, `logout`. react-query owns DATA; auth is orthogonal.
+  In-memory → on load there is never a token → unauthenticated → login.
+- **`components/auth/LoginScreen.tsx`** (NEW, G5) — email + password → /login →
+  store tokens + hydrate /me → app. Calm Swedish error copy: 401 "Fel e-post eller
+  lösenord", 403 "Kontot är tillfälligt låst", 429 "För många försök". Design
+  system (Card/Button/inline v7 inputs), ABNFlower mark.
+- **`components/auth/SetupScreen.tsx`** (NEW, G6) — the fresh-node first run.
+  /setup → auto-login (SetupResponse carries no tokens). Password policy surfaced
+  calmly (≥12 + upper/lower/digit); a weak password (400) shows an honest message.
+  LocalNode signature decor.
+- **`components/auth/AuthGate.tsx`** (NEW, G7) — the permanent app guard: unauth →
+  /setup-needed=true → SetupScreen, else (or on error) → LoginScreen; auth → the
+  app. Always a working path (non-breaking).
+- **`App.tsx`** — the chrome (title bar + backend banner) renders regardless; the
+  authenticated app (Layout + routes + product-tour OnboardingWizard + consent)
+  moved into `AuthedApp`, wrapped by `<AuthGate>`. **`main.tsx`** wraps
+  `<AuthProvider>`. **`Layout.tsx`** — a sidebar "Logga ut" affordance + the
+  logged-in email (logout revokes /logout + clears tokens → login).
+
+TESTS (15 new; 99 → 114 frontend): `lib/auth.test.tsx` (T1 login→Bearer attached,
+T2 401→refresh-once→retry with the rotated token, T2b persistent-401 no-loop, T2c
+no-refresh-token clears + shows login, T3 logout revokes+clears, T6 in-memory only
+— no storage write of any token) driven against a dependency-free axios mock
+adapter so the REAL interceptor's loop-safety is proven; `components/auth/
+AuthGate.test.tsx` (T5 setup-needed=false→login, T5b error→login, T4 setup→
+auto-login→app, T4b weak-password 400 calm copy); `components/auth/
+LoginScreen.test.tsx` (T7 401/403/429 calm copy, success stores tokens, T9 Voice
+— calm Swedish, never scan/autonom/AGI). No new vendor dep (fireEvent, not
+user-event). Frontend build + typecheck green; backend 2016 unchanged.
+
+NEXT: AUTH-3 — node-wide require_role gating (approve/reject=AGENT_MANAGER,
+destructive=NODE_ADMIN, reads=require_auth; connectors ×10 / onboarding ×7 /
+reports / flows / agents writes) + decided_by from the authenticated user; closes
+the 0.0.0.0 server-tier exposure — now the operator exists (AUTH-1) AND the
+frontend sends the token (AUTH-2). Order = the no-broken-state guard.
+
 ## 2026-06-06 — feat(Tuari-1 MND): Evidence Ribbon / Run Inspector — V1's first frontend
 
 FRONTEND / TRUST-CRITICAL (ABN's distinguishing surface — making proof visible).
