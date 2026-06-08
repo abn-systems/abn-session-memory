@@ -11,6 +11,36 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-08 — RAIL-1: evidence mode in the docked rail (frontend-only)
+
+FRONTEND ONLY. First build of a RESERVED rail mode (APP-1 reserved `evidence` +
+`workspace_menu`; RAIL-1 builds `evidence` only — `workspace_menu` stays
+reserved). Preceded by a code-verified RAIL-MODES DISCOVERY (read-only).
+
+DECISIONS (Jacob-locked): provider gets additive **in-memory** payload —
+`open(mode, payload?)` / `toggle(mode, payload?)` carrying `{agentId, runId}`
+(evidenceId/proposalId reserved/typed-unused). Evidence mode renders the
+EXISTING `EvidenceRibbon` **verbatim** (no reimplementation, no second fetch).
+Requires BOTH agentId + runId → else honest empty, never a "latest run" guess.
+Affordance only where a real runId exists (AgentDetailPage Historik rows).
+**Proposal affordance OMITTED** — `Proposal.agent_id` + `run_id` are both
+nullable, so it does not reliably carry both.
+
+WHAT LANDED: `lib/rail.tsx` (RailPayload + atomic `{mode,payload}` state +
+`open/toggle` payload + the pure `resolveEvidenceTarget` integrity resolver);
+`components/rail/RightRail.tsx` (evidence render → EvidenceRibbon; workspace_menu
+still reserved); `components/rail/OpenEvidenceButton.tsx` (NEW — reusable thin
+affordance, no fetch); `AgentDetailPage.tsx` (HistoryTab gains a "Bevis" column +
+agentId prop). Tests: `EvidenceMode.test.tsx` (NEW, 14) + `AgentDetailPage.test.tsx`
+gained a RightRailProvider wrap.
+
+INTEGRITY (Jacob): never mix a route agent with a payload runId from another
+agent — payload agent must match the route agent, else honest `inconsistent`
+(no fetch). No-leak: payload never carries across modes (evidence → close →
+operator_assistant sees no runId). In-memory only — no localStorage/persistence
+(APP-6). No backend change; no role-aware-UI; no mutation actions. Gates: tsc ✓,
+vitest 156 ✓, build ✓. PR held at CLEAN (not merged).
+
 ## 2026-06-07 — feat(AUTH-3b MND): require_auth on reads + soft-flag hardening (auth foundation COMPLETE)
 
 Backend / SECURITY-FOUNDATION. The FINAL step of the permanent JWT auth
