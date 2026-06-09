@@ -11,6 +11,34 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-08 — ROLE-UI-1: role helper + Admin-link gating (frontend-only)
+
+FRONTEND ONLY. The minimal role-aware-UI foundation, after a code-verified
+ROLE-UI-1 DISCOVERY (read-only). The app had NO proactive role-aware UI (only
+AdminPage's reactive 403 fallback).
+
+DECISIONS (Jacob-locked): mirror the backend `require_role` EXACTLY — exact-set
++ NODE_ADMIN-superset, NOT hierarchical (`canManageAgents` = {AGENT_MANAGER,
+NODE_ADMIN}; `canAccessAdmin` = {NODE_ADMIN}; ANALYST/AUDITOR/VIEWER get no
+manage affordances). Normalize like the backend: `strip().lower()` + all
+`_ALIASES` (both `_`/`-` variants); null/empty → VIEWER; **unrecognised →
+'UNKNOWN' fail-closed** (a deliberate, safer divergence from the backend's
+`name.upper()` passthrough — the backend still 403s it). `canViewEvidence` =
+any authenticated user (VIEWER+, NEVER gated — RAIL-1 must keep working).
+HARD LAW: frontend gating is UX; the backend 403 is the guard; the helper
+secures nothing.
+
+WHAT LANDED: `lib/roles.ts` (NEW, pure/React-free — the predicates above);
+`components/Layout.tsx` (the ONE use — the `/admin` NAV link renders only when
+`canAccessAdmin(user?.role)`; `SideNav` exported for the test). Tests:
+`lib/roles.test.ts` (12) + `components/Layout.test.tsx` (9). Gates: tsc ✓,
+vitest 177 (156+21) ✓, build ✓.
+
+SCOPE: no mutating button gated (run/simulate/pause/resume/instruct/settings/
+approve/reject = ROLE-UI-2); /admin route + AuthGate + AdminPage 403 fallback
+untouched; no backend; no tenant authz; ANALYST-approve = a backend policy
+question, not encoded here. PR held at CLEAN (not merged).
+
 ## 2026-06-08 — RAIL-1: evidence mode in the docked rail (frontend-only)
 
 FRONTEND ONLY. First build of a RESERVED rail mode (APP-1 reserved `evidence` +
