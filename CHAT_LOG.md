@@ -11,6 +11,53 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-09 — BACKEND-TENANT-3a: tenant isolation on the GDPR + compliance crown jewels
+
+BACKEND ONLY (gdpr.py + compliance.py). First TENANT-DISCOVERY-EXTRA fix — closes
+the two worst endpoints in the system + the one true file-export gap: gdpr POST
+/erase (would be IRREVERSIBLE cross-tenant destruction), gdpr POST /export (full
+cross-tenant export), compliance GET /gdpr-report(.pdf) (NODE_ADMIN bypassed the
+tenant check).
+
+CODE-IS-TRUTH finding: the GDPRComplianceEngine export/erase are STUBS (no DB
+queries, no DELETEs, db=None unused) — so the catastrophe is LATENT (activates
+when the engine is wired), not live, and there's no cascade/commits today
+(atomicity N/A now). 3a makes the ROUTE the permanent boundary: it authorizes
+before the engine is ever invoked.
+
+DECISIONS (Jacob-locked): current.tenant_id is the ONLY authz basis; tenant A may
+export/erase/report tenant A only; A + body/query tenant_id=B → 404; NO
+cross-tenant capability built here (future GDPR-GOVERNANCE-1 if legally needed).
+
+WHAT LANDED: a per-file _authorize_*_tenant_or_404 gate (FAIL CLOSED HARDEST —
+null/empty current.tenant_id → 404, never read a missing tenant as "all"; a
+requested tenant_id ≠ current → 404, never 403) run as the FIRST op in all four
+handlers, before any reason/confirm validation, data lookup, erase-engine call,
+audit, PDF build, or Content-Disposition filename. Removed the compliance
+NODE_ADMIN cross-tenant bypass (403 → 404). PDF behind the FILE-DOWNLOAD HARD GATE
+(404 before build/pdf/audit/commit/filename/stream). Engine calls now pass scope
+(= current.tenant_id), never the caller param. _build_gdpr_report unchanged (it
+already scopes Tenant+Event+Connector by the tenant_id it gets). New
+test_backend_tenant_3a.py (14) proves: cross-tenant + null-tenant erase/export →
+404 with the engine method NEVER reached (tripwire = zero calls) + victim rows
+untouched; tenant-check beats the 422 oracle; compliance NODE_ADMIN cross-tenant →
+404 (bypass gone); PDF file-gate (cross-tenant → bare 404, build tripwire not
+reached, no Content-Disposition, no %PDF, no audit row); same-tenant paths run.
+One existing test aligned (export invalid-reason: body tenant_id → the injected
+user's "t1"). Gates: full backend suite 2122 passed (2108 + 14).
+
+ERASE CASCADE MAP (for GDPR-ERASE-ENGINE-1): WILL erase = behavioral_signals,
+blackboard_messages, inquiry_sessions, connector_tokens, agent_blueprints,
+tenant_profile; RETAINED (legal) = audit_log (NIS2 2y), report_metadata
+(Bokföringslagen 7y). When wired: every delete filtered on current.tenant_id, ONE
+transaction, all-or-nothing (no partial erase).
+
+STATUS (safer wording): core trio + GDPR/compliance crown jewels tenant-safe;
+STILL pending 3b (connectors/credentials), 3c (pipeline), 3d (transparency/roi/
+agent_memory), 3e (billing/delivery/tenant_settings/tenants), 3f (mind/friday)
+before the server tier is tenant-safe. No migration/schema/runtime/frontend
+change; no other DISCOVERY-EXTRA file touched. PR held at CLEAN (not merged).
+
 ## 2026-06-09 — BACKEND-TENANT-2c-3: tenant isolation on report READ/DOWNLOAD endpoints
 
 BACKEND ONLY (reports.py). The LAST piece of the core trio (agent + proposal +
