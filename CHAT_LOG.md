@@ -11,6 +11,38 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-09 — BACKEND-TENANT-2c-1: tenant isolation on Tier-3 AGENT reads + RAIL-1
+
+BACKEND ONLY (agents.py). The Tier-3 read/download/verification family was the
+last gap (cross-tenant READ = data leak). Tier-3 was too large for one PR →
+split per the prompt's preferred order: 2c-1 = AGENT reads (this), 2c-2 =
+proposal reads, 2c-3 = report reads.
+
+DECISIONS (Jacob-locked): authorize on current.tenant_id ONLY, 404 cross-tenant,
+fail-closed both sides, reuse the 2a loaders, preserve compound parent-child
+ownership, keep caller tenant_id params but ignore for authz, run the
+completion-claim-gate route inventory before any broad safety claim.
+
+WHAT LANDED: rewired the agent reads — detail, runs, findings, finding-trace
+(compound), trend, activity, insight-layer, settings, weekly-stats, the RAIL-1
+verification endpoint (compound: requires an AgentRun proving the run belongs to
+the scoped agent — ABNAttestation has no tenant/agent column), the caller-param
+aggregates roi-summary + anomaly-trend, list_agents (now always scoped — an
+absent param previously returned ALL agents), and simulate (id-only info-leak
+that fell between 2a/2b). New test_backend_tenant_2c.py (16) proves cross-tenant
+404 + no-leak body + compound + RAIL-1 same-tenant VIEWER 200. 6 existing
+read-test files aligned; the 3 caller-param isolation tests rewritten to the 2c
+model. Gates: full backend suite **2089 passed** (2073 + 16).
+
+COMPLETION-CLAIM-GATE (code is truth): route inventory found tenant-bearing
+patterns in 23 route files → SAFER wording: 2a+2b+2c-1 make the audited AGENT
+surface tenant-safe; proposal reads → 2c-2, report reads → 2c-3, other route
+families (roi.py/transparency/dna_phase/friday_report/mind/compliance/connectors/
+tenant_settings/…) → TENANT-DISCOVERY-EXTRA. The multi-tenant server tier is NOT
+fully tenant-safe until those complete. RAIL-1 frontend unchanged. No migration/
+schema/runtime/role-model/frontend change; Tier-1 + Tier-2 untouched. PR held at
+CLEAN (not merged).
+
 ## 2026-06-09 — BACKEND-TENANT-2b: tenant isolation on Tier-2 caller-param endpoints
 
 BACKEND ONLY (agents.py). Closes the WEAK family: these endpoints compared a
