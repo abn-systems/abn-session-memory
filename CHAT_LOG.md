@@ -11,6 +11,37 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-09 — BACKEND-TENANT-2a: tenant isolation on Tier-1 mutating endpoints
+
+BACKEND ONLY. Closes the real cross-tenant IDOR gap (BACKEND-TENANT-1
+Discovery): route loaders were id-only → on a multi-tenant server tier an
+AGENT_MANAGER/NODE_ADMIN of tenant A could act on tenant B's resource by id.
+Unreachable on the single-tenant-per-Node desktop deployment; real for the
+server tier.
+
+DECISIONS (Jacob-locked): copy the proven admin pattern — load by
+(id AND current.tenant_id) → **404** on mismatch (never 403, never reveal
+cross-tenant existence), fail-closed on null tenant. Tenant gate is the first
+data-access/authorization/side-effect-gating op. rollback (NODE_ADMIN) is STILL
+tenant-scoped (role ≠ tenant). Role guards UNCHANGED: wrong role → 403, wrong
+tenant → 404.
+
+WHAT LANDED: 3 tenant-scoped loaders (`agents._load_tenant_agent_or_404`,
+`proposals._load_tenant_proposal_or_404`, `reports._load_tenant_run_or_404`);
+rewired Tier-1 mutating endpoints — agents run/pause/resume/settings-PUT/rollback,
+proposals approve/reject, reports deliver. CODE-IS-TRUTH correction: the prior
+belief that proposals were tenant-scoped was FALSE (approve/reject were id-only;
+AUTH-3a added only ROLE gating). New `tests/test_backend_tenant_2a.py` (23) +
+5 existing API tests aligned to genuine same-tenant + test_api_routes seeds a
+same-tenant agent/run. Gates: full backend suite **2062 passed** (2039 + 23).
+
+OUT OF SCOPE: Tier-2 caller-param endpoints (instruct/generate/ai-act/
+intelligence) → BACKEND-TENANT-2b; Tier-3 reads/download/verification (incl.
+RAIL-1 evidence) → BACKEND-TENANT-2c. No migration/schema/runtime/role-model
+change. Multi-tenant server tier is NOT tenant-safe until 2a+2b+2c done. New
+standing rule: code+tests+routes+runtime config are source of truth; CLAUDE.md
+is doc/history, not proof. PR held at CLEAN (not merged).
+
 ## 2026-06-08 — ROLE-UI-1: role helper + Admin-link gating (frontend-only)
 
 FRONTEND ONLY. The minimal role-aware-UI foundation, after a code-verified
