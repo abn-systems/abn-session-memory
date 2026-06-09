@@ -11,6 +11,37 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-09 — BACKEND-TENANT-2b: tenant isolation on Tier-2 caller-param endpoints
+
+BACKEND ONLY (agents.py). Closes the WEAK family: these endpoints compared a
+tenant_id but against a CALLER-SUPPLIED value (query/body), not
+current.tenant_id → false security (an authenticated attacker passes the
+victim's tenant_id and the check passes). 2b authorizes on current.tenant_id
+ONLY (admin pattern), 404 on mismatch.
+
+DECISIONS (Jacob-locked): current.tenant_id is the only authz basis; NEVER trust
+a caller-supplied tenant_id. Preserve API compatibility — keep the tenant_id
+query/body params (frontend still sends them) but IGNORE them for authz
+(deprecated → API-CLEANUP). 404 not 403; fail-closed on empty current AND
+resource tenant. regenerate already used current.tenant_id → left unchanged.
+
+WHAT LANDED: rewired instruct (body req.tenant_id), generate-from-process (body
++ scoped ProcessGraph load + plan-limit on current.tenant_id), and the GET
+family — ai-act ×3, instructions, intelligence, benchmark (added
+`current = Depends(require_auth)` since the GETs had no `current`, then scoped
+load + table filter to current.tenant_id). New tests/test_backend_tenant_2b.py
+(11) proves the param-bypass is closed + the param is ignored-for-authz +
+mutating ones 404 with zero side-effect. 5 existing Tier-2 test files aligned
+(AUTH-3a/3b overrides were tenant "t1" vs resources "t-test"/TENANT_ID); the
+generate guard-test's old "wrong body tenant_id → 403" sub-case corrected to 2b
+semantics (param ignored → succeeds). Gates: full backend suite **2073 passed**
+(2062 + 11).
+
+OUT OF SCOPE: Tier-3 reads/download/verification incl. the RAIL-1 evidence
+endpoint → BACKEND-TENANT-2c. No migration/schema/runtime/role-model/frontend
+change. Multi-tenant server tier NOT tenant-safe until 2a+2b+2c done. PR held at
+CLEAN (not merged).
+
 ## 2026-06-09 — BACKEND-TENANT-2a: tenant isolation on Tier-1 mutating endpoints
 
 BACKEND ONLY. Closes the real cross-tenant IDOR gap (BACKEND-TENANT-1
