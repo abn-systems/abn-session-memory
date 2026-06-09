@@ -11,6 +11,51 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-09 — BACKEND-TENANT-3b-1: tenant isolation on the connectors CRUD/read surface
+
+BACKEND ONLY (connectors.py). connectors.py was the worst gap file (~10
+caller-param + ~5 id-only). SPLIT (prompt-sanctioned — biggest file): 3b-1 (this)
+= generic connector CRUD/read; 3b-2 (queued) = the Fernet-credential family
+(configure/authorize/callback/api-key/credentials-delete) + the /{type}/connect
+bg automation chain (with credential-tripwire / bg-job / name-collision tests).
+
+DECISIONS (Jacob-locked): current.tenant_id is the ONLY authz basis; 404
+cross-tenant (never 403); tenant-check FIRST; fail-closed both sides; a connector
+id/name/type is only valid inside current.tenant_id (no global resolution).
+STANDING PRINCIPLE (Jacob): laws/regs change (EU/state) → never hardcode them; a
+future internal ABN AI agent / LEGAL-RULES-ENGINE owns regulatory interpretation
+(e.g. the GDPR retention constants).
+
+WHAT LANDED: two per-file helpers — _load_tenant_connector_or_404 (id AND
+current.tenant_id → 404, the 2a pattern) for the 5 int-{id} endpoints
+(get/health/patch/sync/delete), and _tenant_scope_or_404 for the
+tenant-addressing endpoints (create/live-feed/fortnox-status). list now ALWAYS
+scopes to current (param ignored, the 2c list convention). create only for the
+caller's own tenant. GET+health gained require_auth (they lacked current). health
+gate fires BEFORE the Nango probe. /catalogue is n/a (global YAML). New
+test_backend_tenant_3b_1.py (18): cross-tenant 404 per endpoint + same-tenant
+works; name/id-collision (same connector_type in two tenants → A never reaches
+B's id); patch/delete leave the victim row unchanged; health probe tripwire NOT
+reached cross-tenant; list scoped/param-ignored/fail-closed; create cross-tenant
+→ 404 zero-side-effect; null-tenant → 404 everywhere. Three existing test files
+aligned to same-tenant (test_connectors_api user t1 → TENANT_ID + its
+list_filters test rewritten to param-ignored; test_marketplace_wire user t1 →
+TENANT_ID + the live-feed regression points at the caller's own events-empty
+tenant; test_live_feed_api user t1 → TENANT_A + its strict_tenant_scoping
+rewritten to the new model — a foreign tenant_id param → 404). Gates: full
+backend suite 2140 passed (2122 + 18).
+
+API-CLEANUP grows: list/live-feed/fortnox-status tenant_id Query + create
+tenant_id body (kept, ignored). No frontend change (getConnectors/getConnectorHealth
+keep working same-tenant). No migration/schema/runtime; connector_generator + the
+credential family + other DISCOVERY-EXTRA files untouched.
+
+STATUS (safer wording): core trio + GDPR/compliance crown jewels + connector
+CRUD/read tenant-safe; STILL pending 3b-2 (credentials+bg chain), 3c (pipeline),
+3d (transparency/roi/agent_memory), 3e (billing/delivery/tenant_settings/tenants),
+3f (mind/friday), connector_generator /custom — before the server tier is
+tenant-safe. PR held at CLEAN (not merged).
+
 ## 2026-06-09 — BACKEND-TENANT-3a: tenant isolation on the GDPR + compliance crown jewels
 
 BACKEND ONLY (gdpr.py + compliance.py). First TENANT-DISCOVERY-EXTRA fix — closes
