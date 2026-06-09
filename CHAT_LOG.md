@@ -11,6 +11,51 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-09 — BACKEND-TENANT-2c-3: tenant isolation on report READ/DOWNLOAD endpoints
+
+BACKEND ONLY (reports.py). The LAST piece of the core trio (agent + proposal +
+report). Report read/download were id-only → cross-tenant read = data leak; the
+download returns a FILE so it has more leak surfaces (path/bytes/filename
+header). Reuses the proven _load_tenant_run_or_404 (2a) — no parallel pattern.
+
+DECISIONS (Jacob-locked): authorize on current.tenant_id ONLY, 404 cross-tenant
+(never 403, missing == cross-tenant), FILE-DOWNLOAD HARD GATE (tenant load is
+the FIRST data/file op — 404 before path/file/header work), fail-closed both
+sides, preserve the tenant_id param (ignored for authz → API-CLEANUP), keep the
+safer completion wording.
+
+WHAT LANDED: rewired the 3 reads — GET /{id} (metadata), GET /{id}/download (the
+HARD GATE: _load_tenant_run_or_404 placed before the report_paths match,
+_resolve_within_storage path resolution, read_bytes, and the Content-Disposition
+filename header; only the stateless format-422 precedes it, the documented 2a
+convention), and the list (was caller-param: an absent tenant_id returned ALL
+tenants → now ALWAYS scoped to current.tenant_id via a fail-closed sentinel;
+total derives from the scoped query → no count leak). Each read gained
+`current = Depends(require_auth)` (reads VIEWER+; require_role on deliver
+untouched). Removed the now-dead id-only _get_report_run_or_404 (orphaned by
+this batch; 2a had kept it "for the Tier-3 download/metadata reads pending in
+2c"). New test_backend_tenant_2c_3.py (9) proves cross-tenant 404 + no-leak body
++ missing/cross-tenant indistinguishable + the FILE-DOWNLOAD HARD GATE
+(cross-tenant download → bare 404, no Content-Disposition, no bytes, the
+_resolve_within_storage tripwire NOT reached) + same-tenant download still
+streams + list scoped/param-ignored/totals-scoped/fail-closed. test_reports_api
+already aligned in 2a (its user shares the runs' tenant), so its reads stayed
+green. Gates: full backend suite 2108 passed (2099 + 9).
+
+FILE-PATH SAFETY (reported, scope NOT broadened): the download path comes from
+AgentRun.report_paths (DB JSON) resolved by the pre-existing
+_resolve_within_storage (canonicalises against report_storage_path + 404s on a
+storage-root escape — the existing path-traversal guard). 2c-3 only ensures the
+cross-tenant 404 fires before that resolver runs; any further hardening is a
+separate FILE-DOWNLOAD-HARDENING follow-up.
+
+COMPLETION (safer wording): 2a + 2b + 2c-1 (agent reads) + 2c-2 (proposal reads)
++ 2c-3 (report reads/download) make the CORE TRIO tenant-safe; STILL pending
+TENANT-DISCOVERY-EXTRA (~23 route families). The multi-tenant server tier is NOT
+fully tenant-safe until that completes. No migration/schema/runtime/role-model/
+frontend change; agents.py + proposals.py + agent/proposal reads + Tier-1/2
+untouched. PR held at CLEAN (not merged).
+
 ## 2026-06-09 — BACKEND-TENANT-2c-2: tenant isolation on proposal READ endpoints
 
 BACKEND ONLY (proposals.py). Closes the proposal-read leak the DISCOVERY
