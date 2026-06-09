@@ -11,6 +11,41 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-09 — BACKEND-TENANT-2c-2: tenant isolation on proposal READ endpoints
+
+BACKEND ONLY (proposals.py). Closes the proposal-read leak the DISCOVERY
+flagged (id-only loads → cross-tenant read = data leak). Reuses the proven
+`_load_tenant_proposal_or_404` from 2a — no parallel pattern, no consolidation.
+
+DECISIONS (Jacob-locked): authorize on current.tenant_id ONLY, 404 cross-tenant
+(never 403, missing == cross-tenant indistinguishable), tenant-load FIRST (no
+partial leak), fail-closed both sides, preserve the tenant_id param (ignored for
+authz → API-CLEANUP), keep the safer completion wording (only the audited
+surfaces are tenant-safe, NOT the whole server tier).
+
+WHAT LANDED: rewired the 3 proposal reads — GET /{id} (detail), GET /{id}/report
+(report_refs come from the scoped proposal's OWN output_summary → compound
+ownership intrinsic, no nested cross-tenant fetch), and the list (was
+caller-param: an absent tenant_id returned ALL tenants' proposals → now ALWAYS
+scoped to current.tenant_id via a fail-closed sentinel; totals/pending derive
+from the scoped query so no count leak). Each read gained
+`current = Depends(require_auth)` (reads stay VIEWER+; require_role on
+approve/reject untouched). Removed the now-dead id-only `_get_or_404` helper
+(orphaned by this batch; 2a had kept it "for the Tier-3 reads pending in 2c").
+New test_backend_tenant_2c_2.py (10) proves cross-tenant 404 + no-leak body +
+missing/cross-tenant indistinguishable + list scoped/param-ignored/totals-scoped
++ fail-closed empty tenant + same-tenant VIEWER read still 200 (the shipped
+Tuari-3 Approval Center path). One existing wiring test aligned (user tenant
+"t1" → resource TENANT_ID — the same latent mismatch 2a/2b/2c-1 fixed).
+Gates: full backend suite 2099 passed (2089 + 10).
+
+COMPLETION (safer wording): 2a + 2b + 2c-1 (agent reads) + 2c-2 (proposal reads)
+make the audited AGENT + PROPOSAL surfaces tenant-safe; STILL pending 2c-3
+(report reads) + TENANT-DISCOVERY-EXTRA (~23 route families). The multi-tenant
+server tier is NOT fully tenant-safe until those complete. No migration/schema/
+runtime/role-model/frontend change; reports.py + agent reads + Tier-1/2
+untouched. PR held at CLEAN (not merged).
+
 ## 2026-06-09 — BACKEND-TENANT-2c-1: tenant isolation on Tier-3 AGENT reads + RAIL-1
 
 BACKEND ONLY (agents.py). The Tier-3 read/download/verification family was the
