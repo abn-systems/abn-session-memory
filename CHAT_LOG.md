@@ -11,6 +11,32 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-10 — BACKEND-TENANT-3e: tenant isolation on account/config (billing/delivery/tenant_settings/tenants)
+
+- The account/config family. Subtle: tenants.py mixes tenant-self-service with
+  node-level provisioning. Jacob classified (locked, Option 1): ABN NODE_ADMIN
+  is TENANT-SCOPED (no global node-operator persona in V1).
+  * tenants list/get/patch/delete = tenant-self-service → current.tenant_id
+    (404 cross-tenant; list returns own only). delete = soft-archive only
+    (semantics unchanged). create = NODE-LEVEL PROVISIONING (mints a new
+    tenant_id) → left NODE_ADMIN, the one node-level route.
+  * billing MONEY GATE: checkout/portal/subscription gate on current FIRST →
+    404 before any Stripe call / customer-subscription / price lookup; the
+    Stripe session is created under current (client_reference_id=current),
+    never the param. webhook (signature) untouched.
+  * delivery /config (get+put) + /test scoped to current (test fires zero
+    external delivery cross-tenant). tenant_settings get/put scoped.
+- SCHEMA-BLOCKED (NOT fixed, no fake filtering): delivery /history
+  (abn_activity_log has no tenant_id) → DELIVERY-HISTORY-TENANT-COLUMN-FOLLOWUP
+  (same column as the 3d AUDIT + 3c-2 OBSERVER-ACTIVITY follow-ups; one
+  migration closes all three).
+- Role guards unchanged; 404 cross-tenant on tenant-owned, 403 wrong-role on
+  node-level create (role ≠ tenant); Stripe webhook untouched; no migration/
+  schema/frontend/runtime. Tests: new test_backend_tenant_3e.py (26) + aligned
+  3 files (test_billing_api t1->TENANT_ID; test_tenants_api reworked to
+  self-service; test_api_routes patch uses /api/tenants/t1). Full backend suite
+  2236 passed (2210 + 26). PR held at CLEAN.
+
 ## 2026-06-10 — BACKEND-TENANT-3d: tenant isolation on the read-leak endpoints (transparency/roi/agent_memory)
 
 - Read-leak family (id-only + caller-param reads + all-tenant aggregates).
