@@ -11,6 +11,40 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-10 — BACKEND-TENANT-3c: tenant isolation on the pipeline endpoints (dna_phase / onboarding / flows)
+
+- Closed the next TENANT-DISCOVERY-EXTRA tier: the pipeline routers — every
+  endpoint drove a bg DNA/OPERA/agent-creation job (or a resumable wizard, or
+  a full synchronous flow) off a caller-supplied/path/body tenant_id. Now
+  authorize on current.tenant_id ONLY; a PATH/BODY/QUERY tenant_id is a compat
+  echo, never authz → 404 on mismatch, fail closed on null/empty, gate FIRST.
+- dna_phase.py: per-file `_tenant_scope_or_404`. start_dna_phase gate-first —
+  BEFORE the Tenant/progress read, the synchronous progress write, and the bg
+  DNA job; the job's DNAPhaseConfig carries scope (= current.tenant_id), never
+  request.tenant_id → a cross-tenant/null-tenant /start queues ZERO job and
+  writes ZERO progress. get_dna_progress / get_intelligence_report /
+  approve_suggested_agents gated (added `current` to the GET reads); CIP +
+  progress scoped to current.
+- onboarding.py: all 8 endpoints gated. start_wizard gate-before-create-write
+  (no cross-tenant wizard created); get_wizard_state (+current); submit_screen
+  1..5 gate-before-_apply_screen (scope threaded into the helper + the next
+  URL); run_preflight gate-before-row-read / DNA-context build.
+- flows.py: run_flow gate-first (Orchestrator runs under scope, never the
+  caller param → cross-tenant runs ZERO pipeline); list_runs ALWAYS scoped to
+  current (caller tenant_id query param ignored for authz); get_run
+  tenant-scoped load → 404. flows_health stays anonymous (AUTH-3b allowlist).
+- PIPELINE-WORKER-TENANT-FOLLOWUP: confirmed N/A — the engines are tenant-bound
+  via config/arg (DNAPhaseConfig.tenant_id, Orchestrator(tenant_id),
+  _apply_screen(scope)); no worker takes a caller-supplied tenant directly.
+- Tests: new test_backend_tenant_3c.py (21) — BG-JOB-GATE tripwire (zero job +
+  zero progress write cross-tenant; the job carries current), FLOW-GATE
+  tripwire, ZERO-SIDE-EFFECT (cross-tenant onboarding creates/mutates no victim
+  wizard), /runs scoping + param-ignored, null-tenant fail-closed, no-leak 404
+  bodies. Aligned test_onboarding_api (injected user t1 → TENANT). Full backend
+  suite 2179 passed (2158 + 21). Engines/OPERA/DNA/Fernet untouched. No
+  migration/schema/frontend/runtime change. observer/api_routes.py left for
+  3c-2. PR held at CLEAN — not merged.
+
 ## 2026-06-09 — BACKEND-TENANT-3b-2: tenant isolation on the connector CREDENTIAL family + bg chain
 
 BACKEND ONLY (connectors.py). The highest-stakes connector surface (cross-tenant
