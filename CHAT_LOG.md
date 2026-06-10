@@ -11,6 +11,50 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-09 — BACKEND-TENANT-3b-2: tenant isolation on the connector CREDENTIAL family + bg chain
+
+BACKEND ONLY (connectors.py). The highest-stakes connector surface (cross-tenant
+credential write = plant attacker's token in a victim / read/overwrite/revoke a
+victim's) + the LAST piece of connectors.py → connectors.py is now tenant-safe.
+
+PHASE A (code-is-truth): all 6 endpoints incl. POST /{name}/callback already
+carry current via require_role — callback is ABN-internal (operator's browser
+after the OAuth redirect), NOT an open provider callback → no STOP; gate on
+current.tenant_id.
+
+DECISIONS (Jacob-locked): current.tenant_id is the ONLY authz basis; the gate is
+the FIRST data/credential op, BEFORE any crypto/token-exchange/credential
+write-read-revoke/CSRF/bg-job; 404 cross-tenant; fail-closed both sides; ZERO
+secret leak; ZERO cross-tenant job; Fernet logic untouched (gate WHO not HOW);
+name/type only valid inside current.tenant_id.
+
+WHAT LANDED: reused the 3b-1 _tenant_scope_or_404(current, body.tenant_id) as the
+first op in all 6 (configure/authorize/callback/api-key/credentials-delete +
+connect). connect threads scope into _schedule_automation_chain (bg job carries
+current, never the caller param). callback gate precedes _consume_oauth_state +
+exchange_code_for_token + store_credential. The 502 token-exchange error is now
+generic ("token exchange failed", exc logged server-side type-only) — no secret
+echo. store_credential/revoke_credential filter by (tenant_id, connector_type) →
+passing scope = name-collision isolation. New test_backend_tenant_3b_2.py (18):
+per endpoint cross-tenant + null-tenant → 404 with every seam tripwired = ZERO
+calls (store/revoke/exchange/persist/consume/schedule); same-tenant works + the
+op/bg-job carries current.tenant_id; name/type collision isolated; no secret in
+the 404 body. Three existing test files aligned (test_connector_oauth +
+test_token_exchange credential flows + test_automation_chain connect-route, user
+t1 → TENANT_ID). Gates: full backend suite 2158 passed (2140 + 18).
+
+API-CLEANUP grows: configure/connect/authorize/callback/api-key/credentials-delete
+body tenant_id (kept, ignored). Deferred: SECRET-JOB-PAYLOAD-FOLLOWUP (the bg job
+carries tenant_id+connector_type, no raw secret → nothing to minimise today). No
+frontend change; the 9 generic endpoints + connector_generator + other
+DISCOVERY-EXTRA files untouched; Fernet unchanged.
+
+STATUS (safer wording): connectors.py tenant-safe (3b-1 + 3b-2), alongside the
+core trio + GDPR/compliance crown jewels. STILL pending 3c (pipeline), 3d
+(transparency/roi/agent_memory), 3e (billing/delivery/tenant_settings/tenants),
+3f (mind/friday), connector_generator /custom — before the server tier is
+tenant-safe. PR held at CLEAN (not merged).
+
 ## 2026-06-09 — BACKEND-TENANT-3b-1: tenant isolation on the connectors CRUD/read surface
 
 BACKEND ONLY (connectors.py). connectors.py was the worst gap file (~10
