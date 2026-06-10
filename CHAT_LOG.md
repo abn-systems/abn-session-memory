@@ -11,6 +11,30 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-10 — BACKEND-TENANT-3f: mind/friday_report + connector_generator /custom (FINAL DISCOVERY-EXTRA tier)
+
+- The last DISCOVERY-EXTRA HTTP batch. current.tenant_id only; aggregates scoped
+  before count/fetch/serialize; Mind stays PROPOSE-ONLY (no action power added;
+  autonomy/human-approval surface untouched).
+- mind.py: GET /reports (own-only, param ignored), GET /reports/{id} +
+  PATCH /reports/{id} (id AND current -> 404), POST /reports/generate =
+  MIND-CYCLE GATE (gate before MindAgent; report generated under current, never
+  body param; cross-tenant -> zero report, tripwire). autonomy/* already
+  current-scoped (Batch 67a) -> untouched; cross-tenant approve -> 404 (compound).
+- friday_report.py: preview (single read, 404 on mismatch) + history (aggregate,
+  own-only) scoped; send gates first -> 404 before generate + any email/send
+  (zero send cross-tenant; sent under current). No file/download endpoint.
+- connector_generator.py: GET /custom scoped to current (no same-name-collision
+  leak); generate + delete already current-scoped (unchanged); preview n/a.
+- No schema-blocked endpoints (all 3 tables have tenant_id). Role guards +
+  engines + human-gate untouched; no migration/schema/frontend/runtime. Tests:
+  new test_backend_tenant_3f.py (18) + aligned 2 files. Full backend suite 2254
+  passed (2236 + 18). PR held at CLEAN.
+- GAP-TRACKING: all DISCOVERY-EXTRA HTTP routes now tenant-safe EXCEPT the
+  schema-blocked abn_activity_log/abn_llm_calls aggregates. Server tier NOT
+  fully tenant-safe until the SCHEMA-COLUMN migrations + final matrix +
+  WORKER-SCHEDULER-TENANT-AUDIT (non-HTTP runtime surface).
+
 ## 2026-06-10 — BACKEND-TENANT-3e: tenant isolation on account/config (billing/delivery/tenant_settings/tenants)
 
 - The account/config family. Subtle: tenants.py mixes tenant-self-service with
