@@ -11,6 +11,43 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-10 — BACKEND-TENANT-3c-2: tenant isolation on the observer router (harden-in-place)
+
+- CRITICAL PHASE A finding (code is truth): the prompt's target
+  `observer/api_routes.py` (322 lines, 6 endpoints) is NOT mounted — main.py
+  imports the observer router from `api.routes.observer`, a 4-line EMPTY STUB,
+  and mounts that. The full Observer management API is DEAD in production
+  (unreachable); the DISCOVERY tenant gaps are latent. Only consumer is
+  test_observer_batch32. Surfaced to Jacob; he decided harden-in-place ONLY
+  (do NOT wire), add require_auth to the 3 unauth reads (approved because
+  unmounted = zero live effect), log OBSERVER-WIRING-FOLLOWUP.
+- Second finding: ABNActivityLog has no tenant_id column → /activity rows
+  cannot be tenant-filtered without a migration (OBSERVER-ACTIVITY-TENANT-
+  COLUMN-FOLLOWUP).
+- Gated all 6 endpoints on current.tenant_id (404, fail closed):
+  * /status — +require_auth + scoped to current (was all-tenant + no auth).
+  * /watermarks/{tenant_id} — +require_auth + path gate + scoped.
+  * /run + /trigger — OBSERVER-CYCLE GATE: gate FIRST in the shared
+    _execute_manual_run (before rate-limit/connector/cycle); rate-limit key +
+    connector query + ObservationCycle.tenant_id all use scope (= current),
+    never the body param → cross-tenant/null-tenant starts ZERO cycle.
+  * /circuit-breakers — scoped to the caller's own connector keys
+    ({connector_type}_{tenant_id}); no cross-tenant breaker-state leak.
+  * /activity/{tenant_id} — +require_auth + path gate; row-level scoping is
+    the FOLLOWUP (no tenant_id column).
+- require_auth added to status/watermarks/activity only (approved, unmounted);
+  NODE_ADMIN role guards on run/trigger/circuit-breakers unchanged; no auth
+  removed. Observer engine + rate-limiter + mount UNALTERED. NOT wired.
+- OBSERVER-ENGINE check: the in-process ObserverScheduler keys cycles by the
+  connector's own tenant_id (trusted server-side context), not a caller param
+  → not a tenant-bypass today.
+- Tests: new test_backend_tenant_3c_2.py (15) — mounts the unmounted router
+  standalone; OBSERVER-CYCLE tripwire (zero cycle cross-tenant; carries
+  current same-tenant; VIEWER 403 unchanged), PATH-PARAM 404s, /status +
+  /circuit-breakers scoping, null-tenant fail-closed, no-leak 404 bodies. Full
+  backend suite 2194 passed (2179 + 15); test_observer_batch32 4 API tests
+  unaffected. No migration/schema/frontend/runtime change. PR held at CLEAN.
+
 ## 2026-06-10 — BACKEND-TENANT-3c: tenant isolation on the pipeline endpoints (dna_phase / onboarding / flows)
 
 - Closed the next TENANT-DISCOVERY-EXTRA tier: the pipeline routers — every
