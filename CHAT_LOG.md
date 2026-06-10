@@ -11,6 +11,38 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-10 — BACKEND-TENANT-3d: tenant isolation on the read-leak endpoints (transparency/roi/agent_memory)
+
+- Read-leak family (id-only + caller-param reads + all-tenant aggregates).
+  current.tenant_id only; aggregates scoped BEFORE count/fetch/serialize (no
+  post-load filtering); 404 on cross-tenant single reads; compound ownership
+  scopes the parent; fail-closed both sides.
+- Fixed 7 endpoints (per-file _scope_or_404 helper, +current via require_auth):
+  * transparency /findings/{id}/explain — Finding by id AND tenant -> 404.
+  * transparency /findings/{id}/inquire (mutating-ish) — Finding by id AND
+    tenant -> 404 BEFORE the inquiry engine (zero side-effect; tripwire).
+  * transparency /agents/{id}/reasoning/{run} — COMPOUND (run_id AND agent_id
+    AND tenant) -> 404.
+  * transparency /blackboard — always scoped to current; param optional+ignored.
+  * roi /summary — ledger filtered by current BEFORE fetch/sum; totals scoped;
+    param ignored; response tenant_id = scope.
+  * agent_memory /{id}/memory + /{id}/evolution — _resolve_agent_or_404 filters
+    id AND tenant -> 404.
+- SCHEMA-BLOCKED (NOT fixed, no fake post-load filtering — HARD LAW): /audit
+  (abn_activity_log) + /llm-calls (abn_llm_calls) have NO tenant_id column ->
+  left all-tenant with an explicit ⚠️ NOTE; flagged AUDIT-TENANT-COLUMN-FOLLOWUP
+  (same column as the 3c-2 observer-activity follow-up) +
+  LLM-CALLS-TENANT-COLUMN-FOLLOWUP. The DISCOVERY assumed they were scope-
+  fixable; code-is-truth overrode it.
+- Discovered (out of scope, flagged): BLACKBOARD-GETALL-BUG — Blackboard.get_all
+  applies limit before filter -> raises -> fail-silent []. Engine correctness
+  bug (not a tenant bug). The 3d blackboard isolation is proven at the
+  construction seam instead (board built with current.tenant_id, never param).
+- Role guards unchanged; engines untouched; no migration/schema/frontend/
+  runtime. Tests: new test_backend_tenant_3d.py (16) + aligned 4 existing files
+  (t1 -> seeded tenant; rewrote the obsolete blackboard requires-param test).
+  Full backend suite 2210 passed (2194 + 16). PR held at CLEAN.
+
 ## 2026-06-10 — BACKEND-TENANT-3c-2: tenant isolation on the observer router (harden-in-place)
 
 - CRITICAL PHASE A finding (code is truth): the prompt's target
