@@ -47,11 +47,11 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: ABN-CORE-RUNTIME-DISCOVERY PASS 1A COMPLETE (READ-ONLY) — #163 + #164 merged. Master findings-tracker skapad.
+Status: ABN-CORE-RUNTIME-DISCOVERY PASS 1B COMPLETE (READ-ONLY) — alla 7 §15-entry-points granskade; 8 nya fynd (#15–#22) i trackern.
 Repo-sökväg: C:\Users\Jacob\OneDrive\Skrivbord\ABN-systems huvudmap\Source\abn (CANONICAL — gamla C:\Users\Jacob\Downloads\abn är STALE, använd aldrig)
-Main-branch: df13059 (#163 + #164 merged; PASS 1A COMPLETE). Discovery är READ-ONLY (notes-fil + session-docs, ingen källkodsändring).
-Senast: backend/docs/CORE_RUNTIME_DISCOVERY_FINDINGS.md skapad — master-trackern för alla discovery-fynd, seedad med 14 PASS 1A-fynd; sessionsankare flyttade till kanoniska OneDrive-sökvägen.
-Nästa: PASS 1B — agent creation / blueprint / compiler / runtime. Starta från backend/docs/CORE_RUNTIME_DISCOVERY_1A.md §15. SINGLE-AGENT, READ-ONLY, ingen subagent-flotta. Append:a 1B-fynd till FINDINGS-trackern.
+Main-branch: 09a0e76-baserad (#165 + #166 merged; PASS 1A #1–#14 + PASS 1B #15–#22). Discovery är READ-ONLY (notes-fil + session-docs, ingen källkodsändring).
+Senast: backend/docs/CORE_RUNTIME_DISCOVERY_1B.md skapad (PASS 1B COMPLETE — 15 sektioner; toppfynd: P2 lookback_days ignoreras i _phase_observe; P2 quarantine/health-pause täcker inte /instruct+orchestrator+trigger för tier-1/2); FINDINGS-trackern uppdaterad till 22 rader.
+Nästa: Jacob granskar 1B-fynden → därefter PASS 1C — worker / scheduler / non-HTTP (WORKER-SCHEDULER-TENANT-AUDIT). Starta från CORE_RUNTIME_DISCOVERY_1A.md §15. SINGLE-AGENT, READ-ONLY. Append:a 1C-fynd till trackern (nästa rad = #23).
 VIKTIGT: READ-ONLY (ingen route/källkod/migration). FINDINGS-trackern är append-only — skriv aldrig över rader. Pausa OneDrive-synk före stora git-träd-operationer (synk-churn orsakade 1013-commit-driften).
 
 ## ABN V1 — AUGUST RELEASE PLAN (canon / kistan)
