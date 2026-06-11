@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch CI-BUDGET-2 KLAR — PR open. CI-kostnad sänkt UTAN att försvaga någon required gate (workflow-YAML only). De 5 required (Frontend/Landing/Shield/abn-security 45a/migrations) + gitleaks kör fortfarande på varje PR. branch feat/ci-budget-2.
+Status: TENANT-PROOF-TESTS-2A klar — PR open, väntar på Jacobs merge. 12 nya tester gröna + full backend-svit grön. UNVERIFIED 19→9. branch feat/tenant-proof-tests-2a.
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 071ba04 (#160 — TENANT-PROOF-TESTS-1 merged; HTTP gap=0, SAFE 121, UNVERIFIED 19). CI-BUDGET-2 är PR-only ovanpå detta; INTE auto-mergad.
-Senast: Semgrep + Trivy (ADVISORY, continue-on-error, EJ required) tog bort pull_request-triggern → kör på main-push + weekly + workflow_dispatch (sparar ~3 min dyraste runners/PR). gitleaks OFÖRÄNDRAD (per-PR). concurrency cancel-in-progress tillagt i ci.yml + migrations-dual (shield/security-* hade redan) → PR-re-push + merge+trigger-deploy-dubbel kollapsar till senaste. migrations pull_request strammad till branches:[main]. Branch-protection verifierad via gh api: required = exakt de 5 (Backend är EJ required trots prompten; rapporterat).
-Nästa (varje egen batch): TENANT-PROOF-TESTS-2 (de 19 kvarvarande UNVERIFIED) · WORKER-SCHEDULER-TENANT-AUDIT (icke-HTTP) · EMAIL-DRAFTS-404-CONVENTION · OBSERVER-CONSENT-TENANT-GATE · AUTH-3b-ALLOWLIST-DOC · Hetzner alembic upgrade head (d9a3f1c75e28). REKOMMENDATION (Jacobs GitHub-UI-beslut): slå på branch-protection "require branches up to date" (strict=true) → då blir post-merge main-körningen redundant och kan gates till PR-only senare (sparar full main-suite/merge); idag strict=false så main-körningen behålls som skyddsnät.
-VIKTIGT: SÄKERHET FÖRST — INGEN required check försvagad/path-gated/borttagen; de 5 + gitleaks kör på varje relevant PR (bevisat via trigger-config). Endast ADVISORY scans flyttade off-PR. Post-merge main-körning BEHÅLLEN (strict=false → skyddsnät mot two-PR semantisk konflikt). Workflow-YAML-only diff (ingen backend/frontend/test-kod). Commit-meddelanden: ALDRIG dubbelcitat. PR hålls vid CLEAN — INTE auto-merge.
+Main-branch: c0f8b64 (#160 + #161 merged; HTTP gap=0). Efter 2A-merge: SAFE 129, SAFE-BY-DESIGN 34, UNVERIFIED 9. 2A är test-only; INTE auto-mergad.
+Senast: backend/tests/test_tenant_proof_2.py (12) bevisar 10 lägre-risk-rutter cross-tenant — email_drafts ×4 + onboarding 2–5 ×4 → SAFE; observer-consent ×2 → SAFE-BY-DESIGN (per-caller self-route). PHASE A: ingen läcka. Matrix MD+JSON uppdaterad.
+Nästa: TENANT-PROOF-TESTS-2B (de 9 kvar: users invite/invites · auth audit-log/invite/logout/me · admin overview/un-health-pause/rollback-records) → sedan WORKER-SCHEDULER-TENANT-AUDIT (icke-HTTP).
+VIKTIGT: TEST-ONLY (ingen route/källkod/migration). email_drafts approve/reject = 403 cross-tenant (EMAIL-DRAFTS-404-CONVENTION; isolering håller, noll side-effect, send-seam tripwired). observer-consent = per-caller self-route (SAFE-BY-DESIGN m. bevis). Server-tiern INTE fullt tenant-säker förrän UNVERIFIED=0 + worker-audit. PR hålls vid CLEAN — INTE auto-merge.
 
 ## ABN V1 — AUGUST RELEASE PLAN (canon / kistan)
 The compass for EVERY scope decision until launch (target: August 2026).
@@ -456,6 +456,14 @@ Rules:
 
 ## OPEN ITEMS
 Unfinished sub-tasks / open questions live here (referenced by CLAUDE.md §4.2 PRE-/clear HALT PROTOCOL). Empty = nothing pending.
+
+### TENANT-PROOF track (backend multi-tenant isolation)
+- **TENANT-PROOF-TESTS-2B (next, test-only):** the remaining 9 UNVERIFIED HTTP routes — users invite/invites · auth audit-log/invite/logout/me (logout/me are self-only) · admin overview/un-health-pause/rollback-records. Same pattern as 2A (mirror test_tenant_proof_2.py). INVITE/TOKEN SAFETY GATE applies to users/auth invite (no cross-tenant invitee/email/token leak; invite bound to current.tenant_id).
+- **WORKER-SCHEDULER-TENANT-AUDIT:** the non-HTTP surface (Observer cycle, agent/friday/mind/control-plane/shield/pulse schedulers, cron, outbox poller). Required (alongside UNVERIFIED=0) before the multi-tenant server tier can be called fully tenant-safe.
+- **EMAIL-DRAFTS-404-CONVENTION (cleanup, NOT a gap):** approve/reject return 403 cross-tenant instead of the 404 convention; isolation is proven SAFE (2A, zero side-effect) — a status-code cleanup only.
+- **OBSERVER-CONSENT-TENANT-GATE (optional):** observer-consent proven per-caller self-route SAFE-BY-DESIGN (2A); an explicit tenant gate is optional defence-in-depth.
+- **AUTH-3b-ALLOWLIST-DOC:** add accept-invite to the documented anonymous allowlist.
+- **Hetzner `alembic upgrade head`** (head d9a3f1c75e28, SCHEMA-COLUMN-1) at the next deploy.
 
 ### ⚠️ CONSOLIDATED SIGN-OFF BEFORE PUBLISHING (all softened-now, NOTHING invented — Jacob must approve before the public site goes live)
 The public copy is built honest + scoped, but these claims need founder/legal approval before publish. All are SOFTENED already (no over-absolutes ship); this is the review gate, not a blocker to building.

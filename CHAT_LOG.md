@@ -11,6 +11,28 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-11 — TENANT-PROOF-TESTS-2A: cross-tenant proof for 10 lower-risk routes (split 2A of 2)
+
+- Test-only (no route/source change). SPLIT per the prompt's SPLIT GUARD: 2A =
+  email_drafts x4 + onboarding screens 2-5 x4 + compliance observer-consent x2
+  (10 routes); 2B = auth self-routes x4 + users x2 + admin x3 (the remaining 9).
+- BASELINE GUARD: confirmed #160 (071ba04) + #161 (c0f8b641) merged; local main
+  contains #161; matrix GAP=0 / UNVERIFIED=19; clean tree; branched off main.
+- New backend/tests/test_tenant_proof_2.py (12 tests), mirrors the PROOF-1
+  harness. PHASE A read every handler — NO live leak. email_drafts + onboarding
+  -> SAFE; observer-consent -> SAFE-BY-DESIGN (per-caller self-routes).
+- email_drafts approve/reject: cross-tenant 403 (the documented
+  EMAIL-DRAFTS-404-CONVENTION; isolation holds, zero side-effect, the
+  send_approved_draft seam tripwired to 0 calls) — asserted the REAL contract,
+  not a weakened one. onboarding 2-5: cross-tenant 404 + victim wizard screens
+  unchanged + null-tenant fail-closed + wrong-role 403. observer-consent: POST
+  keyed to current.user_id (planted body tenant_id ignored); GET filters
+  user_id==current.user_id.
+- Same-tenant happy paths cited (test_email_capability.py + test_onboarding_api.py).
+- Matrix (MD + JSON): SAFE 121->129, SAFE-BY-DESIGN 32->34, UNVERIFIED 19->9, GAP 0.
+- Remaining: TENANT-PROOF-TESTS-2B (9 routes) + WORKER-SCHEDULER-TENANT-AUDIT
+  (non-HTTP). Held at CLEAN — not auto-merged.
+
 ## 2026-06-10 — BACKEND-TENANT-3f: mind/friday_report + connector_generator /custom (FINAL DISCOVERY-EXTRA tier)
 
 - The last DISCOVERY-EXTRA HTTP batch. current.tenant_id only; aggregates scoped
