@@ -11,6 +11,29 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-11 — ABN-CORE-RUNTIME-DISCOVERY PASS 1A (READ-ONLY, PARTIAL)
+
+- Full source-code discovery of the ABN core engine after #162. READ-ONLY (code
+  is truth; CLAUDE.md is doc, not proof). Deliverable = a notes file:
+  backend/docs/CORE_RUNTIME_DISCOVERY_1A.md — no source/route/migration change.
+- Baseline confirmed: main 931d379, #162 merged, clean tree, matrix
+  SAFE 129 / SBD 34 / UNVERIFIED 9 / GAP 0 / total 172.
+- Decision: 4-pass split (1A wiring/dead/stub · 1B agent-creation/blueprint/
+  compiler/runtime · 1C worker/scheduler/non-HTTP · 1D LLM/tools/evidence/audit),
+  one at a time, review between each.
+- The 8 fan-out subagents all died instantly on an Anthropic session limit
+  ("resets 1:30pm"), so PASS 1A was completed single-agent and is PARTIAL: the
+  mount layer + 3 known stub/bug entry points + baseline were code-verified; the
+  engine layer is NOT yet audited (deferred to 1B–1D; §15 of the 1A file names
+  the exact files).
+- Verified from source: main.py mount map (28 routers + 2 conditional) + lifespan
+  (alembic-upgrade-no-try/except; 5 daemons + health monitor started) + CORS
+  (or ["*"]+credentials); the Observer real router is UNMOUNTED (the 4-line stub
+  api/routes/observer.py is mounted instead); GDPR export/erase = STUB (no DB
+  cascade); Blackboard.get_all .limit()-before-.filter() → fail-silent []; /api/
+  status hardcoded module "ok".
+- Saved to disk + GitHub per the /clear protocol; Jacob will /clear and run 1B next.
+
 ## 2026-06-11 — TENANT-PROOF-TESTS-2A: cross-tenant proof for 10 lower-risk routes (split 2A of 2)
 
 - Test-only (no route/source change). SPLIT per the prompt's SPLIT GUARD: 2A =

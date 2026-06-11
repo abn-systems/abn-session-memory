@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: TENANT-PROOF-TESTS-2A klar — PR open, väntar på Jacobs merge. 12 nya tester gröna + full backend-svit grön. UNVERIFIED 19→9. branch feat/tenant-proof-tests-2a.
+Status: ABN-CORE-RUNTIME-DISCOVERY PASS 1A PARTIAL (READ-ONLY) — sparad till disk+GitHub, redo för /clear. #162 merged.
 Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: c0f8b64 (#160 + #161 merged; HTTP gap=0). Efter 2A-merge: SAFE 129, SAFE-BY-DESIGN 34, UNVERIFIED 9. 2A är test-only; INTE auto-mergad.
-Senast: backend/tests/test_tenant_proof_2.py (12) bevisar 10 lägre-risk-rutter cross-tenant — email_drafts ×4 + onboarding 2–5 ×4 → SAFE; observer-consent ×2 → SAFE-BY-DESIGN (per-caller self-route). PHASE A: ingen läcka. Matrix MD+JSON uppdaterad.
-Nästa: TENANT-PROOF-TESTS-2B (de 9 kvar: users invite/invites · auth audit-log/invite/logout/me · admin overview/un-health-pause/rollback-records) → sedan WORKER-SCHEDULER-TENANT-AUDIT (icke-HTTP).
-VIKTIGT: TEST-ONLY (ingen route/källkod/migration). email_drafts approve/reject = 403 cross-tenant (EMAIL-DRAFTS-404-CONVENTION; isolering håller, noll side-effect, send-seam tripwired). observer-consent = per-caller self-route (SAFE-BY-DESIGN m. bevis). Server-tiern INTE fullt tenant-säker förrän UNVERIFIED=0 + worker-audit. PR hålls vid CLEAN — INTE auto-merge.
+Main-branch: 931d379 (#162 merged; HTTP gap=0, SAFE 129 / SBD 34 / UNVERIFIED 9 / total 172). Discovery är READ-ONLY (notes-fil + session-docs, ingen källkodsändring).
+Senast: backend/docs/CORE_RUNTIME_DISCOVERY_1A.md — verifierat: main.py mount/lifespan/CORS, observer-stub-vs-riktig router, GDPR export/erase=STUB, Blackboard.get_all .limit()-före-.filter()-bugg, alembic-upgrade-utan-try/except, /api/status hårdkodad "ok". 8 subagenter dog på session-limit → 1A kördes single-agent, PARTIAL.
+Nästa: kör resten av Discovery i 4 pass (1A wiring ✅ partial · 1B agent-creation/blueprint/compiler/runtime · 1C worker/scheduler/non-HTTP · 1D LLM/tools/evidence/audit), ett i taget, review mellan varje. §15 i 1A-filen listar exakta filer per pass.
+VIKTIGT: READ-ONLY (ingen route/källkod/migration). 1A är PARTIAL — engine-lager (agent creation/runtime/LLM/evidence) är INTE kodgranskat ännu; överklaim inte att de är "live + korrekta". CLAUDE.md är doc, inte bevis. Top-fynd: observer-stub mountad, GDPR-stub (latent P0 om wired), Blackboard.get_all fail-silent.
 
 ## ABN V1 — AUGUST RELEASE PLAN (canon / kistan)
 The compass for EVERY scope decision until launch (target: August 2026).
@@ -456,6 +456,12 @@ Rules:
 
 ## OPEN ITEMS
 Unfinished sub-tasks / open questions live here (referenced by CLAUDE.md §4.2 PRE-/clear HALT PROTOCOL). Empty = nothing pending.
+
+### ABN-CORE-RUNTIME-DISCOVERY track (READ-ONLY source audit)
+- **Findings live in `backend/docs/CORE_RUNTIME_DISCOVERY_1A.md`** (PASS 1A, PARTIAL). The 4-pass plan: 1A wiring/dead/stub (✅ partial) · 1B agent-creation/blueprint/compiler/runtime · 1C worker/scheduler/non-HTTP (the WORKER-SCHEDULER-TENANT-AUDIT) · 1D LLM/tools/evidence/audit. One pass at a time, review between each.
+- **1A is PARTIAL** — the 8 fan-out subagents died on an Anthropic session limit; only the mount layer + 3 stub/bug confirmations + baseline were code-audited. §15 of the 1A file names the exact files each later pass must inspect.
+- **Confirmed P1/P2 leads (fix-batch candidates, NOT fixed — read-only):** GDPR export/erase engine is a STUB (latent P0 — `GDPR-ERASE-ENGINE-1`); `Blackboard.get_all` `.limit()`-before-`.filter()` fail-silent `[]` (`BLACKBOARD-GETALL-BUG`); observer real router unmounted, stub mounted (`OBSERVER-WIRING-FOLLOWUP`); `alembic upgrade head` on boot without try/except; CORS `or ["*"]`+credentials when env list empty; `/api/status` hardcoded module "ok".
+- Bug-class grep for the continuation: every `except Exception` returning empty/ok, and every `.filter()`/`.where()` after `.limit()`/`.offset()`.
 
 ### TENANT-PROOF track (backend multi-tenant isolation)
 - **TENANT-PROOF-TESTS-2B (next, test-only):** the remaining 9 UNVERIFIED HTTP routes — users invite/invites · auth audit-log/invite/logout/me (logout/me are self-only) · admin overview/un-health-pause/rollback-records. Same pattern as 2A (mirror test_tenant_proof_2.py). INVITE/TOKEN SAFETY GATE applies to users/auth invite (no cross-tenant invitee/email/token leak; invite bound to current.tenant_id).
