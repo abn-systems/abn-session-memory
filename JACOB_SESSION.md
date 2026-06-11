@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: ABN-CORE-RUNTIME-DISCOVERY PASS 1C COMPLETE (READ-ONLY) — worker/scheduler/non-HTTP audit; 6 nya fynd (#23–#28). VERDIKT: ingen non-HTTP tenant-loss-väg hittad (tenant-isolering håller HTTP + non-HTTP, statiskt bevisad); MEN safety-gate-ytan är ojämn (#23/#25 quarantine/health-bypass, ingen central guard).
+Status: ABN-CORE-RUNTIME-DISCOVERY PASS 1D COMPLETE (READ-ONLY) — LLM/tools/evidence/audit/reports/delivery; 11 nya fynd (#29–#39). HUVUDVERDIKT (#29): No-Data-gatewayen är en STRUKTURELL garanti för payload (varje löv tokeniseras, abstractorn skickar bara tokens, gäller alla lägen inkl. full, fail-closed residue-scan) men ett CALLER-KONTRAKT för task_description — ingen live-väg skickar rå kunddata till LLM idag. ALLA 4 audit-pass (1A–1D) är klara.
 Repo-sökväg: C:\Users\Jacob\OneDrive\Skrivbord\ABN-systems huvudmap\Source\abn (CANONICAL — gamla C:\Users\Jacob\Downloads\abn är STALE, använd aldrig)
-Main-branch: 6513caf-baserad (#165–#167 merged; PASS 1A #1–#14 + 1B #15–#22 + 1C #23–#28). Discovery är READ-ONLY (notes-fil + session-docs, ingen källkodsändring).
-Senast: backend/docs/CORE_RUNTIME_DISCOVERY_1C.md skapad (PASS 1C COMPLETE — §1–§17; toppfynd: P2 /instruct+orchestrator+trigger saknar quarantine/health-gate för tier-1/2; P2 auto-trigger kör nya agenten på STÄNGD DB-session; P2 ingen central runtime-guard). FINDINGS-trackern uppdaterad till 28 rader.
-Nästa: Jacob granskar 1C-fynden → därefter PASS 1D — LLM / tools / evidence / audit / reports. Live LLM-väg = OPERARunner._call_llm_reasoner → LLMGateway (INTE döda AAEA-executorn). Starta från 1C §16-handoff. SINGLE-AGENT, READ-ONLY. Append:a 1D-fynd till trackern (nästa rad = #29).
-VIKTIGT: READ-ONLY (ingen route/källkod/migration). FINDINGS-trackern är append-only — skriv aldrig över rader. Pausa OneDrive-synk före stora git-träd-operationer (synk-churn orsakade 1013-commit-driften).
+Main-branch: e5f17b7-baserad (#165–#168 merged; tracker 1A #1–#14 + 1B #15–#22 + 1C #23–#28 + 1D #29–#39 = 39 rader). Discovery är READ-ONLY (docs-only PR, ingen källkodsändring).
+Senast: backend/docs/CORE_RUNTIME_DISCOVERY_1D.md skriven (PASS 1D COMPLETE — §1–§17; toppfynd: P2 task_description-kontraktssömmen #29; P2 health-LLM-checken vaktar en död breaker #33; instruct-LLM-dödbuggen #30; tier-3 evidens-EFTER-skrivning #34; transparensloggens rotorsak #32). Trackern 28→39 rader + 1E-fixroadmap-seed i 1D §16.
+Nästa: Jacob granskar 1D-fynden → därefter PASS 1E — SYNTES (ingen ny audit): trackerns 39 rader → fix-roadmap. Ledande kandidat RUNTIME-CENTRAL-GUARD-1 (#16/#23/#25); batchordning + pilot-gates ligger färdiga i 1D §16.
+VIKTIGT: FINDINGS-trackern är append-only (nästa rad = #40) — skriv aldrig över rader. Pausa OneDrive-synk före stora git-träd-operationer (synk-churn orsakade 1013-commit-driften).
 
 ## ABN V1 — AUGUST RELEASE PLAN (canon / kistan)
 The compass for EVERY scope decision until launch (target: August 2026).
