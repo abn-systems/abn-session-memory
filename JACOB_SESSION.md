@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: ABN-CORE-RUNTIME-DISCOVERY PASS 1D COMPLETE (READ-ONLY) — LLM/tools/evidence/audit/reports/delivery; 11 nya fynd (#29–#39). HUVUDVERDIKT (#29): No-Data-gatewayen är en STRUKTURELL garanti för payload (varje löv tokeniseras, abstractorn skickar bara tokens, gäller alla lägen inkl. full, fail-closed residue-scan) men ett CALLER-KONTRAKT för task_description — ingen live-väg skickar rå kunddata till LLM idag. ALLA 4 audit-pass (1A–1D) är klara.
+Status: ABN-CORE-RUNTIME-DISCOVERY PASS 1E ROADMAP COMPLETE (syntes, ingen ny audit) — hela discoveryn (1A–1E) är KLAR. Verdikt: 0 P0, 1 latent P1 (#1 GDPR-stub), P2-klustret domineras av EN strukturell rotorsak (RC-1: ingen central runtime-guard). Roadmapen: rotorsaker RC-1–RC-6, claim-control-lista, pre-autonomy- + pre-pilot-gates, batchordning (1. RUNTIME-CENTRAL-GUARD-1, 2. AUTO-TRIGGER-DB-SESSION-1, 3. LOOKBACK-WINDOW-OBSERVE-1, + 3p mikrobatchar #2/#30/#26, 4. NO-DATA-TASK-DESCRIPTION-GUARD-1, 5. LLM-HEALTH-GATEWAY-1, 6. GDPR-ERASE-ENGINE-1, …) + byggfärdiga specar för de 5 första batcharna.
 Repo-sökväg: C:\Users\Jacob\OneDrive\Skrivbord\ABN-systems huvudmap\Source\abn (CANONICAL — gamla C:\Users\Jacob\Downloads\abn är STALE, använd aldrig)
-Main-branch: e5f17b7-baserad (#165–#168 merged; tracker 1A #1–#14 + 1B #15–#22 + 1C #23–#28 + 1D #29–#39 = 39 rader). Discovery är READ-ONLY (docs-only PR, ingen källkodsändring).
-Senast: backend/docs/CORE_RUNTIME_DISCOVERY_1D.md skriven (PASS 1D COMPLETE — §1–§17; toppfynd: P2 task_description-kontraktssömmen #29; P2 health-LLM-checken vaktar en död breaker #33; instruct-LLM-dödbuggen #30; tier-3 evidens-EFTER-skrivning #34; transparensloggens rotorsak #32). Trackern 28→39 rader + 1E-fixroadmap-seed i 1D §16.
-Nästa: Jacob granskar 1D-fynden → därefter PASS 1E — SYNTES (ingen ny audit): trackerns 39 rader → fix-roadmap. Ledande kandidat RUNTIME-CENTRAL-GUARD-1 (#16/#23/#25); batchordning + pilot-gates ligger färdiga i 1D §16.
-VIKTIGT: FINDINGS-trackern är append-only (nästa rad = #40) — skriv aldrig över rader. Pausa OneDrive-synk före stora git-träd-operationer (synk-churn orsakade 1013-commit-driften).
+Main-branch: a618567-baserad (#165–#169 merged; tracker 39 rader #1–#39, inga nya rader i 1E). Discovery är READ-ONLY (docs-only PRs, ingen källkodsändring).
+Senast: backend/docs/CORE_RUNTIME_DISCOVERY_1E_ROADMAP.md skriven (§1–§15: exekutiv syntes, rotorsakskarta, claim-control, gates, prioriterad roadmap 12+6 batchar, första-5-specar, teststrategi, dead-code-dispositioner, pilot-definition, öppna frågor, slutrekommendation: GÅ TILL FIXAR — första batch RUNTIME-CENTRAL-GUARD-1).
+Nästa: Jacob granskar roadmapen + besvarar §14-frågorna (leveranskanaler MVP, inquire ship/disable, GDPR-yta, safe_mode-beslut) → därefter FÖRSTA FIXBATCHEN: RUNTIME-CENTRAL-GUARD-1 (specen i roadmap §9, egen session, tests-first, ABN BUILD-disciplin).
+VIKTIGT: FINDINGS-trackern är append-only (nästa rad = #40) — skriv aldrig över rader. Inga fixar är gjorda än (FIXED:0) — discovery ändrade ingen kod. Pausa OneDrive-synk före stora git-träd-operationer.
 
 ## ABN V1 — AUGUST RELEASE PLAN (canon / kistan)
 The compass for EVERY scope decision until launch (target: August 2026).
