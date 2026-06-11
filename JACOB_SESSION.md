@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: ABN-CORE-RUNTIME-DISCOVERY PASS 1A PARTIAL (READ-ONLY) — sparad till disk+GitHub, redo för /clear. #162 merged.
-Repo-sökväg: C:\Users\Jacob\Downloads\abn
-Main-branch: 931d379 (#162 merged; HTTP gap=0, SAFE 129 / SBD 34 / UNVERIFIED 9 / total 172). Discovery är READ-ONLY (notes-fil + session-docs, ingen källkodsändring).
-Senast: backend/docs/CORE_RUNTIME_DISCOVERY_1A.md — verifierat: main.py mount/lifespan/CORS, observer-stub-vs-riktig router, GDPR export/erase=STUB, Blackboard.get_all .limit()-före-.filter()-bugg, alembic-upgrade-utan-try/except, /api/status hårdkodad "ok". 8 subagenter dog på session-limit → 1A kördes single-agent, PARTIAL.
-Nästa: kör resten av Discovery i 4 pass (1A wiring ✅ partial · 1B agent-creation/blueprint/compiler/runtime · 1C worker/scheduler/non-HTTP · 1D LLM/tools/evidence/audit), ett i taget, review mellan varje. §15 i 1A-filen listar exakta filer per pass.
-VIKTIGT: READ-ONLY (ingen route/källkod/migration). 1A är PARTIAL — engine-lager (agent creation/runtime/LLM/evidence) är INTE kodgranskat ännu; överklaim inte att de är "live + korrekta". CLAUDE.md är doc, inte bevis. Top-fynd: observer-stub mountad, GDPR-stub (latent P0 om wired), Blackboard.get_all fail-silent.
+Status: ABN-CORE-RUNTIME-DISCOVERY PASS 1A COMPLETE (READ-ONLY) — #163 + #164 merged.
+Repo-sökväg: C:\Users\Jacob\Downloads\abn (CANONICAL — utanför OneDrive; OneDrive-checkouten ...\Source\abn + abn-1a-wt-worktree är ICKE-kanoniska, ankra aldrig dit)
+Main-branch: df13059 (#163 + #164 merged; PASS 1A COMPLETE). Discovery är READ-ONLY (notes-fil + session-docs, ingen källkodsändring).
+Senast: PASS 1A slutförd — rapporten ligger i backend/docs/CORE_RUNTIME_DISCOVERY_1A.md. Sessionsankare synkade till kanonisk repo-sökväg (denna batch).
+Nästa: PASS 1B — agent creation / blueprint / compiler / runtime. Starta från backend/docs/CORE_RUNTIME_DISCOVERY_1A.md §15. SINGLE-AGENT, READ-ONLY, ingen subagent-flotta.
+VIKTIGT: READ-ONLY (ingen route/källkod/migration). CANONICAL repo = C:\Users\Jacob\Downloads\abn — nästa session får ALDRIG ankras till OneDrive-checkouten eller abn-1a-wt. Top-fynd från 1A kvarstår som fix-kandidater: observer-stub mountad, GDPR-stub (latent P0 om wired), Blackboard.get_all fail-silent.
 
 ## ABN V1 — AUGUST RELEASE PLAN (canon / kistan)
 The compass for EVERY scope decision until launch (target: August 2026).
