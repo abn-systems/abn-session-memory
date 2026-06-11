@@ -38,7 +38,7 @@ what has been built, what prompts were given, and what is next.
 # ABN — Session Memory
 
 ## ÅTERHÄMTNING EFTER /clear
-1. cd C:\Users\Jacob\Downloads\abn
+1. cd "C:\Users\Jacob\OneDrive\Skrivbord\ABN-systems huvudmap\Source\abn"
 2. git log --oneline -5
 3. git status
 4. cat CLAUDE.md | head -40
@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: ABN-CORE-RUNTIME-DISCOVERY PASS 1A COMPLETE (READ-ONLY) — #163 + #164 merged.
-Repo-sökväg: C:\Users\Jacob\Downloads\abn (CANONICAL — utanför OneDrive; OneDrive-checkouten ...\Source\abn + abn-1a-wt-worktree är ICKE-kanoniska, ankra aldrig dit)
+Status: ABN-CORE-RUNTIME-DISCOVERY PASS 1A COMPLETE (READ-ONLY) — #163 + #164 merged. Master findings-tracker skapad.
+Repo-sökväg: C:\Users\Jacob\OneDrive\Skrivbord\ABN-systems huvudmap\Source\abn (CANONICAL — gamla C:\Users\Jacob\Downloads\abn är STALE, använd aldrig)
 Main-branch: df13059 (#163 + #164 merged; PASS 1A COMPLETE). Discovery är READ-ONLY (notes-fil + session-docs, ingen källkodsändring).
-Senast: PASS 1A slutförd — rapporten ligger i backend/docs/CORE_RUNTIME_DISCOVERY_1A.md. Sessionsankare synkade till kanonisk repo-sökväg (denna batch).
-Nästa: PASS 1B — agent creation / blueprint / compiler / runtime. Starta från backend/docs/CORE_RUNTIME_DISCOVERY_1A.md §15. SINGLE-AGENT, READ-ONLY, ingen subagent-flotta.
-VIKTIGT: READ-ONLY (ingen route/källkod/migration). CANONICAL repo = C:\Users\Jacob\Downloads\abn — nästa session får ALDRIG ankras till OneDrive-checkouten eller abn-1a-wt. Top-fynd från 1A kvarstår som fix-kandidater: observer-stub mountad, GDPR-stub (latent P0 om wired), Blackboard.get_all fail-silent.
+Senast: backend/docs/CORE_RUNTIME_DISCOVERY_FINDINGS.md skapad — master-trackern för alla discovery-fynd, seedad med 14 PASS 1A-fynd; sessionsankare flyttade till kanoniska OneDrive-sökvägen.
+Nästa: PASS 1B — agent creation / blueprint / compiler / runtime. Starta från backend/docs/CORE_RUNTIME_DISCOVERY_1A.md §15. SINGLE-AGENT, READ-ONLY, ingen subagent-flotta. Append:a 1B-fynd till FINDINGS-trackern.
+VIKTIGT: READ-ONLY (ingen route/källkod/migration). FINDINGS-trackern är append-only — skriv aldrig över rader. Pausa OneDrive-synk före stora git-träd-operationer (synk-churn orsakade 1013-commit-driften).
 
 ## ABN V1 — AUGUST RELEASE PLAN (canon / kistan)
 The compass for EVERY scope decision until launch (target: August 2026).
