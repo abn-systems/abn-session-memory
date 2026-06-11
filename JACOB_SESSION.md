@@ -47,11 +47,11 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: ABN-CORE-RUNTIME-DISCOVERY PASS 1B COMPLETE (READ-ONLY) — alla 7 §15-entry-points granskade; 8 nya fynd (#15–#22) i trackern.
+Status: ABN-CORE-RUNTIME-DISCOVERY PASS 1C COMPLETE (READ-ONLY) — worker/scheduler/non-HTTP audit; 6 nya fynd (#23–#28). VERDIKT: ingen non-HTTP tenant-loss-väg hittad (tenant-isolering håller HTTP + non-HTTP, statiskt bevisad); MEN safety-gate-ytan är ojämn (#23/#25 quarantine/health-bypass, ingen central guard).
 Repo-sökväg: C:\Users\Jacob\OneDrive\Skrivbord\ABN-systems huvudmap\Source\abn (CANONICAL — gamla C:\Users\Jacob\Downloads\abn är STALE, använd aldrig)
-Main-branch: 09a0e76-baserad (#165 + #166 merged; PASS 1A #1–#14 + PASS 1B #15–#22). Discovery är READ-ONLY (notes-fil + session-docs, ingen källkodsändring).
-Senast: backend/docs/CORE_RUNTIME_DISCOVERY_1B.md skapad (PASS 1B COMPLETE — 15 sektioner; toppfynd: P2 lookback_days ignoreras i _phase_observe; P2 quarantine/health-pause täcker inte /instruct+orchestrator+trigger för tier-1/2); FINDINGS-trackern uppdaterad till 22 rader.
-Nästa: Jacob granskar 1B-fynden → därefter PASS 1C — worker / scheduler / non-HTTP (WORKER-SCHEDULER-TENANT-AUDIT). Starta från CORE_RUNTIME_DISCOVERY_1A.md §15. SINGLE-AGENT, READ-ONLY. Append:a 1C-fynd till trackern (nästa rad = #23).
+Main-branch: 6513caf-baserad (#165–#167 merged; PASS 1A #1–#14 + 1B #15–#22 + 1C #23–#28). Discovery är READ-ONLY (notes-fil + session-docs, ingen källkodsändring).
+Senast: backend/docs/CORE_RUNTIME_DISCOVERY_1C.md skapad (PASS 1C COMPLETE — §1–§17; toppfynd: P2 /instruct+orchestrator+trigger saknar quarantine/health-gate för tier-1/2; P2 auto-trigger kör nya agenten på STÄNGD DB-session; P2 ingen central runtime-guard). FINDINGS-trackern uppdaterad till 28 rader.
+Nästa: Jacob granskar 1C-fynden → därefter PASS 1D — LLM / tools / evidence / audit / reports. Live LLM-väg = OPERARunner._call_llm_reasoner → LLMGateway (INTE döda AAEA-executorn). Starta från 1C §16-handoff. SINGLE-AGENT, READ-ONLY. Append:a 1D-fynd till trackern (nästa rad = #29).
 VIKTIGT: READ-ONLY (ingen route/källkod/migration). FINDINGS-trackern är append-only — skriv aldrig över rader. Pausa OneDrive-synk före stora git-träd-operationer (synk-churn orsakade 1013-commit-driften).
 
 ## ABN V1 — AUGUST RELEASE PLAN (canon / kistan)
