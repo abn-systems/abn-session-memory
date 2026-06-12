@@ -4151,3 +4151,16 @@ pm run tauri build (~5-10 min Rust-compile) för att skapa ny installer.
 - SAFETY (T1/T4): the 5 required + gitleaks all still fire on pull_request:[main] (proven in trigger config). No required check path-gated or removed -> none can be silently skipped. Only path-gated job is the non-required Backend (CI-BUDGET-1). docker stays main-only.
 - POST-MERGE MAIN RUN KEPT (deliberate): prompt #5 (main runs only deploy/docker) NOT done because strict=false makes the post-merge main run the only catch for a two-PR semantic conflict (DANGER section -> favor safety). Concurrency de-dupes the merge/trigger-deploy double-hit. RECOMMENDATION (Jacob GitHub-UI): enable strict=true (require up-to-date) -> main re-runs become redundant -> a follow-up can gate the PR suite to PR-only and cut the full main-suite per merge safely.
 - VERIFY: all 6 workflow YAML files parse (yaml.safe_load OK). Workflow-YAML-only diff (4 files); no backend/frontend/test source. Estimate: PR-open 6 -> 4 workflow runs; re-pushes cancel-collapse; zero change to what gates a merge.
+
+## Batch RUNTIME-CENTRAL-GUARD-1 (fix-fas batch 1) — PR #175 HELD
+2026-06-12. Tests-first per roadmap §9 + 1E-ADDENDUM-3 + de två CLAUDE.md-lagarna.
+Failing-before (8dafb97): 10 bug-proof FAIL / 8 PASS-baselines, guard_spy
+asserterar guard-INVOKATION (anti-false-green). Fix (e2e6177): universellt
+_raise_if_quarantined() överst i run() (alla 5 entry-paths; ordning
+pending→quarantine/health→tier3→signature) + Mind villkor 6.5 health_paused.
+Passing-after: 18/18 + full svit 2326 passed/0 failed. Tracker: #16/#25/#28
+FIXED, #23 PARTIAL (#24 blockerar auto-trigger-produktionsbeviset → batch 2
+AUTO-TRIGGER-DB-SESSION-1). Beslut: tier-3-preflighten behåller sitt eget
+guard-anrop (defence-in-depth; isolationstest beror på det); stale
+"TIER3 pre-flight"-strängar korrigerade (meddelanden får inte ljuga); #16-noten
+flaggad i PR:n för Jacobs striktare läsning. PR #175 HÅLLS — ingen auto-merge.
