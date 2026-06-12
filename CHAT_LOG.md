@@ -4231,3 +4231,26 @@ OBSERVER-TS-UTC-NORMALIZE-1); #40 orörd; RC-1-statusar orörda. Efter #178:
 41 rader, OPEN 15 / batch-named 20 / FIXED 6 / PARTIAL 0, nästa id #42.
 Ingen schema/migration/frontend/Observer-ingest/LLM/GDPR-ändring. PR #178
 HÅLLS för Jacob — aldrig auto-merge.
+
+## BLACKBOARD-GETALL-BUG — #2 fixad: filter före limit i get_all (PR #180, HÅLLS)
+2026-06-12. Första 3p-mikrobatchen (roadmap §9), körd i TVÅ faser per den nya
+failing-before-HARD-STOP-regeln (PR #179): Phase A/B stannade efter
+failing-before-rapporten; Jacobs explicita GO; först då Phase C/D/E. Phase A
+bekräftade buggen ordagrant på main (limit :298 FÖRE villkors-filtret
+:301-305; except :322-324 sväljer → []; get_unread :198-207 = det korrekta
+mönstret; expiry = strängjämförelse mot utcnow().isoformat() → frusen klocka
+krävs). Phase B (677fc34, tester FÖRE fixen): 5 tester under frozen_clock,
+seeds via riktiga post() med pinnade tidsstämplar — failing-before 4 FAIL /
+1 PASS, varje röd av RÄTT skäl; T4-mekanismbeviset skiljde svald-fel-tomhet
+från tom-tabell (get_all=[] medan get_unread såg samma 3-raders-seed + den
+fångade loggen "Blackboard get_all failed: Query.filter() being called on a
+Query which already has LIMIT or OFFSET applied", blackboard.py:323).
+Phase C (b771f16): ENDAST ordningen — filter(tenant) → villkorat
+filter(expiry) → order_by(created_at.desc()) → limit(limit); kontrakt,
+include_expired, except-med-logg (nu enbart defence-in-depth) och get_unread
+orörda. Phase D: nya filen 5/5 (T1-T4 flippade, T5-ankaret grönt), targeted
+69/69, FULL SVIT 2358/0 (2353 + 5 exakt). Phase E: tracker #2 → FIXED
+(PR #180); #40/#41 orörda batch-named; räkning 41 rader OPEN 15 /
+batch-named 19 / FIXED 7 / PARTIAL 0, nästa id #42; JUST NU-ride-along
+(auktoriserad). Ingen schema/migration/frontend/Observer/LLM/GDPR/runtime-
+ändring. PR #180 HÅLLS för Jacob — aldrig auto-merge.
