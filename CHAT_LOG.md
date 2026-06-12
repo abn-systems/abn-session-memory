@@ -4254,3 +4254,29 @@ orörda. Phase D: nya filen 5/5 (T1-T4 flippade, T5-ankaret grönt), targeted
 batch-named 19 / FIXED 7 / PARTIAL 0, nästa id #42; JUST NU-ride-along
 (auktoriserad). Ingen schema/migration/frontend/Observer/LLM/GDPR/runtime-
 ändring. PR #180 HÅLLS för Jacob — aldrig auto-merge.
+
+## INSTRUCT-LLM-RESULT-FIX-1 — #30 fixad: .response exklusivt (PR #181, HÅLLS)
+2026-06-12. Andra 3p-mikrobatchen, TVÅ faser per failing-before-HARD-STOP.
+Phase A bekräftade ordagrant på main: produktionsgrenen i _resolve_with_llm
+läste getattr(result, "text", None) (parser.py:363) medan den riktiga
+LLMGatewayResult bär .response (gateway.py:78 — INGET .text-fält finns;
+pinnat av NoPayload-2). Live-vägen (POST /instruct, agents.py:2691, skickar
+db+settings) BETALADE för gateway-anropet (:360) men resultatet kunde aldrig
+användas → varje tvetydig instruktion degraderade tyst till clarification.
+Maskerat av llm_call-seamen (:312, FÖRE produktionsgrenen) — #37-mönstret.
+Phase B (abf177d, tester FÖRE fixen): riktiga LLMGatewayResult IMPORTERAD
+(formen kan inte drifta), stub ENDAST vid gateway-gränsen; rätt-skäl-
+diskriminator inbakad (tyst underläsning = None UTAN "promotion failed"-
+varning). Failing-before 2 FAIL / 4 PASS. Jacobs GO (efter en re-verifiering
+från disk — prompten kom dubbelt; §4.3 re-ankra, ingen andra commit).
+Phase C (778e7fe): EN rad — .text → .response, EXKLUSIVT (ingen dual-read);
+T3 INVERTERAD i samma commit som exklusivitetsbeviset (.text-only → None;
+en dual-read hade passerat T1/T2 men fällt inverterade T3). Seam-konsekvens-
+beslut: INGET befintligt test matar .text-formade objekt genom produktions-
+läsningen (de två maskerade testerna når den aldrig) — inget befintligt test
+bröts, inget behövde uppdateras. Phase D: nya filen 6/6, targeted 62/62,
+FULL SVIT 2364/0 (2358 + 6 exakt). Phase E: tracker #30 → FIXED (PR #181) +
+NY rad #42 (P3, asyncio.run-in-async latent hazard, parser.py:349/:360,
+INTE fixad — egen batch INSTRUCT-ASYNC-RUN-CALLER-1); 42 rader, OPEN 15 /
+batch-named 19 / FIXED 8 / PARTIAL 0, nästa id #43. Ingen schema/frontend/
+Observer/GDPR/runtime-ändring. PR #181 HÅLLS — aldrig auto-merge.

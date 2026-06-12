@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: 3p-mikrobatch BLACKBOARD-GETALL-BUG (#2) KLAR — PR #180 öppen, HÅLLS för Jacobs review (aldrig auto-merge). Full backend-svit 2358/0 lokalt.
+Status: 3p-mikrobatch 2 INSTRUCT-LLM-RESULT-FIX-1 (#30) KLAR — PR #181 öppen, HÅLLS för Jacobs review (aldrig auto-merge). Full backend-svit 2364/0 lokalt.
 Repo-sökväg: C:\Users\Jacob\OneDrive\Skrivbord\ABN-systems huvudmap\Source\abn (CANONICAL — gamla C:\Users\Jacob\Downloads\abn är STALE, använd aldrig)
-Main-branch: f1560fd (#179 merged — failing-before-HARD-STOP-regeln; #178 LOOKBACK mergad + retroaktiv audit CLEAN; RC-1 stängd). PR #180 (fix/blackboard-getall-bug) ovanpå: #2-fixen + tracker #2 → FIXED. Tracker efter #180: 41 rader, OPEN 15 / batch-named 19 / FIXED 7 / PARTIAL 0, nästa id #42.
-Senast: #2 fixad i TVÅ faser per den nya HARD-STOP-regeln — Phase A/B (failing-before 4 FAIL/1 PASS, T4-mekanismbeviset fångade den svalda InvalidRequestError "Query.filter() … already has LIMIT" medan get_unread såg samma seed) → Jacobs GO → Phase C/D/E (filter-före-limit i get_all, speglar get_unread-mönstret; passing-after 5/5, targeted 69/69, full svit 2358/0).
-Nästa: Jacob reviewar + mergar PR #180 → därefter nästa 3p-mikrobatch (#30 INSTRUCT-LLM-RESULT-FIX-1 eller #26 SCHEDULER-PER-RUN-SESSION-1, båda SAFE per §8.6) eller batch 4 NO-DATA-TASK-DESCRIPTION-GUARD-1 — failing-before-HARD-STOP gäller varje batch.
-VIKTIGT: PR #180 ALDRIG auto-merge. BÅDA stående reglerna gäller (stop-for-go + failing-before-HARD-STOP). #40 + #41 förblir batch-named.
+Main-branch: c8494b8 (#180 merged — BLACKBOARD-GETALL post-merge-bekräftad). PR #181 (fix/instruct-llm-result-fix-1) ovanpå: #30-fixen + tracker #30 → FIXED + ny rad #42. Tracker efter #181: 42 rader, OPEN 15 / batch-named 19 / FIXED 8 / PARTIAL 0, nästa id #43.
+Senast: #30 fixad i TVÅ faser per HARD-STOP-regeln — failing-before 2 FAIL/4 PASS (T1: promotion → None med gateway calls=1 och NOLL promotion-failure-varningar = den tysta .text-underläsningen; T2: live-route-formen BETALADE för anropet men degraderade till clarification) → Jacobs GO → en rads fix (.text → .response, EXKLUSIV läsning utan dual-read-shim) + T3 INVERTERAD som exklusivitetsbevis → passing-after 6/6, targeted 62/62, full svit 2364/0. Batch-38:s LLM-fallback fungerar för FÖRSTA gången. Ny finding #42 (P3, asyncio.run-in-async latent, parser.py:349/:360) ENDAST bokförd → egen batch INSTRUCT-ASYNC-RUN-CALLER-1.
+Nästa: Jacob reviewar + mergar PR #181 → därefter sista 3p-mikrobatchen #26 SCHEDULER-PER-RUN-SESSION-1 (SAFE per §8.6; failing-before-identitetsassertioner MÅSTE hålla starka referenser — id()-reuse-lektionen från #180) eller batch 4 NO-DATA-TASK-DESCRIPTION-GUARD-1. Failing-before-HARD-STOP gäller varje batch.
+VIKTIGT: PR #181 ALDRIG auto-merge. BÅDA stående reglerna gäller. #40/#41/#42 förblir batch-named (bokförda, inte fixade).
 ## ABN V1 — AUGUST RELEASE PLAN (canon / kistan)
 The compass for EVERY scope decision until launch (target: August 2026).
 Standard unchanged: ship nothing poor; the moat is trust. August = focus, not
