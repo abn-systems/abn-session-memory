@@ -4204,3 +4204,30 @@ saknas?) → egen batch RUN-LOCK-INFRA-FAIL-SEMANTICS-1. Efter #177: 40 rader,
 OPEN 16 / batch-named 19 / FIXED 5 / PARTIAL 0, nästa id #41. PR #177 HÅLLS
 för Jacob — aldrig auto-merge. Nästa batch: LOOKBACK-WINDOW-OBSERVE-1 (#15),
 re-checka specen mot main först (§8.6).
+
+## LOOKBACK-WINDOW-OBSERVE-1 — #15 fixad: observe-fönstret ärar lookback_days (PR #178, HÅLLS)
+2026-06-12. Fix-fas batch 3 per roadmap §9, Jacobs explicita go, tests-first.
+Pre-batch §8.6-re-check (read-only): SAFE TO BUILD — 1B.7:s "Unchecked"
+tidsstämpel-antagande STÄNGT från källa (Event.timestamp String; EN writer
+cycle.py:269 ← EN normaliserings-choke base.py:163-187, kanonisk naiv-ISO
+eller NormalisationError). Tidskontrakt A.1 fastlagt FÖRE testerna:
+DEFAULT_LOOKBACK_DAYS=90 (speglar blueprint.py/generator.py), MAX 365
+(absurt → default, LOGGAT, aldrig obegränsat), since = utcnow() −
+timedelta(days=effective) med µs trunkerade, >= inkluderar kantens event,
+eko = EFFEKTIVT värde. Phase B: tests/test_lookback_window.py (13 tester)
+under frozen_clock (freezegun 2026-06-17T12:00:00Z — deterministisk gräns
+by construction); failing-before 11 FAIL / 2 PASS committad FÖRE fixen,
+varje röd verifierad mot rätt skäl (today-00:00-fönstret missar
+äldre-men-giltiga events; T6: assert 0 == 50, confidence 0.0 → tier-2
+svälter) med NUMERISK anti-masking-bevisning per test; en harness-bugg
+(cp1252 →-tecken i evidensutskriften) fångad som FEL-skäl-röd och fixad
+före beviscapture. Phase C (3e3c5f7): _effective_lookback_days-validering +
+fönsterblocket i _phase_observe; tenant/domain-filter + query-struktur
+orörda. Passing-after 13/13; targeted OPERA/runtime 126/126; FULL SVIT
+2353/0 (2340 + 13 exakt). Tracker: #15 OPEN→FIXED (PR #178) + NY rad #41
+(P3, _parse_timestamp strippar non-Z-offsetens tzinfo UTAN UTC-konvertering,
+base.py:178-180, docstringen lovar UTC — bokförd ENDAST, egen batch
+OBSERVER-TS-UTC-NORMALIZE-1); #40 orörd; RC-1-statusar orörda. Efter #178:
+41 rader, OPEN 15 / batch-named 20 / FIXED 6 / PARTIAL 0, nästa id #42.
+Ingen schema/migration/frontend/Observer-ingest/LLM/GDPR-ändring. PR #178
+HÅLLS för Jacob — aldrig auto-merge.

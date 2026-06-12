@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: AUTO-TRIGGER-DB-SESSION-1 (fix-batch 2) KLAR — PR #177 öppen, HÅLLS för Jacobs review (aldrig auto-merge). Full backend-svit 2340/0 lokalt.
+Status: Batch 3 LOOKBACK-WINDOW-OBSERVE-1 (#15) KLAR — PR #178 öppen, HÅLLS för Jacobs review (aldrig auto-merge). Full backend-svit 2353/0 lokalt.
 Repo-sökväg: C:\Users\Jacob\OneDrive\Skrivbord\ABN-systems huvudmap\Source\abn (CANONICAL — gamla C:\Users\Jacob\Downloads\abn är STALE, använd aldrig)
-Main-branch: 7834980 (#176 merged). PR #177 (fix/auto-trigger-db-session-1) ovanpå: #24-fixen + tracker #24/#23/#16 → FIXED + ny rad #40. Tracker efter #177: 40 rader, OPEN 16 / batch-named 19 / FIXED 5 / PARTIAL 0, nästa id #41.
-Senast: #24 fixad tests-first — _run_agent_now äger egen SessionLocal (stängs i finally), tar stabila ids (agent_id, tenant_id), re-resolvar agenten under LAGRAD tenant, går genom guardade run()-seamen. Failing-before 13 FAIL/1 PASS (rätt skäl verifierade per test) → passing-after 14/14 → #175-sviten + five-sites 32/32 → full svit 2340/0. #16+#23-produktionsbeviset KOMPLETT (guard CALLED + blockerar quarantined/health_paused genom riktiga create_agent_from_graph). Ny finding #40 (P2, acquire_run_lock infra-fail-open) ENDAST bokförd — egen framtida batch RUN-LOCK-INFRA-FAIL-SEMANTICS-1.
-Nästa: Jacob reviewar + mergar PR #177 → därefter batch 3 LOOKBACK-WINDOW-OBSERVE-1 (#15) per roadmap §8/§9 — RE-CHECKA specen mot main först (§8.6 Spår-A).
-VIKTIGT: PR #177 ALDRIG auto-merge. EN #175-test uppdaterades BY DESIGN (deferred-proof-platshållaren test_run_agent_now_with_live_session_reaches_central_guard → den fixade signaturen, guard-spy-assertionen bevarad); alla övriga #175-tester byte-oförändrade.
+Main-branch: e8ca3cb (#177 merged; RC-1 stängd). PR #178 (fix/lookback-window-observe-1) ovanpå: #15-fixen + tracker #15 → FIXED + ny rad #41. Tracker efter #178: 41 rader, OPEN 15 / batch-named 20 / FIXED 6 / PARTIAL 0, nästa id #42.
+Senast: #15 fixad tests-first under frozen_clock — _phase_observe-fönstret = utcnow() − effective_lookback (µs trunkerade, >= inkluderar kanten; DEFAULT 90 / MAX 365, ogiltigt → default LOGGAT, aldrig obegränsat; ekot = effektivt värde). Failing-before 11 FAIL/2 PASS (numerisk anti-masking-bevisning, tester committade FÖRE fixen) → passing-after 13/13 → targeted 126/126 → full svit 2353/0. Ny finding #41 (P3, _parse_timestamp non-Z-offset utan UTC-konvertering, base.py:178-180) ENDAST bokförd → egen batch OBSERVER-TS-UTC-NORMALIZE-1.
+Nästa: Jacob reviewar + mergar PR #178 → därefter nästa batch per roadmap §8/§9 (3p-mikrobatcherna #2/#30/#26 — alla SAFE SMALL BATCH per §8.6-re-checken — eller batch 4 NO-DATA-TASK-DESCRIPTION-GUARD-1; §8.6 re-check mot main först).
+VIKTIGT: PR #178 ALDRIG auto-merge. Stående regeln gäller efter denna batch igen (stop-for-go). #40 + #41 förblir batch-named (bokförda, inte fixade).
 ## ABN V1 — AUGUST RELEASE PLAN (canon / kistan)
 The compass for EVERY scope decision until launch (target: August 2026).
 Standard unchanged: ship nothing poor; the moat is trust. August = focus, not
