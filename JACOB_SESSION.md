@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: Batch RUNTIME-CENTRAL-GUARD-1 KLAR — väntar på Jacobs granskning av PR #175 (HÅLLS — auto-mergas ALDRIG). Full backend-svit grön: 2326 passed, 0 failed. Nya guard-testerna 18/18 (failing-before 10 FAIL/8 PASS → passing-after).
+Status: PR #175 (RUNTIME-CENTRAL-GUARD-1) MERGAD grön (merge 0043807). Docs-korrigering PR #176 (POST-175-DOCS) öppen: #16 nedgraderad FIXED→PARTIAL per Jacobs beslut (#16:s prosa inkluderar den #24-blockerade auto-triggern — strikta lagen). Mergas efter gröna checks.
 Repo-sökväg: C:\Users\Jacob\OneDrive\Skrivbord\ABN-systems huvudmap\Source\abn (CANONICAL — gamla C:\Users\Jacob\Downloads\abn är STALE, använd aldrig)
-Main-branch: e1c5602 (#174). Branch feat/runtime-central-guard-1 = PR #175. Tracker: #16/#25/#28 FIXED, #23 PARTIAL (auto-trigger-produktionsbeviset blockeras av #24) — OPEN 17 / batch-named 18 / FIXED 3 / PARTIAL 1.
-Senast: RUNTIME-CENTRAL-GUARD-1 implementerad — _raise_if_quarantined (kollar BÅDA quarantined + health_paused) hissad till ett universellt anrop överst i OPERARunner.run(); gate-ordning pending→quarantine/health→tier3-preflight→signature (test-asserterad); Mind autonomy_allowed villkor 6.5 health_paused (#28). Tier-3-preflighten behåller sitt eget anrop (defence-in-depth). Inga schemaändringar, inga nya flaggor, ingen frontend.
-Nästa: Jacob granskar PR #175 (incl. #16-noten: vill du läsa marking-rulen striktare → nedgradera #16 till PARTIAL). Efter merge: batch 2 AUTO-TRIGGER-DB-SESSION-1 (#24 — den stängda DB-sessionen; kompletterar #23-beviset) per roadmap §8/§9; OBS §8.6 Spår-A-regeln: RE-CHECKA batch 2-5-specarna mot main efter merge.
-VIKTIGT: PR #175 HÅLLS för Jacob — merga aldrig utan hans godkännande; required checks ska vara gröna före merge (gh pr checks 175).
+Main-branch: 0043807 (#175 merged — universell quarantine/health-guard i run() + Mind 6.5; full svit 2326/0 lokalt + Backend 1518 grönt på CI). Tracker efter #176: #25/#28 FIXED, #16/#23 PARTIAL — OPEN 17 / batch-named 18 / FIXED 2 / PARTIAL 2.
+Senast: POST-175-DOCS (PR #176, docs-only): tracker #16 → PARTIAL med deferral-not; CLAUDE.md-sektionens trackermening korrigerad; CHAT_LOG-post. Ingen källkod/tester/runtime rörd; #175 ej reverterad.
+Nästa: merga #176 när checks är gröna → därefter batch 2 AUTO-TRIGGER-DB-SESSION-1 (#24 — stängd DB-session; kompletterar BÅDE #16- och #23-bevisen) per roadmap §8/§9. OBS §8.6 Spår-A-regeln: RE-CHECKA batch 2-5-specarna mot main först. AUTO-TRIGGER-DB-SESSION-1 är INTE startad.
+VIKTIGT: #16 och #23 förblir PARTIAL tills auto-trigger-guard-invokation är bevisad på PRODUKTIONSVÄGEN (efter #24-fixen) — flippa aldrig i förväg.
 ## ABN V1 — AUGUST RELEASE PLAN (canon / kistan)
 The compass for EVERY scope decision until launch (target: August 2026).
 Standard unchanged: ship nothing poor; the moat is trust. August = focus, not

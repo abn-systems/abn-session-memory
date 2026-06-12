@@ -4164,3 +4164,13 @@ AUTO-TRIGGER-DB-SESSION-1). Beslut: tier-3-preflighten behåller sitt eget
 guard-anrop (defence-in-depth; isolationstest beror på det); stale
 "TIER3 pre-flight"-strängar korrigerade (meddelanden får inte ljuga); #16-noten
 flaggad i PR:n för Jacobs striktare läsning. PR #175 HÅLLS — ingen auto-merge.
+
+## POST-175-DOCS — #16 nedgraderad till PARTIAL (Jacobs beslut på PR-noten)
+2026-06-12. PR #175 mergades grön (merge 0043807). Jacobs avgörande på den
+flaggade #16-noten: #16:s prosa inkluderar auto-trigger-täckningen, och
+produktionsbeviset är #24-blockerat — alltså PARTIAL under den strikta
+Proof-Driven-lagen (annars falsk-komplett tracker). Docs-only-korrigering:
+tracker #16 FIXED→PARTIAL med deferral-not (FIXED 2 / PARTIAL 2), CLAUDE.md-
+sektionens trackermening korrigerad. Ingen källkod/tester/runtime rörd; #175
+INTE reverterad; AUTO-TRIGGER-DB-SESSION-1 INTE startad. Slutläge efter #175:
+#25/#28 FIXED, #16/#23 PARTIAL — båda kompletteras av AUTO-TRIGGER-DB-SESSION-1.
