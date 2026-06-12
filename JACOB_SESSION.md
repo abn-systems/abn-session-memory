@@ -453,6 +453,7 @@ Rules:
 - One batch at a time, green build before next (rule #8)
 - After every batch: update this file + CHAT_LOG.md and push to GitHub (see `## Session Management` in CLAUDE.md)
 - Stop for Jacob go means no commit, no push, no PR, no tracker flip, and no status flip until Jacob explicitly says go — regardless of how green the results are. (Standing rule added after the AUTO-TRIGGER-DB-SESSION-1 process deviation, 2026-06-12: Phase-4 commit/push/PR/tracker-flip ran before Jacob's explicit go despite a stated "stop for your go".)
+- Failing-before report is a HARD STOP in every batch: implementation may not begin until Jacob explicitly approves the failing-before matrix, even when the batch itself is pre-authorized. (Added post-#178: the LWO-1 failing-before/anti-masking report was produced but implementation proceeded inside the pre-authorized batch flow without a separate Jacob approval of the matrix.)
 
 ## OPEN ITEMS
 Unfinished sub-tasks / open questions live here (referenced by CLAUDE.md §4.2 PRE-/clear HALT PROTOCOL). Empty = nothing pending.
