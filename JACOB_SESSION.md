@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: PR #175 (RUNTIME-CENTRAL-GUARD-1) MERGAD grön (merge 0043807). Docs-korrigering PR #176 (POST-175-DOCS) öppen: #16 nedgraderad FIXED→PARTIAL per Jacobs beslut (#16:s prosa inkluderar den #24-blockerade auto-triggern — strikta lagen). Mergas efter gröna checks.
+Status: AUTO-TRIGGER-DB-SESSION-1 (fix-batch 2) KLAR — PR #177 öppen, HÅLLS för Jacobs review (aldrig auto-merge). Full backend-svit 2340/0 lokalt.
 Repo-sökväg: C:\Users\Jacob\OneDrive\Skrivbord\ABN-systems huvudmap\Source\abn (CANONICAL — gamla C:\Users\Jacob\Downloads\abn är STALE, använd aldrig)
-Main-branch: 0043807 (#175 merged — universell quarantine/health-guard i run() + Mind 6.5; full svit 2326/0 lokalt + Backend 1518 grönt på CI). Tracker efter #176: #25/#28 FIXED, #16/#23 PARTIAL — OPEN 17 / batch-named 18 / FIXED 2 / PARTIAL 2.
-Senast: POST-175-DOCS (PR #176, docs-only): tracker #16 → PARTIAL med deferral-not; CLAUDE.md-sektionens trackermening korrigerad; CHAT_LOG-post. Ingen källkod/tester/runtime rörd; #175 ej reverterad.
-Nästa: merga #176 när checks är gröna → därefter batch 2 AUTO-TRIGGER-DB-SESSION-1 (#24 — stängd DB-session; kompletterar BÅDE #16- och #23-bevisen) per roadmap §8/§9. OBS §8.6 Spår-A-regeln: RE-CHECKA batch 2-5-specarna mot main först. AUTO-TRIGGER-DB-SESSION-1 är INTE startad.
-VIKTIGT: #16 och #23 förblir PARTIAL tills auto-trigger-guard-invokation är bevisad på PRODUKTIONSVÄGEN (efter #24-fixen) — flippa aldrig i förväg.
+Main-branch: 7834980 (#176 merged). PR #177 (fix/auto-trigger-db-session-1) ovanpå: #24-fixen + tracker #24/#23/#16 → FIXED + ny rad #40. Tracker efter #177: 40 rader, OPEN 16 / batch-named 19 / FIXED 5 / PARTIAL 0, nästa id #41.
+Senast: #24 fixad tests-first — _run_agent_now äger egen SessionLocal (stängs i finally), tar stabila ids (agent_id, tenant_id), re-resolvar agenten under LAGRAD tenant, går genom guardade run()-seamen. Failing-before 13 FAIL/1 PASS (rätt skäl verifierade per test) → passing-after 14/14 → #175-sviten + five-sites 32/32 → full svit 2340/0. #16+#23-produktionsbeviset KOMPLETT (guard CALLED + blockerar quarantined/health_paused genom riktiga create_agent_from_graph). Ny finding #40 (P2, acquire_run_lock infra-fail-open) ENDAST bokförd — egen framtida batch RUN-LOCK-INFRA-FAIL-SEMANTICS-1.
+Nästa: Jacob reviewar + mergar PR #177 → därefter batch 3 LOOKBACK-WINDOW-OBSERVE-1 (#15) per roadmap §8/§9 — RE-CHECKA specen mot main först (§8.6 Spår-A).
+VIKTIGT: PR #177 ALDRIG auto-merge. EN #175-test uppdaterades BY DESIGN (deferred-proof-platshållaren test_run_agent_now_with_live_session_reaches_central_guard → den fixade signaturen, guard-spy-assertionen bevarad); alla övriga #175-tester byte-oförändrade.
 ## ABN V1 — AUGUST RELEASE PLAN (canon / kistan)
 The compass for EVERY scope decision until launch (target: August 2026).
 Standard unchanged: ship nothing poor; the moat is trust. August = focus, not
@@ -452,6 +452,7 @@ Rules:
 - Act as 4 engineers: Architect, Engineer, Reviewer, Optimizer
 - One batch at a time, green build before next (rule #8)
 - After every batch: update this file + CHAT_LOG.md and push to GitHub (see `## Session Management` in CLAUDE.md)
+- Stop for Jacob go means no commit, no push, no PR, no tracker flip, and no status flip until Jacob explicitly says go — regardless of how green the results are. (Standing rule added after the AUTO-TRIGGER-DB-SESSION-1 process deviation, 2026-06-12: Phase-4 commit/push/PR/tracker-flip ran before Jacob's explicit go despite a stated "stop for your go".)
 
 ## OPEN ITEMS
 Unfinished sub-tasks / open questions live here (referenced by CLAUDE.md §4.2 PRE-/clear HALT PROTOCOL). Empty = nothing pending.

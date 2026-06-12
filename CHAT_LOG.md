@@ -4174,3 +4174,33 @@ tracker #16 FIXED→PARTIAL med deferral-not (FIXED 2 / PARTIAL 2), CLAUDE.md-
 sektionens trackermening korrigerad. Ingen källkod/tester/runtime rörd; #175
 INTE reverterad; AUTO-TRIGGER-DB-SESSION-1 INTE startad. Slutläge efter #175:
 #25/#28 FIXED, #16/#23 PARTIAL — båda kompletteras av AUTO-TRIGGER-DB-SESSION-1.
+
+## AUTO-TRIGGER-DB-SESSION-1 — #24 fixad, #16/#23-bevisen kompletta (PR #177, HÅLLS)
+2026-06-12. Fix-fas batch 2 per roadmap §9, tests-first. Phase A mappade
+produktionsvägen rad-för-rad (db_B öppnas i create_agent_from_graph, task
+schemaläggs UTAN await, finally stänger db_B FÖRE körningen; _run_agent_now
+sväljer felet). Phase B: tests/test_auto_trigger_session.py (14 tester, 7
+grupper) — failing-before 13 FAIL / 1 PASS, varje röd verifierad att faila av
+RÄTT skäl; primärt deterministiskt bevis = session-OWNERSHIP (close-flagga +
+objektidentitet på en äkta Session-SUBKLASS via sessionmaker(class_=...)),
+ALDRIG "query raisar på stängd session" (SQLAlchemy är lenient — raise-modellen
+endast SUPPORTING via raise_on_use); fire-and-forget-coroutinen FÅNGAS
+(create_task-capture) och drivs deterministiskt — ingen GC/timing-flakiness.
+Phase C-fixen (dd8f5e1): _run_agent_now(agent_id, tenant_id) äger egen
+SessionLocal (stängs i finally), re-resolvar agenten by id under LAGRAD tenant
+(caller-tenant inert — loggas, litas aldrig på), går genom guardade
+run()-seamen; create_agent_from_graph skickar bara stabila ids. Passing-after
+14/14; #175-sviten + five-sites 32/32; FULL SVIT 2340/0 (2326 + 14). EN
+#175-test uppdaterad BY DESIGN: deferred-proof-platshållaren
+test_run_agent_now_with_live_session_reaches_central_guard → den fixade
+signaturen (guard-spy-assertionen bevarad; alla övriga #175 byte-oförändrade).
+Tracker: #24 OPEN→FIXED, #16+#23 PARTIAL→FIXED (produktionsbeviset = guard
+CALLED + blockerar quarantined/health_paused genom riktiga
+create_agent_from_graph — exakt deferral-villkoret) + NY rad #40 (P2,
+acquire_run_lock fail-OPEN på infra-fel, run_lock.py:148/:140-147 +
+runner.py:158-182) — ENDAST bokförd per scope-regeln (medvetet Jacob-beslut C;
+review-frågan: är fail-open rätt när SESSIONEN är död vs lease-tabellen
+saknas?) → egen batch RUN-LOCK-INFRA-FAIL-SEMANTICS-1. Efter #177: 40 rader,
+OPEN 16 / batch-named 19 / FIXED 5 / PARTIAL 0, nästa id #41. PR #177 HÅLLS
+för Jacob — aldrig auto-merge. Nästa batch: LOOKBACK-WINDOW-OBSERVE-1 (#15),
+re-checka specen mot main först (§8.6).
