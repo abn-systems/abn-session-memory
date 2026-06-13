@@ -11,6 +11,41 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-13 — NO-DATA-TASK-DESCRIPTION-GUARD-1 (#29, PR #184 — HELD)
+
+- Fix-phase batch closing tracker #29 — the No-Data PRIMARY-TARGET gap: the
+  payload path tokenises every leaf, but `task_description` was strong-PII-
+  redacted only + concatenated verbatim into the prompt, so a NON-PII raw
+  payload value echoed into it reached the LLM un-tokenised. Live callers pass
+  constant/ABN-authored task_description today → a LATENT contract gap (A.2),
+  not an active leak.
+- Two-phase HARD-STOP honoured: Phase A/B (source confirmation + tests-first
+  failing-before, committed `008e0af`, no fix) → Jacob approved the matrix →
+  Phase C/D/E (this GO).
+- DECISION (disclosed): the approved failing-before T1/T4 put the sentinel only
+  in task_description, but the approved mechanism + PR title are raw-PAYLOAD-ECHO
+  detection (scan vs the payload leaves). Refined T1/T4 so the sentinel is ALSO
+  a payload leaf (task_description strings byte-identical) — the genuine echo
+  threat. A blanket "no free text in task_description" guard was REJECTED (not
+  the mechanism; would false-block every caller).
+- Fix: a value-echo guard at the gateway choke — new pipeline stage
+  `task_description_scan` between `payload_scan` and `_call_provider`;
+  `_task_description_echoes_payload(safe_task, mapping)` scans the redacted
+  task_description vs `mapping.values()` (the exact tokenized leaves — drift-
+  proof) with a ≥4-char floor; FAIL-CLOSED (mirrors `payload_scan`), metadata-
+  only count, mapping wiped by the existing error handler. Sharpenings: (a)
+  fail-closed not sanitize; (b) value set = `mapping.values()`; (c) the ≥4-char
+  false-positive floor (T6). gateway.py only (+78); payload tokenisation + PII
+  residue scan byte-unchanged.
+- CLAIM RULE: the absolute "LLM never receives raw values" stays FROZEN
+  (scoped) — the guard closes raw-PAYLOAD echo, not every natural-language
+  secrecy concern (the residual: a raw value present ONLY in task_description,
+  never in the payload, is out of the value-echo mechanism's scope).
+- Proof: failing-before 2 FAIL/4 PASS → passing-after 6/6, targeted 78/78
+  (gateway+NoPayload-2+instruction+Shield), full backend suite 2377/0. Tracker
+  #29 batch-named→FIXED; FIXED 9→10, batch-named 19→18, next id #43; no new row
+  (no other Core-Standard violation found). PR #184 HELD — never auto-merged.
+
 ## 2026-06-11 — ABN-CORE-RUNTIME-DISCOVERY PASS 1A (READ-ONLY, PARTIAL)
 
 - Full source-code discovery of the ABN core engine after #162. READ-ONLY (code
