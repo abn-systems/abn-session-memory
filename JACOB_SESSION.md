@@ -47,12 +47,12 @@ what has been built, what prompts were given, and what is next.
 ABN lever i: GitHub + denna disk + dessa markdown-filer. Aldrig i chatt-minnet.
 
 ## JUST NU
-Status: 3p-mikrobatch 2 INSTRUCT-LLM-RESULT-FIX-1 (#30) KLAR — PR #181 öppen, HÅLLS för Jacobs review (aldrig auto-merge). Full backend-svit 2364/0 lokalt.
+Status: 3p-mikrobatch 3 SCHEDULER-PER-RUN-SESSION-1 (#26) KLAR — PR #182 öppen, HÅLLS för Jacobs review (aldrig auto-merge). Full backend-svit 2369/0 lokalt. 3p-trion (#2/#30/#26) KOMPLETT.
 Repo-sökväg: C:\Users\Jacob\OneDrive\Skrivbord\ABN-systems huvudmap\Source\abn (CANONICAL — gamla C:\Users\Jacob\Downloads\abn är STALE, använd aldrig)
-Main-branch: c8494b8 (#180 merged — BLACKBOARD-GETALL post-merge-bekräftad). PR #181 (fix/instruct-llm-result-fix-1) ovanpå: #30-fixen + tracker #30 → FIXED + ny rad #42. Tracker efter #181: 42 rader, OPEN 15 / batch-named 19 / FIXED 8 / PARTIAL 0, nästa id #43.
-Senast: #30 fixad i TVÅ faser per HARD-STOP-regeln — failing-before 2 FAIL/4 PASS (T1: promotion → None med gateway calls=1 och NOLL promotion-failure-varningar = den tysta .text-underläsningen; T2: live-route-formen BETALADE för anropet men degraderade till clarification) → Jacobs GO → en rads fix (.text → .response, EXKLUSIV läsning utan dual-read-shim) + T3 INVERTERAD som exklusivitetsbevis → passing-after 6/6, targeted 62/62, full svit 2364/0. Batch-38:s LLM-fallback fungerar för FÖRSTA gången. Ny finding #42 (P3, asyncio.run-in-async latent, parser.py:349/:360) ENDAST bokförd → egen batch INSTRUCT-ASYNC-RUN-CALLER-1.
-Nästa: Jacob reviewar + mergar PR #181 → därefter sista 3p-mikrobatchen #26 SCHEDULER-PER-RUN-SESSION-1 (SAFE per §8.6; failing-before-identitetsassertioner MÅSTE hålla starka referenser — id()-reuse-lektionen från #180) eller batch 4 NO-DATA-TASK-DESCRIPTION-GUARD-1. Failing-before-HARD-STOP gäller varje batch.
-VIKTIGT: PR #181 ALDRIG auto-merge. BÅDA stående reglerna gäller. #40/#41/#42 förblir batch-named (bokförda, inte fixade).
+Main-branch: 203bc1e (#181 merged — INSTRUCT-LLM post-merge-bekräftad). PR #182 (fix/scheduler-per-run-session-1) ovanpå: #26-fixen + tracker #26 → FIXED. Tracker efter #182: 42 rader, OPEN 14 / batch-named 19 / FIXED 9 / PARTIAL 0, nästa id #43.
+Senast: #26 fixad i TVÅ faser per HARD-STOP-regeln — failing-before 4 FAIL/1 PASS, helt deterministiskt (starka live-referenser + is/is not, asyncio.Event-sekvenserad interleaving — ALDRIG timing; T2-nyckelbeviset: B stagear pending write → A rollback → B commit → B:s write BORTA = verklig cross-run-kontamination via delad session) → Jacobs GO → ATDS-mönstret på schedulern (stabila ids över gathern; _run_one äger egen SessionLocal, re-resolvar agenten, gates på färsk rad, finally close; _run_resolved = byte-oförändrad körkropp) → passing-after 5/5, targeted 120/120 (12 seam-sites uppdaterade mekanik-endast, assertions byte-identiska), full svit 2369/0. Ännu en skala-kritisk foundation-risk bortbyggd med bevis.
+Nästa: Jacob reviewar + mergar PR #182 → därefter batch 4 NO-DATA-TASK-DESCRIPTION-GUARD-1 (#29, value-echo-scan vid gateway-choken) per roadmap §8/§9 — §8.6 re-check mot main först; failing-before-HARD-STOP gäller.
+VIKTIGT: PR #182 ALDRIG auto-merge. BÅDA stående reglerna gäller. #40/#41/#42 förblir batch-named.
 ## ABN V1 — AUGUST RELEASE PLAN (canon / kistan)
 The compass for EVERY scope decision until launch (target: August 2026).
 Standard unchanged: ship nothing poor; the moat is trust. August = focus, not

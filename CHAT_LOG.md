@@ -4280,3 +4280,37 @@ NY rad #42 (P3, asyncio.run-in-async latent hazard, parser.py:349/:360,
 INTE fixad — egen batch INSTRUCT-ASYNC-RUN-CALLER-1); 42 rader, OPEN 15 /
 batch-named 19 / FIXED 8 / PARTIAL 0, nästa id #43. Ingen schema/frontend/
 Observer/GDPR/runtime-ändring. PR #181 HÅLLS — aldrig auto-merge.
+
+## SCHEDULER-PER-RUN-SESSION-1 — #26 fixad: en körning = en egen DB-session (PR #182, HÅLLS)
+2026-06-12. Tredje och sista 3p-mikrobatchen — trion #2/#30/#26 KOMPLETT.
+TVÅ faser per failing-before-HARD-STOP. Phase A kartlade källan ordagrant:
+_tick öppnar EN SessionLocal (:113) och delar den över asyncio.gather
+(:154-157); _run_one(agent, db) (:243) får en levande ORM-Agent + den delade
+sessionen; runnern byggs på den (:296-301) → samma session som #175-guarden,
+signaturgaten, RunLock (#40) och _save_run_record använder; run():s fas-
+awaits gör interleavingen VERKLIG. Phase B (42a2d54, tester FÖRE fixen):
+DETERMINISM-LAGEN — inga sleeps/timing/retries; identitet via starka live-
+referenser + is/is not (#180-lagen, noll id()); T2 beteendemässig men
+deterministisk BY CONSTRUCTION via asyncio.Event-sekvensering. Failing-before
+4 FAIL/1 PASS: T1 parvis-identiska sessioner [True,True,True]; T2 NYCKELN —
+B stagear pending write → A rollback() → B commit() → B:s write BORTA
+(trackerns exakta felläge, Jacobs viktigaste bevis); T3 boundary
+args=[Agent, Session]; T4 en session för TRE tenants; T5 äkta e2e-ankare
+grönt (helt ostubbat genom _tick → en success-AgentRun). Jacobs GO. Phase C
+(af211fa): ATDS-1/#177-kontraktet på schedulern — gathern skickar STABILA
+IDS; _run_one(agent_id, tenant_id) äger egen SessionLocal (finally close),
+re-resolvar by id+tenant (None → ärlig loggad skip) och delegerar till
+_run_resolved (pre-#26-kroppen byte-oförändrad: gates på FÄRSK rad,
+_running_tenants, OPERARunner på per-run-sessionen); _tick behåller sin
+session ENDAST för monitorer + due-detection; return_exceptions=True orört.
+SEAM-KONSEKVENS (disclosed): 12 call-sites i 4 testfiler uppdaterade
+MEKANIK-ENDAST med byte-identiska assertions (quarantine ×4, create_gate ×4,
+RCG scheduler-baseline ×3, health ×1; mutations-flödena committar nu —
+produktionstroget). Phase D: nya filen 5/5 (T1-T4 flippade, T5 kvar),
+targeted 120/120, FULL SVIT 2369/0 (2364 + 5 exakt). Alla identitets-
+assertions håller starka referenser till levande sessionsobjekt; inga
+freed-object-id-jämförelser. Phase E: tracker #26 → FIXED (PR #182); inga
+nya rader; 42 rader, OPEN 14 / batch-named 19 / FIXED 9 / PARTIAL 0, nästa
+id #43. Ingen RunLock/async-run/schema/frontend/Observer/LLM/GDPR-ändring.
+PR #182 HÅLLS — aldrig auto-merge. Nästa: batch 4
+NO-DATA-TASK-DESCRIPTION-GUARD-1 (#29) efter §8.6 re-check.
