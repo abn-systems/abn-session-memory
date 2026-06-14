@@ -4439,3 +4439,37 @@ neutralisera även den.
   Denna fil nämner alltså `CLAUDE.md`/`Codex`/`artifact` medvetet i historik-beskrivningen.
 - Diff docs-only (3 kärn-docs + 2 session-loggar). PR #190 fortsatt OPEN + HÅLLS, origin/main
   fortsatt 45920b1. Ingen nästa batch startad.
+
+## 2026-06-14 — HEALTH-LLM #33 (Option A #191 + Option B #192) + TRACKER-RECONCILE-APPLY-2
+
+Catch-up sedan #190. main: 45920b1 → f55ffbb (#190) → ad21ae3 (#191) → aaa7b98 (#192).
+
+- **#191 HEALTH-LLM-CHECK-REWIRE-1 (Option A)** MERGED (ad21ae3): stoppade den FALSKA "ok".
+  `llm_gateway_reachable` läste en DÖD orphan-brytare ("abn.agent_runtime.executor.call_llm_
+  reasoner" — som inget live-anrop skriver; breaker_state defaultar okända namn till CLOSED)
+  + grindade på settings.llm_gateway_url → rapporterade ok även under en riktig outage. Fix:
+  ärlig warn/UNOBSERVED (ingen brytare läst) + orphan-self-healen borttagen. Phase A/B
+  failing-before (T1 right-reason red) → Option-A passing-after T1-T5; full svit 2405/0;
+  runtime-path orörd (Option A/B-gränsen hölls).
+- **#192 HEALTH-LLM-OBSERVABILITY-1 (Option B, completes #33)** MERGED (aaa7b98): health
+  DETEKTERAR nu en riktig outage. NY core/llm_observation.py (process-local last-observation:
+  status+timestamps+safe error CLASS+provider; lock-guarded, last-write-wins, No-Data).
+  LLMGateway.call (den UNIVERSELLA seamen — alla 3 live-callers: OPERA-reasoner, instruction-
+  parser-fallback, H_feel) spelar in success (happy-path) + provider-failure (except,
+  stage=="provider", FÖRE re-raise). health_monitor.py läser observation_health() staleness-
+  aware (recent ok→REACHABLE / recent fail→warn UNREACHABLE / stale→warn STALE / never→warn
+  UNOBSERVED; "(this process)" i meddelandet). TTL=300s HÅRDKODAD modulkonstant (ej settings-
+  driven; benign follow-up). R6: runner.py orört → _call_llm_reasoner-fallbacken byte-identisk
+  (observability only). Failing-before dea5812 (T1/T2 red) → passing-after T1-T6; PR-1-tester
+  gröna; full svit 2411/0. GITLEAKS-HISTORY-LÄXA: en syntetisk test-marker `secret="<entropy>"`
+  trippade gitleaks; en forward-rename räckte INTE (gitleaks skannar varje commits diff) →
+  måste SCRUBBA historiken (soft-reset till failing-before + recommit + force-with-lease).
+  ARC #33: false-ok → honest-unknown (#191) → real-detection process-local (#192).
+- **TRACKER-RECONCILE-APPLY-2** (docs-only, denna PR HÅLLS): applicerade de #191/#192 post-
+  merge-verifierade statusarna — #33 batch-named→FIXED (med EXPLICIT process-local-begränsning),
+  #22 OPEN→FIXED (covered by #33: både LLM-checken OCH self-healen åtgärdade), + 2 sibling-
+  rader CANDIDATE (#44 circuit_breakers_status orphan/tomt-brytarregister, #45 agent_queue_depth
+  return-0-stub — RECORDED, INTE fixade, egna batchar). Counts maskinverifierade: Total 43→45,
+  FIXED 12→14, OPEN 13→12, batch-named 18→17, NEW CANDIDATE 2 (status 14+12+17+0+2=45; severity
+  P0 0+P1 1+P2 15+P3 29=45). Ingen source/test/runtime-ändring. Båda stående reglerna gäller;
+  PR aldrig auto-merge.
