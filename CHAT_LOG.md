@@ -4349,3 +4349,39 @@ nya rader; 42 rader, OPEN 14 / batch-named 19 / FIXED 9 / PARTIAL 0, nästa
 id #43. Ingen RunLock/async-run/schema/frontend/Observer/LLM/GDPR-ändring.
 PR #182 HÅLLS — aldrig auto-merge. Nästa: batch 4
 NO-DATA-TASK-DESCRIPTION-GUARD-1 (#29) efter §8.6 re-check.
+
+## 2026-06-14 — #184–#188 + discovery-tracker reconcile (catch-up sedan #182)
+
+CHAT_LOG var efter vid #182; denna post fångar arc:n till main 9506e7c.
+
+- **#184 NO-DATA-TASK-DESCRIPTION-GUARD-1 (#29)** MERGED (eafd4bf): value-echo-guard
+  vid LLM-gatewayen (ny stage task_description_scan, FAIL-CLOSED på raw-PAYLOAD-echo i
+  task_description, ≥4-teckens golv, metadata-only). Tests-first 2 FAIL/4 PASS → 6/6,
+  full svit 2377/0. No-Data-claimet förblir scoped/FRYST.
+- **#185 SEMGREP-ADVISORY-NOISE-AND-CORS-1** MERGED (beee820): fail-closed CORS
+  (`or ["*"]` borttagen → `settings.cors_allow_origins()` = `[]` deny-by-default på
+  tom/whitespace/all-comma, aldrig implicit `["*"]`; explicit `"*"` bevaras) +
+  Semgrep-brus-suppression; test_cors_fallback.py (283 rader). Detta STÄNGDE
+  discovery-fynd #14 (CORS) men flippade ALDRIG #14-raden → TRACKER-STATUS-STALE.
+- **#186 FINGERPRINT-MD5-POSTURE-1** MERGED (f55095f): md5→sha256 i fingerprint.py:34
+  fallback sub-id (no-MD5 HYGIENE Law 5, INTE security/collision-fix — båda 48-bit,
+  collision-neutral; CLAIM SCOPED/FROZEN). Semgrep 8→7. Flaggade #43
+  DEDUP-TENANT-SCOPE-1 som ny kandidat (T5: fingerprint tenant-oberoende).
+- **#187 + #188 DEDUP-TENANT-SCOPE-1 (#43, SECURITY/tenant-isolation)** — SCHEMA-first
+  split: #187 (ca1c785) composite unique (tenant_id, fingerprint) ersätter global unique
+  på events.fingerprint (migration e7c2a9f4d1b8, dual-dialect, data-survival bevisad,
+  guarded-unsafe downgrade); #188 (9506e7c) tenant-scopar Observer-dedup-filtret
+  (cycle.py:262) + observerbar dup-logg (A3-gap stängd). RUNTIME-first hade kraschat på
+  global unique → SCHEMA-first obligatorisk. Revaliderad failing-before → passing-after
+  5/5, full svit 2400/0, migrations-dual grön. #43 HELT STÄNGD.
+- **DISCOVERY-TRACKER-REBASE-AND-PRIORITIZE-1** (read-only audit): reconcilerade hela
+  1A–1E-kartan mot main; fångade TVÅ luckor — #43 TRACKER-MISSING (fixad, ingen rad) +
+  #14 TRACKER-STATUS-STALE (fixad av #185, raden sa OPEN). Verifierade alla FIXED-rader
+  på main (kod + grön proof). Prioritetskarta: #1 GDPR enda öppna P1 (blockad på
+  §14-beslut); core-runtime/security > posture (G5) → K8S demoterad under #13/#33.
+- **TRACKER-RECONCILE-APPLY-1** (docs-only, denna PR HÅLLS): applicerade verdikten —
+  #14 → FIXED (cite #185), #43 tillagd FIXED (cite #187+#188), counts 43 / FIXED 12 /
+  OPEN 13 / batch-named 18 / PARTIAL 0. Retirerade den stale
+  docs/discovery-findings-tracker-branchen (raderad, var fed5358, ancestor av main) →
+  main:s CORE_RUNTIME_DISCOVERY_FINDINGS.md är nu ENDA trackern. Ingen
+  source/test/runtime-ändring. Båda stående reglerna gäller; PR aldrig auto-merge.
