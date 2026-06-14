@@ -4385,3 +4385,57 @@ CHAT_LOG var efter vid #182; denna post fångar arc:n till main 9506e7c.
   docs/discovery-findings-tracker-branchen (raderad, var fed5358, ancestor av main) →
   main:s CORE_RUNTIME_DISCOVERY_FINDINGS.md är nu ENDA trackern. Ingen
   source/test/runtime-ändring. Båda stående reglerna gäller; PR aldrig auto-merge.
+
+## 2026-06-14 — CONSTITUTION-DOCS-APPLY-1 (governance-kärnor landade VERBATIM, PR HÅLLS)
+
+Docs-only. Landade tre Jacob-författade governance-texter som kanoniska docs under
+backend/docs/ — VERBATIM, inga innehållsändringar. Den enda tillägget per fil är en
+simplified proprietär header + titelrad. Ingen source/test/runtime/migration/frontend/
+config/dependency.
+
+- **De tre kärnorna:** `ABN_CONSTITUTION.md` (ABN Constitution v1, 20 numrerade §) ·
+  `ABN_ENGINEERING_KERNEL.md` (ABN Engineering Kernel v1, 22 §) ·
+  `ABN_RUNTIME_AGENT_KERNEL.md` (ABN Runtime Agent Kernel v1, 22 §). Section-count
+  20/22/22 verifierad.
+- **Layering (i texterna själva):** Constitution styr hela systemet → Engineering Kernel
+  styr repo-arbete → Runtime Agent Kernel styr framtida kund-agenter. Constitution vinner
+  vid konflikt.
+- **Header (Jacobs BESLUT, G3):** simplified `© 2026 ABN. All rights reserved.` +
+  "PROPRIETARY AND CONFIDENTIAL — INTERNAL GOVERNANCE DOCUMENT. Legal owner pending
+  registration." INGEN riktig juridisk entitet skriven (ingen ABN Platform AB / Auto
+  Matchning) — riktig registrerad ägare uppdateras senare i en separat docs-PR.
+- **G5 (ingen aktivering):** denna PR landar ENBART dokumenten. De är INTE runtime-enforced,
+  INTE inkopplade i agenter, ändrar INTE Trust Kernel / Compiler / Runtime / agent-beteende.
+  Framtida enforcement/integration är en separat discovery/build-batch.
+- **G2/G4 verbatim-grep (Claude/Anthropic/MCP/Opus/Fable/Codex/GPT/artifact):** 3 träffar,
+  ALLA del av Jacobs verbatim-text, INGEN införd av mig — `CLAUDE.md` (repo-minnesfilnamn,
+  Engineering §1: "never treat CLAUDE.md … as proof"), `Codex` (reviewer-referens,
+  Engineering §19), `"artifact language"` (i en FÖRBUDS-mening, Constitution §5). Flaggade
+  för Jacobs review per G4 (behåll som-är ELLER revidera källtexten i separat docs-PR) —
+  texten landade verbatim, inte strippad. Anthropic/MCP/Opus/Fable/GPT: 0.
+- Main 45920b1 (#189). Branch `docs/constitution-docs-apply-1`. PR HÅLLS — aldrig
+  auto-merge. Båda stående reglerna gäller. Ingen nästa batch startad.
+
+### Korrigerings-commit — vendor-neutralisering (OPTION A, samma branch, PR #190 fortsatt HÅLLS)
+
+Före merge: Jacob valde OPTION A — neutralisera alla vendor-träffar i den kanoniska texten
+så ABN läser som ABN-native (Constitution §5 Originality Law). En case-insensitive §3b-sweep
+fångade en FJÄRDE träff som det första word-boundary-grepet missade: `"proof artifacts"`
+(Runtime Agent Kernel §7) — STOP-och-rapporterad (inte tyst editerad), Jacob beslutade
+neutralisera även den.
+
+- **Fyra korrigeringar i ETT commit (mening bevarad, inga andra ändringar, ingen omnumrering):**
+  (1) Engineering §1 `CLAUDE.md, JACOB_SESSION.md, CHAT_LOG.md, roadmap docs, or tracker rows`
+  → `repository instruction documents, session logs, roadmap docs, or tracker rows`;
+  (2) Engineering §19 `If Codex or another reviewer` → `If a code agent or reviewer`;
+  (3) Constitution §5 `artifact language` → `vendor-specific output formats`;
+  (4) Runtime §7 `proof artifacts` → `proof records`.
+- **Post-edit case-insensitive sweep** (claude|codex|artifact|anthropic|mcp|opus|fable|gpt|
+  openai) scoped till de TRE kärn-dokumenten = **ZERO** (ingen femte). Section-count
+  oförändrad 20/22/22. Simplified header `© 2026 ABN. All rights reserved.` oförändrad, ingen
+  juridisk entitet. G5 håller (docs-only, ej runtime-enforced).
+- **Session-loggarna avsiktligt EJ strippade** — JACOB_SESSION.md/CHAT_LOG.md är intern
+  repo-historik (CLAUDE.md-undantaget); zero-hit-kravet gäller bara de tre kärn-dokumenten.
+  Denna fil nämner alltså `CLAUDE.md`/`Codex`/`artifact` medvetet i historik-beskrivningen.
+- Diff docs-only (3 kärn-docs + 2 session-loggar). PR #190 fortsatt OPEN + HÅLLS, origin/main
+  fortsatt 45920b1. Ingen nästa batch startad.
