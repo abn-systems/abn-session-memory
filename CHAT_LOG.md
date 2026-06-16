@@ -11,6 +11,14 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-16 — TRACKER-HEALTH-MONITOR-HONESTY-FIXED-APPLY-1 (docs-only, PR HELD)
+
+- PR #210 (HEALTH-MONITOR-HONESTY-1) merged → main `ae170b8`, post-merge confirmed (read-only): local FF `4dbbddf..ae170b8`, merged diff = `core/health_monitor.py` + `tests/test_health_monitor_honesty.py` ONLY (no migration/scheduler/runner/observer-internals/tracker/frontend); 5 required CI green on the PR head (Vercel author-access fail = documented non-required noise); feature branch safe-deleted local+remote; `b55b6e9` preserved.
+- Tracker (`backend/docs/CORE_RUNTIME_DISCOVERY_FINDINGS.md`): #50/#51/#52 CANDIDATE→FIXED (scoped), citing PR #210 + the main proof. SCOPE: false-OK honesty ONLY — the three checks now report warn / value "UNOBSERVED" instead of a vacuous "ok"; NO `db_session_factory` wiring, NO real resource measurement, NO real scheduler-liveness infra added; self-heal contract unchanged (a real not-alive `False` still → critical → heal). #50 `_db_ping`→None on no-factory ("database connectivity unobserved (no db_session_factory)"); #51 `_disk_usage_pct`/`_memory_usage_pct` except→None ("disk usage unobserved" · "memory usage unobserved"); #52 `_observer_scheduler_alive` except→None ("observer scheduler liveness unobserved").
+- Appended 1 CANDIDATE row (own future failing-before batch; NOT implemented in #210; NOT counted as #50/#51/#52's fix), surfaced by #210's CORE PURITY GATE: #53 HEALTH-SELFHEAL-HEALED-FLAG-1 (P3) — `self_heal` claims `healed=True` while `_db_reconnect` swallows its error and `_observer_scheduler_restart` is a logged no-op → a false "healed" on the self-heal axis (the false-OK class, on the self-heal axis, distinct from the check axis #50/#51/#52 fixed).
+- Counts: Total 52→**53**, FIXED 17→**20**, CANDIDATE 7→**5**, P3 34→**35** (P0 0 / P1 1 / P2 17 / OPEN 11 / batch-named 17 / PARTIAL 0 unchanged; status 20+11+17+0+5=53; severity 0+1+17+35=53; machine-counted from the file, both axes = Total).
+- Docs-only diff: `CORE_RUNTIME_DISCOVERY_FINDINGS.md` + `JACOB_SESSION.md` + `CHAT_LOG.md` only — no source/test/runtime/migration/frontend/config/dependency/CLAUDE.md. PR HELD (never auto-merged). NEXT (Jacob's call, NOTHING started): #53 self-heal honesty · #1 GDPR-ERASE-ENGINE-1 (latent-P1) · or another higher-priority tracker item.
+
 ## 2026-06-16 — TRACKER-AGENT-QUEUE-DEPTH-FIXED-APPLY-1 (docs-only, PR HELD)
 
 - PR #208 (AGENT-QUEUE-DEPTH-1) merged → main `ba0bf7e`, post-merge confirmed (read-only): local FF `01d93d4..ba0bf7e`, merged diff = `core/health_monitor.py` + `tests/test_agent_queue_depth.py` ONLY (no migration/scheduler/runner/tracker); targeted `test_agent_queue_depth.py` re-run ON main = 4/4; feature branch safe-deleted local+remote; `b55b6e9` preserved.
