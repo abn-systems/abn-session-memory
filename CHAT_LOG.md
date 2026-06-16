@@ -11,6 +11,14 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-16 — TRACKER-AGENT-QUEUE-DEPTH-FIXED-APPLY-1 (docs-only, PR HELD)
+
+- PR #208 (AGENT-QUEUE-DEPTH-1) merged → main `ba0bf7e`, post-merge confirmed (read-only): local FF `01d93d4..ba0bf7e`, merged diff = `core/health_monitor.py` + `tests/test_agent_queue_depth.py` ONLY (no migration/scheduler/runner/tracker); targeted `test_agent_queue_depth.py` re-run ON main = 4/4; feature branch safe-deleted local+remote; `b55b6e9` preserved.
+- Tracker (`backend/docs/CORE_RUNTIME_DISCOVERY_FINDINGS.md`): #45 `agent_queue_depth` CANDIDATE→FIXED (scoped), citing PR #208 + the main proof. SCOPE: honest-unobserved health ONLY — ABN still does NOT measure real queue depth, does NOT create a queue table, does NOT count `AgentRun` as queue depth, scheduler/runner unchanged; real measurement deferred. Sibling of #33/#44.
+- Appended 3 CANDIDATE rows (own future failing-before batches; NOT implemented in #208; NOT counted as #45's fix) — all P3 control-plane false-OK health-observability gaps surfaced by #45's CORE PURITY GATE, verified TRUE against main `ba0bf7e` (own grep + an independent read-only agent agreed): #50 DATABASE-CONNECTION-DB-SESSION-FACTORY-1 (`_db_ping` returns True when `db_session_factory` is None at `:338-340`; the factory is never wired in prod — only tests pass a value), #51 RESOURCE-USAGE-EXCEPTION-FALSE-OK-1 (`_disk_usage_pct`/`_memory_usage_pct` except→0.0 → "ok"), #52 OBSERVER-SCHEDULER-ALIVE-FALSE-OK-1 (`_observer_scheduler_alive` except→True → "ok" + suppresses self-heal).
+- Counts: Total 49→52, FIXED 16→17, CANDIDATE 5→7, P3 31→34 (P0 0 / P1 1 / P2 17 / OPEN 11 / batch-named 17 / PARTIAL 0 unchanged); both axes machine-recounted from the file and sum to 52.
+- Docs-only diff (tracker + these 2 session logs); NO source/test/runtime/migration/frontend/config/dependency/CLAUDE.md. G1 pre-flip: #45 was CANDIDATE. Both standing rules apply; PR HELD — never auto-merged.
+
 ## 2026-06-13 — NO-DATA-TASK-DESCRIPTION-GUARD-1 (#29, PR #184 — HELD)
 
 - Fix-phase batch closing tracker #29 — the No-Data PRIMARY-TARGET gap: the
