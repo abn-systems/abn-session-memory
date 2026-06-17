@@ -11,6 +11,50 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-17 — DECISION-RECORD §14 GDPR-ERASE POLICY (ABN V1) — docs-only, PR HELD
+
+Docs-only decision record. Locked Jacob's §14 GDPR-erase policy as durable disk
+truth in CLAUDE.md — a new `## §14 — GDPR ERASE POLICY DECISION (ABN V1) — LOCKED
+2026-06-17` section placed in the top permanent-law cluster, between
+`## ⚠️ DATABASE ARCHITECTURE (NON-NEGOTIABLE)` and
+`## ABN Mathematical Foundations` (same authority tier as the other locked laws).
+
+Decision: **C for V1 / build toward B / A deferred.**
+  - C (V1): GDPR erase automation is DISABLED as customer-facing self-service;
+    erasure runs through a vetted, documented manual/operator process, surfaced
+    honestly. No self-service-deletion claim until the engine is built,
+    tenant-scoped, tested, audited, and approved.
+  - B (build direction): admin-only / operator-gated automated erasure — full
+    ceremony, tenant-scoped cascade, fail-closed, typed confirmation, scope
+    preview where possible, audit + evidence before action, human approval.
+  - A (deferred, post-V1): a customer-facing self-service erase button — only
+    after B is proven hard, with preview, staged/soft-delete, grace/review,
+    rollback/compensation where valid, and legal sign-off.
+  - Non-negotiable invariants: always tenant-scoped + fail-closed; no
+    cross-tenant delete path; no delete-all-rows shortcut; policy-driven deletion
+    only (versioned policy in the Policy Engine), not ad-hoc cascade; audit +
+    evidence BEFORE action; honest customer-facing wording; hosted-shared must
+    not put ABN ops into a customer-data loop unless contract/DPA/legal allows;
+    desktop Node preferred for automated admin execution; final legal/DPA
+    sign-off REQUIRED before any external claim or launch.
+
+Effect: `#1 GDPR-ERASE-ENGINE-1` is UNBLOCKED as a full-ceremony engineering
+batch — but that batch MUST NOT build customer-facing self-service (build toward
+B only). The decision unblocks the future batch; it does NOT implement or fix #1.
+
+Level 13 next allowed build: `#1 GDPR-ERASE-ENGINE-1` — FULL ceremony, build
+toward B only — admin-only / operator-gated automated erasure, tenant-scoped,
+fail-closed, audit/evidence before action, human approval, no customer-facing
+self-service.
+Level 13 forbidden build: no customer-facing self-service erase button; no
+delete-all-rows shortcut; no cross-tenant delete path; no tracker flip before
+runtime proof; no legal/compliance claim before legal/DPA sign-off.
+
+Scope: docs-only — CLAUDE.md (the §14 block) + JACOB_SESSION.md (JUST NU) +
+CHAT_LOG.md (this entry). Tracker (CORE_RUNTIME_DISCOVERY_FINDINGS.md) UNTOUCHED —
+56 rows, #1 status/severity unchanged. No source/test/runtime/migration/frontend/
+config/dependency/CI change. PR held — never auto-merged.
+
 ## 2026-06-17 — TRACKER-HEALTH-SELFHEAL-FLAG-HONESTY-FIXED-APPLY-1 (docs-only, PR HELD)
 
 Docs-only batch. Flipped #54 (HEALTH-SELFHEAL-PRUNE-FLAG-1) + #55
