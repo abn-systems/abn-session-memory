@@ -11,6 +11,35 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-17 — TRACKER-HEALTH-MONITOR-AUDIT-CANDIDATES-APPLY-1 (docs-only, PR HELD)
+
+Docs-only batch. Recorded the two NEW candidates surfaced by the read-only
+HEALTH-MONITOR-CORE-PURITY-AUDIT-1 of `core/health_monitor.py` (the audit ran on
+`main` `0a3ad84` with zero edits / git writes / tracker change during the audit;
+the candidates land via THIS docs-only PR, which adds no source/test/runtime change):
+- **#55 HEALTH-SELFHEAL-MEMORY-GC-FLAG-1** (P3, CANDIDATE) — `self_heal`'s
+  `memory_usage` branch runs `gc.collect()` then `return True` WITHOUT
+  re-measuring memory → a system still at critical memory is reported
+  `healed=True` every tick. False-healed class, identical shape to #54 disk-prune
+  on the memory axis; reachable from tick; pinned by `tests/test_ars.py:347-351`.
+- **#56 HEALTH-CIRCUIT-SELFHEAL-UNREACHABLE-1** (P3, CANDIDATE) — `self_heal`'s
+  `circuit_breakers_status` branch is honest if called directly (a real
+  lock-guarded OPEN→HALF_OPEN flip) but is STRUCTURALLY UNREACHABLE from the live
+  tick because `run_check` only ever yields ok/warn. A dead-branch / structural
+  finding, NOT a false-healed lie; triple-latent (related to #48/#49). Do NOT
+  claim breaker healing is broken — the issue is live reachability from the tick.
+
+Recommended bundling (Jacob's call, NOTHING started): #54 + #55 → ONE
+false-healed self-heal honesty fix batch (HEALTH-SELFHEAL-FLAG-HONESTY-1, FULL
+ceremony — touches runtime + tests); #56 separate OR folded into the #48/#49
+resilience-wiring cluster.
+
+Counts: Total 54→56, CANDIDATE 5→7, P3 36→38 (FIXED 21 / OPEN 11 / batch-named 17
+/ PARTIAL 0 / P0 0 / P1 1 / P2 17 unchanged; both axes sum to 56, machine-counted
+from the file). Diff = CORE_RUNTIME_DISCOVERY_FINDINGS.md + JACOB_SESSION.md +
+CHAT_LOG.md ONLY — NO source/test/runtime/migration/frontend/config/dependency/
+CLAUDE.md. PR HELD — never auto-merged. `main` = `0a3ad84`.
+
 ## 2026-06-16 — TRACKER-HEALTH-SELFHEAL-HONESTY-FIXED-APPLY-1 (docs-only, PR HELD)
 
 - PR #212 (HEALTH-SELFHEAL-HONESTY-1) merged → main `ee76cf6`, post-merge confirmed (read-only): local FF `cc795c5..ee76cf6`, merged diff = `core/health_monitor.py` + `tests/test_health_selfheal_honesty.py` + ONE disclosed mechanics-only `tests/test_ars.py` alignment ONLY (no scheduler/runner/observer-internals/migration/tracker/frontend); 5 required CI green on the PR head (Vercel author-access fail = documented non-required noise); feature branch safe-deleted local+remote; `b55b6e9` preserved.
