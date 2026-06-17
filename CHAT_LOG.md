@@ -11,6 +11,36 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-17 — TRACKER-HEALTH-SELFHEAL-FLAG-HONESTY-FIXED-APPLY-1 (docs-only, PR HELD)
+
+Docs-only batch. Flipped #54 (HEALTH-SELFHEAL-PRUNE-FLAG-1) + #55
+(HEALTH-SELFHEAL-MEMORY-GC-FLAG-1) CANDIDATE→FIXED scoped in the tracker,
+citing PR #215 (HEALTH-SELFHEAL-FLAG-HONESTY-1, merged → `main` `a8d69ae`,
+post-merge confirmed). Both self-heal branches are now honest via #53's
+confirm-by-re-measure: `memory_usage` runs `gc.collect()` then re-measures via
+`_memory_usage_pct()`, `disk_space_sufficient` runs `_prune_oldest_reports()`
+then re-measures via `_disk_usage_pct(self.disk_path)`, each returning
+`new is not None and new < 95` — so `healed=True` ⟺ the post-action re-measure
+confirms the metric below the 95 critical threshold (False if still critical OR
+unmeasurable/None). Proof from PR #215: failing-before `200fbd4`
+(M2/M3/D2/D3 right-reason reds) → fix `a08a962`; targeted 6/6 (M1-M3/D1-D3);
+full backend suite 2446/0 (baseline 2442 + 4 new); merged diff
+`b7d77ff..a8d69ae` = `core/health_monitor.py` + `tests/test_ars.py` only.
+
+- SCOPE: #54/#55 are FIXED ONLY for healed-flag honesty — NO real disk-reclaim,
+  NO real memory-reclamation, NO deeper recovery infra; `gc.collect()` /
+  `_prune_oldest_reports()` and the module helpers are unchanged.
+- #56 HEALTH-CIRCUIT-SELFHEAL-UNREACHABLE-1 stays CANDIDATE (structural /
+  dead-branch, not a false-healed lie; own future batch OR folded into the
+  #48/#49 resilience-wiring cluster).
+- Counts (machine-counted from the file, cell-scoped): 56 rows · FIXED 21→23 ·
+  CANDIDATE 7→5 · OPEN 11 / batch-named 17 / PARTIAL 0 unchanged · P0 0 / P1 1 /
+  P2 17 / P3 38 unchanged · both axes = 56.
+- Diff = the 3 docs files ONLY (CORE_RUNTIME_DISCOVERY_FINDINGS.md +
+  JACOB_SESSION.md + CHAT_LOG.md). No source/test/runtime/migration/frontend/
+  CLAUDE.md change. PR HELD — never auto-merged. `main` = `a8d69ae`; b55b6e9
+  preserved.
+
 ## 2026-06-17 — TRACKER-HEALTH-MONITOR-AUDIT-CANDIDATES-APPLY-1 (docs-only, PR HELD)
 
 Docs-only batch. Recorded the two NEW candidates surfaced by the read-only
