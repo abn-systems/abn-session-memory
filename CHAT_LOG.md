@@ -11,6 +11,47 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-18 — DECISION-RECORD: VERIFICATION LAW + CORE PURITY 10 reconcile (CLAUDE.md) — docs-only, PR HELD
+
+Docs-only decision record. No runtime behavior changed, no tracker changed, no
+source/test/schema/migration/config/dependency/CI changed. Records the law only — no
+verification result is claimed for existing ABN runtime beyond recording the law. PR HELD.
+
+  - **VERIFICATION LAW — LOCKED 2026-06-18 (new):** added as a dated LOCKED block in
+    `CLAUDE.md` immediately after §14 (mirroring §14's convention), heading
+    `## VERIFICATION LAW — LOCKED 2026-06-18`. "Green CI" / "PR merged" = a SIGNAL,
+    NEVER proof; every done / complete / fixed claim is verified at source-of-truth on
+    codebase + disk. Covers BEFORE merge (reviewed head, exact diff, required checks,
+    no forbidden files) AND AFTER merge (live remote SHA, local==origin/main, clean
+    tree, two-parent merge-commit shape, merged diff scope, disk/runtime truth, tests
+    on merged main where runtime, branch cleanup, no stacked deploy commit, no next
+    batch silently started). Proof surfaces by change type: runtime/source needs
+    runtime proof; docs-only needs disk + file-scope; tracker needs arithmetic (total /
+    status buckets / severity buckets / IDs contiguous / target row status / no
+    duplicate / table integrity). G3-truthful: explicitly does NOT claim ABN
+    complete/verified, nor that green checks prove correctness or safety.
+  - **CORE PURITY 10 — reconcile result = already present (no rewrite, no duplicate):**
+    the existing numbered 1–10 list in `### ABN CORE ENGINEERING STANDARD — Jacob
+    locked` is, item by item, a semantically IDENTICAL SUPERSET of Jacob's target 10
+    (same count, same order, no item missing, none conflicting; it carries extra
+    non-conflicting ABN-specific detail — tenant isolation / no-payload / permission
+    gates in #8, "unless proven bounded" in #5, quarantine in #10, "makes the
+    architecture a lie" in #1). Per G7 (preserve extra useful ABN constraints) + the
+    no-duplicate discipline, it was PRESERVED in place — NOT stripped to the terser
+    target wording, NOT duplicated. Added a single one-line canonical-name anchor
+    naming it the "CORE PURITY 10" and binding it to the CORE PURITY STANDARD (one
+    law, two views). If Jacob prefers the verbatim-terser wording instead, that is a
+    one-word change at merge (PR is held).
+  - **State:** `main` `566dd5a` (PR #219 merged + post-merge confirmed; local == origin
+    == live remote, tree clean). Tracker UNTOUCHED — 56 rows, #1 = PARTIAL
+    (machine-counted on disk: status 23+11+16+1+5=56, severity 0+1+17+38=56). No
+    tracker / status / count drift (G8).
+  - **Next:** 1B = GDPR-ERASE-REQUEST-RECORD-1 (level 14) — NOT started. No next batch
+    started; #1 stays PARTIAL.
+  - **Diff scope:** `CLAUDE.md` + `JACOB_SESSION.md` + `CHAT_LOG.md` ONLY. Both standing
+    rules apply (stop-for-Jacob-go; failing-before HARD STOP N/A docs-only). PR HELD —
+    DO NOT MERGE.
+
 ## 2026-06-18 — TRACKER-GDPR-ERASE-SAFE-SURFACE-PARTIAL-APPLY-1 — docs-only, PR HELD
 
 Docs-only tracker apply. Marked **#1 GDPR-ERASE-ENGINE-1 batch-named → PARTIAL**
