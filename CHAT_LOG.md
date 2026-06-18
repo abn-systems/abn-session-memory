@@ -11,6 +11,32 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-18 — MASTER-ROADMAP-CREATE-1 (docs-only, PR HELD)
+
+Created `backend/docs/ABN_MASTER_ROADMAP.md` — a navigation / orientation map,
+NOT a tracker and NOT proof. It points to the source-of-truth (the findings
+tracker `CORE_RUNTIME_DISCOVERY_FINDINGS.md`, `CLAUDE.md` + the laws,
+`docs/research/`, `TENANT_GAP_MATRIX.md`, and `main` code+tests). It restates no
+findings counts and duplicates no law text; every "done" item carries a verified
+PR/SHA reference, and anything unsourced is marked NOT VERIFIED / requires
+discovery.
+
+Verified baseline at creation: `main` 7069f66 (local == origin == live; tree
+clean). Tracker machine-counted on disk: 56 rows; #1 GDPR-ERASE-ENGINE-1 =
+PARTIAL (1A PR #218 + 1B PR #221 landed; neither implements actual erase or
+pseudonymization; remaining-for-full-FIXED listed in the map and in tracker row
+#1). SORT-1 is framed as hardening of the verified existing foundation, not
+"complete". SORT-2 motors are NOT VERIFIED without discovery. The Relevance
+Kernel remains PARKED SORT-2 (attention-inspired, not transformer-based;
+deterministic/auditable; discovery prompt drafted but NOT started; sequenced
+after the GDPR #1 P1 lane).
+
+No tracker status/count change. No CLAUDE.md change. No
+source/test/runtime/migration/schema/CI change. No next batch started.
+Cursor/memory persistence is separate and not started. Docs-only diff =
+`ABN_MASTER_ROADMAP.md` (new) + `JACOB_SESSION.md` + `CHAT_LOG.md`. PR HELD — do
+not merge.
+
 ## 2026-06-18 — TRACKER-GDPR-ERASE-REQUEST-RECORD-PARTIAL-APPLY-1 (docs-only, PR HELD)
 
 Docs-only tracker-sync. No runtime/source/test/schema/migration/config/dependency/CI/CLAUDE.md
