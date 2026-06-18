@@ -11,6 +11,36 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-18 — TRACKER-GDPR-ERASE-REQUEST-RECORD-PARTIAL-APPLY-1 (docs-only, PR HELD)
+
+Docs-only tracker-sync. No runtime/source/test/schema/migration/config/dependency/CI/CLAUDE.md
+change — records that 1B is complete on `main` WITHOUT moving any status bucket.
+
+  - **PR #221 (GDPR-ERASE-REQUEST-RECORD-1, 1B) merged + post-merge source-of-truth
+    confirmed:** merge commit `519ab44b48bf4f12eff95387d60e293e3935ea6d`, reviewed head
+    `43bfea3`, two-parent merge shape, 5-file runtime diff (models.py + the
+    `c7e1f4a9d2b6` migration + gdpr.py + no_payload_proof.py + the 1B test file); the
+    runtime PR touched NO tracker row. The request-record + audit-before-action surface
+    landed: `erasure_requests` record (Base, payload-free, classified MUST_BE_PAYLOAD_FREE)
+    + `gdpr_erase_requested` audit-before-action (written before the response, one shared
+    session) + email_hash subject_ref (user_id or sha256(email), never raw email) +
+    fail-closed (record/audit write failure → rollback + 503).
+  - **#1 (GDPR-ERASE-ENGINE-1) STAYS PARTIAL (severity P1 unchanged).** This PR only
+    AUGMENTS the #1 scope note with the 1B-complete sentence + the remaining-work boundary;
+    it does NOT flip #1 to FIXED. NOT full FIXED — the erase ENGINE is still unbuilt
+    (subject-scoped cascade, versioned Policy Engine, audit/evidence before a real erase,
+    human approval, cross-store handling, legal/DPA sign-off, and the actual
+    erase/pseudonymize execution all REMAIN).
+  - **No status-bucket move, no count change.** Both axes stay 56 (status FIXED 23 + OPEN 11
+    + batch-named 16 + PARTIAL 1 + CANDIDATE 5 = 56; severity P0 0 + P1 1 + P2 17 + P3 38 =
+    56). The tracker "Last updated:" line was updated (prior demoted); the Summary table is
+    unchanged. #54/#55 stay FIXED-scoped, #56 stays CANDIDATE, IDs 1–56 contiguous.
+  - **State:** `main` = `519ab44` (#221 merged + post-merge confirmed). Docs-only diff =
+    exactly 3 files (CORE_RUNTIME_DISCOVERY_FINDINGS.md + JACOB_SESSION.md + CHAT_LOG.md).
+    PR HELD — never auto-merged. Next recommended (NOTHING started): decide the next scoped
+    #1/P1 batch (subject-resolution → Policy Engine → cascade) OR the parked Relevance
+    Kernel discovery (remains PARKED SORT-2; do not start unless Jacob opens that lane).
+
 ## 2026-06-18 — DECISION-RECORD: VERIFICATION LAW + CORE PURITY 10 reconcile (CLAUDE.md) — docs-only, PR HELD
 
 Docs-only decision record. No runtime behavior changed, no tracker changed, no
