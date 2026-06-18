@@ -11,6 +11,41 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-18 — TRACKER-GDPR-ERASE-SAFE-SURFACE-PARTIAL-APPLY-1 — docs-only, PR HELD
+
+Docs-only tracker apply. Marked **#1 GDPR-ERASE-ENGINE-1 batch-named → PARTIAL**
+(severity **P1 UNCHANGED**) in `backend/docs/CORE_RUNTIME_DISCOVERY_FINDINGS.md`,
+citing **PR #218** (GDPR-ERASE-SAFE-SURFACE-1, 1A — merged → `main` `8275688`,
+head `8588cd4`, post-merge confirmed).
+
+  - **What #218 (1A) actually fixed (the PARTIAL scope, recorded exactly):** ONLY
+    the live false-success API surface — `/erase` no longer claims
+    `status="erased"` / "Erasure completed per Art. 17" (tenant-gate FIRST, then
+    subject-selector fail-closed: no subject → 422 `subject_required`, subject
+    present → 501 `not_executable` / `erasure_completed:false`); `/export` → 501
+    `not_implemented` (no placeholder data, no Art.15/20 claim); `EraseRequest`
+    gained an OPTIONAL `user_id`/`email` subject selector (handler-enforced AFTER
+    the tenant gate → cross-tenant still 404s first). **ZERO deletion, ZERO
+    schema, `gdpr/compliance.py` engine stub UNTOUCHED**; full suite 2453/0.
+  - **Why PARTIAL, never full FIXED (G5 honoured):** the erase ENGINE itself is
+    unbuilt. Remaining for full #1 (the §14 build toward B): subject-scoped
+    tenant-cascade erase engine, versioned Policy Engine, audit/evidence BEFORE
+    action, human approval, ErasureRequest record/state machine, cross-store
+    handling (files/vector/Nango/Stripe/backups), legal/DPA sign-off. A future
+    flip is FIXED-scoped or full FIXED only once the whole engine lands.
+  - **G-PARTIAL guard verified:** PARTIAL is a legend-defined, counted status
+    bucket (Status rules + Summary table). Did NOT need to STOP.
+  - **Counts (machine-verified post-edit, 56=56 both axes):** batch-named 17→**16**,
+    PARTIAL 0→**1**; FIXED 23 / OPEN 11 / CANDIDATE 5 unchanged; P0 0 / P1 1 /
+    P2 17 / P3 38 unchanged. Updated row #1 (status + scope note), the Summary
+    table, the arithmetic line, and the "Last updated" narration; mirrored into
+    `JACOB_SESSION.md ## JUST NU` + this log.
+  - **Scope:** docs-only — edited ONLY `CORE_RUNTIME_DISCOVERY_FINDINGS.md` +
+    `JACOB_SESSION.md` + `CHAT_LOG.md`. No source/test/runtime/migration/frontend/CI
+    change. Fresh branch `docs/tracker-gdpr-erase-safe-surface-partial-apply-1` off
+    `main` `8275688`. post-commit hook neutralized around the commit then restored;
+    b55b6e9 preserved. **PR HELD — never auto-merged.**
+
 ## 2026-06-17 — DECISION-RECORD §14 GDPR-ERASE POLICY (ABN V1) — docs-only, PR HELD
 
 Docs-only decision record. Locked Jacob's §14 GDPR-erase policy as durable disk
