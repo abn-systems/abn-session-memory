@@ -11,6 +11,43 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-19 — TRACKER-GDPR-SUBJECT-RESOLVER-PARTIAL-APPLY-1 (docs-only, PR HELD)
+
+Recorded the PR #224 (GDPR-SUBJECT-RESOLVER-CONTRACT-1, 1C) result in the
+findings tracker WITHOUT overclaiming #1. Two changes to
+`backend/docs/CORE_RUNTIME_DISCOVERY_FINDINGS.md`:
+
+1. Augmented row #1 (GDPR-ERASE-ENGINE-1)'s scope note with a 1C entry — the
+   tenant-bounded subject-resolver contract landed on `main`
+   (`backend/gdpr/subject_resolver.py`: `ResolvedSubject` payload-none +
+   `resolve_subject` user_id path `WHERE user_id=? AND tenant_id=scope`
+   fail-closed; cross-tenant → CROSS_TENANT_REJECTED via id-only existence
+   check; email_hash pinned NEEDS_SCHEMA_SUPPORT; NOT route-wired; no
+   deletion/cascade/Policy Engine). **#1 STAYS PARTIAL (severity P1
+   UNCHANGED)** — the erase engine is still unbuilt; remaining-for-full-FIXED
+   restated.
+2. Added CANDIDATE row #57 LOGIN-EMAIL-TENANT-SCOPE-1 (P2, security,
+   recorded-only / NOT fixed): the PR #224 discovery surfaced that `auth.py`
+   login resolves a user by email with NO tenant filter (`auth.py:209-212`,
+   `.first()`) while `User` is UNIQUE(tenant_id,email) (`auth/models.py:133`),
+   so the same email across tenants can match the wrong tenant's user — its own
+   future failing-before batch required.
+
+Summary counts moved 56→57 (P2 17→18, CANDIDATE 5→6); both axes balance at 57
+(status 23+11+16+1+6; severity 0+1+18+38); IDs 1–57 contiguous, no duplicate.
+
+Verified before editing: `main` = 2d25bc1 (PR #224 merged + post-merge
+confirmed; local==origin==live, tree clean); no existing
+LOGIN-EMAIL-TENANT-SCOPE-1 row (grep clean); the login hazard live in source
+(`auth.py:209-212` no tenant filter; `auth/models.py:133`
+UNIQUE(tenant_id,email)).
+
+Scope: docs-only, ONE held PR (never auto-merged). Diff = exactly 3 docs files
+(`CORE_RUNTIME_DISCOVERY_FINDINGS.md` + `JACOB_SESSION.md` + `CHAT_LOG.md`). NO
+source/test/runtime/migration/schema/CI change; `CLAUDE.md` +
+`ABN_MASTER_ROADMAP.md` untouched. #1 NOT marked full FIXED; the login hazard
+RECORDED only, NOT fixed.
+
 ## 2026-06-18 — MASTER-ROADMAP-CREATE-1 (docs-only, PR HELD)
 
 Created `backend/docs/ABN_MASTER_ROADMAP.md` — a navigation / orientation map,
