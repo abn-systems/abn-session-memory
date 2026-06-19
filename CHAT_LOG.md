@@ -11,6 +11,39 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-19 — GDPR-NEXT-LAYER-DISCOVERY-1 (DOC COMMIT, PR HELD)
+
+Committed the already-written next-layer discovery doc
+`backend/docs/GDPR_NEXT_LAYER_DISCOVERY.md` as a docs-only HELD PR
+(branch `docs/gdpr-next-layer-discovery-1`, base db21f0a). Decides ORDERING
+only — builds nothing, merges nothing, deletes nothing.
+
+Q-GATE verdict (recorded, not acted on): §14-B is operator-gated and the
+operator identifies the subject by `user_id`, which the 1C resolver already
+resolves (`subject_resolver.py:142`). So **`user_id` suffices for §14-B and
+`email_hash` is an A-path / deferred prerequisite, NOT the next B blocker** (the
+`users` table stores raw email with no hash column — `auth/models.py:121`; 1C
+pins `email_hash` -> NEEDS_SCHEMA_SUPPORT at `subject_resolver.py:114-127`).
+
+Recommended next runtime layer (RECOMMENDATION ONLY — NOT started): wire 1C into
+`/erase` + a versioned subject-scoped ErasurePlan / Policy-Engine PREVIEW on the
+`user_id` path, **plan/preview only, ZERO deletion** (no cascade execution).
+email_hash schema + #57 LOGIN-EMAIL-TENANT-SCOPE-1 are a separate post-V1 A-path.
+
+Every claim in the doc is cited file:line against the SOURCE CODE (not docs):
+subject_resolver.py / gdpr.py / models.py / auth/models.py / compliance.py /
+auth.py; every cross-store (reports FS / chromadb / Nango / Stripe / backups)
+marked UNKNOWN. Doc verified before commit: zero overclaim, citations resolve in
+source (3/6 files independently sub-agent-confirmed; the rest rate-limited ->
+verified inline at source); two conservative phrase normalizations only
+("ZERO deletion" / "#1 remains PARTIAL" — restating content already present, no
+new conclusion, no verdict change).
+
+NOT in this PR: #1 GDPR-ERASE-ENGINE-1 STAYS **PARTIAL** (no tracker edit, no
+status change); CLAUDE.md / ABN_MASTER_ROADMAP.md / source / schema all
+untouched; README-SYNC-1 and MASTER-ROADMAP-POST-GDPR-SYNC-1 are SEPARATE future
+docs PRs, not folded in. No runtime authorization created. PR HELD — Jacob merges.
+
 ## 2026-06-19 — TRACKER-GDPR-SUBJECT-RESOLVER-PARTIAL-APPLY-1 (docs-only, PR HELD)
 
 Recorded the PR #224 (GDPR-SUBJECT-RESOLVER-CONTRACT-1, 1C) result in the
