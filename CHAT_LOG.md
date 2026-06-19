@@ -11,6 +11,41 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-19 — MASTER-ROADMAP-POST-GDPR-SYNC-1 (DOCS-ONLY, PR HELD)
+
+Synced the navigation/mirror docs to the verified main after the GDPR
+subject-resolver + discovery batches landed. Branch
+`docs/master-roadmap-post-gdpr-sync-1`, base `407a36b` (the post-merge-confirmed
+PR #226 SHA). Builds nothing; touches no source/test/runtime/tracker/CLAUDE.md;
+merges nothing.
+
+Roadmap Maintenance Rule applied: every PR→SHA written was verified at git
+source FIRST — #218→`8275688`, #221→`519ab44`, #222→`7069f66`, #224→`2d25bc1`,
+#225→`db21f0a`, #226→`407a36b` (all MERGED); tracker re-read on main = 57 rows,
+#1 = P1/PARTIAL, #57 = LOGIN-EMAIL-TENANT-SCOPE-1/P2/CANDIDATE.
+
+`backend/docs/ABN_MASTER_ROADMAP.md` edits (additive, honest — history not
+rewritten): §2 gained a "Current verified state (MASTER-ROADMAP-POST-GDPR-SYNC-1)"
+subsection (verified main 407a36b; 1C #224 / tracker-sync #225 / discovery #226;
+#1 stays PARTIAL) — the "created at main 7069f66" baseline left intact. §3 GDPR
+row Source reference += 1C #224 (`2d25bc1`) / sync #225 (`db21f0a`) / discovery
+#226 (`407a36b`) / tracker rows #1 (+#57). §3 "what REMAINS" updated (subject
+resolution DONE for the user_id path; Policy Engine recommended NEXT; cascade =
+the compliance engine is TENANT-scoped + 1C not route-wired; cross-store UNKNOWN;
+#57 added as a parallel P2 CANDIDATE). §7 Open decision #1 → RESOLVED by PR #226
+(user_id suffices for §14-B; email_hash deferred to A-path; recommended next
+runtime = wire 1C into /erase + a subject-scoped ErasurePlan/Policy PREVIEW, ZERO
+deletion — RECOMMENDATION ONLY, awaiting Jacob GO).
+
+Guards honored: no "GDPR compliant" / "Article 17 satisfied" / "erase implemented"
+wording anywhere; Relevance Kernel PARKED status untouched; #1 stays PARTIAL (the
+tracker is truth). Diff = exactly 3 files (ABN_MASTER_ROADMAP.md +
+JACOB_SESSION.md + CHAT_LOG.md); the tracker (CORE_RUNTIME_DISCOVERY_FINDINGS.md)
+and CLAUDE.md are byte-identical/untouched. JUST NU's held→merged one-step lag
+corrected this batch (it will itself lag one step once THIS PR merges — expected).
+README-SYNC-1 + the GDPR-ERASURE-PLAN-POLICY-PREVIEW-1 runtime are SEPARATE,
+NOT started. PR HELD — Jacob merges.
+
 ## 2026-06-19 — GDPR-NEXT-LAYER-DISCOVERY-1 (DOC COMMIT, PR HELD)
 
 Committed the already-written next-layer discovery doc
