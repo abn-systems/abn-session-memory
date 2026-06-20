@@ -11,6 +11,47 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-20 — TRACKER-GDPR-ERASURE-PREVIEW-PARTIAL-APPLY-1 (DOCS-ONLY, PR HELD)
+
+Synced the three truth/navigation docs to `main` `c26a6c8` after the first
+erase-domain runtime batch (PR #228, GDPR-ERASURE-PLAN-POLICY-PREVIEW-1) merged +
+post-merge confirmed. Branch `docs/tracker-gdpr-erasure-preview-partial-apply-1`,
+base `c26a6c8` (local == origin == live remote; tree clean; no open PR). Builds
+nothing; touches no source/test/runtime/migration/CI/CLAUDE.md; merges nothing.
+
+STEP 0 verified at source FIRST: PR #228 MERGED, merge commit == `c26a6c8`, the
+landed diff was exactly 4 runtime/test files (`api/routes/gdpr.py`,
+`backend/gdpr/erasure_planner.py`, two test files), #1 still PARTIAL.
+
+TRACKER (`CORE_RUNTIME_DISCOVERY_FINDINGS.md`): #1's scope note += the 1D step
+(PR #228 landed a subject-scoped ErasurePlan / policy PREVIEW; `/erase` returns
+an honest non-executable preview for a resolvable `user_id` subject; non-resolved
+subjects fail closed 501; ZERO deletion / cascade / pseudonymization; the 1B
+ErasureRequest + SecurityAuditLog evidence writes preserved; #1 STAYS PARTIAL).
+NEW P3 CANDIDATE row #58 SAFE-SURFACE-COMPLETED-NET-1 appended (the
+`test_gdpr_erase_safe_surface.py:191` completed-net asserts `status=="erased"`
+only — tighten to `{"erased","completed"}` next time the file is touched;
+recorded-only, no source touched). Recount from the raw rows: Total 57→58,
+P3 38→39, CANDIDATE 6→7 (#1 stays the only P1; row #33 embedded-pipe counted from
+the raw line); both axes balance at 58 (status 23+11+16+1+7; severity 0+1+18+39).
+
+MAP (`ABN_MASTER_ROADMAP.md`): the synced-SHA marker bumped to `c26a6c8` (the
+on-disk marker was `407a36b`, NOT the prompt's `335b319` — code-is-truth, the
+real marker was bumped); the GDPR/erase line re-pointed to post-#228 state
+(preview BUILT; #1 PARTIAL; next = versioned Policy Engine → subject-scoped
+cascade / real erase; #57 parallel P2). The map POINTS to tracker row #1; it does
+not copy tracker prose.
+
+SESSION (`JACOB_SESSION.md`): `## JUST NU` replaced (6-line shape) to the
+post-#228 snapshot — main `c26a6c8`, tracker 58, #1 PARTIAL (1A+1B+1C+1D-preview),
+SAFE-SURFACE-COMPLETED-NET-1 tracked P3, next = Policy Engine → cascade (or #57
+parallel). Honest snapshot, no overclaim.
+
+Guards honored: no "GDPR compliant" / "Article 17 satisfied" / "erase implemented"
+claim; #1 NOT marked FIXED; no runtime / Policy-Engine batch started; three-truth
+separation intact (map points, tracker holds, laws unchanged). Diff is DOCS-ONLY
+(4 .md files). PR HELD — DO NOT MERGE.
+
 ## 2026-06-19 — MASTER-ROADMAP-POST-GDPR-SYNC-1 (DOCS-ONLY, PR HELD)
 
 Synced the navigation/mirror docs to the verified main after the GDPR
