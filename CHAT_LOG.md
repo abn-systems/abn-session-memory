@@ -11,6 +11,45 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-21 — TRACKER-GDPR-ACCOUNT-FOOTPRINT-COVERAGE-FIXED-APPLY-1 (DOCS-ONLY, PR HELD)
+
+Synced the truth/navigation docs to `main` `3f6b79d` after PR #233
+(GDPR-EXECUTOR-ACCOUNT-FOOTPRINT-COVERAGE-1) merged + post-merge confirmed
+(2-parent merge `[d79a2b8, 4edc1fa]`; merged diff = EXACTLY 4 source/test files —
+`gdpr/erasure_policy.py` +3 `_POLICY_RULES` entries, the new
+`test_gdpr_erase_account_footprint.py`, the recovered `test_gdpr_erase_execution.py`,
+and the disclosed `test_gdpr_erasure_policy_preview_contract.py` migration — no
+docs/tracker landed in #233). Branch
+`docs/tracker-gdpr-account-footprint-coverage-fixed-apply-1`, base `3f6b79d`.
+
+Decisions / what changed (docs-only — POINT, never duplicate):
+- **#1 GDPR-ERASE-ENGINE-1 STAYS PARTIAL.** Recorded the #233 account-footprint
+  coverage step in #1's note: the subject-scoped erase PREVIEW now MODELS the
+  subject's account-identity footprint — `Session` / `WebAuthnCredential` /
+  `InviteToken` added to `_POLICY_RULES` with DERIVED `delete` actions (the #231
+  derived-not-literal discipline; `erasure_planner.py` unchanged — it iterates
+  `MODELED_POLICY_STORES` + calls `decide_erasure_action`). PREVIEW coverage ONLY:
+  `executable=False`, ZERO deletion (`erase_tenant_data` never called). `invite_tokens`
+  narrowly scoped (`used_by`==subject + `invited_email`==subject email; `invited_by`
+  excluded from broad deletion) — currently in REASON TEXT, not executing code.
+- **#60 GDPR-EXECUTOR-ACCOUNT-FOOTPRINT-GAP-1 CANDIDATE → FIXED (scoped).** FIXED =
+  the preview plan no longer SILENTLY OMITS the footprint, NOT that the footprint is
+  erased. **Residual risk made unmistakable:** NON-EXECUTABLE policy intent only — NO
+  session revoked, NO MFA credential deleted, so a subject CAN STILL AUTHENTICATE until
+  a real executor is built. Does NOT fix #59/#61/#62; does NOT make #1 FIXED.
+- **Tracker recount (raw rows, both axes PROVED):** Total 62 · FIXED 23→**24** ·
+  OPEN 11 · batch-named 16 · PARTIAL 1 · CANDIDATE 11→**10** = 62 (status) ·
+  P0 0 / P1 1 / P2 22 / P3 39 = 62 (severity; #60 stays P2). IDs 1–62 contiguous, no
+  dups; #1 the only P1; #59/#61/#62 stay P2 CANDIDATE.
+- **Roadmap (`ABN_MASTER_ROADMAP.md`):** synced-SHA `a429927`→`3f6b79d`; "Current
+  verified state" + §3 GDPR lane + the "#1 REMAINS" section now cite 1D-account-footprint
+  PR #233 (#60 FIXED-for-preview, non-executable intent); real EXECUTION still BLOCKED by
+  #59 (tenant-stub mismatch) + #61 (no-cascade/atomicity) + #62 (typed gate); #1 PARTIAL.
+- **No runtime/source/test/model/migration/config/CI/dependency/CLAUDE change.** Diff =
+  EXACTLY the 4 docs/session files. PR HELD (DO NOT MERGE). Next GDPR runtime
+  (recommendation, NOT started) = #62 typed execution gate / #61 atomicity planning, NOT
+  deletion; no executor built; no erasure exists.
+
 ## 2026-06-21 — TRACKER-GDPR-POLICY-AND-EXECUTION-DISCOVERY-APPLY-1 (DOCS-ONLY, PR HELD)
 
 Synced the truth/navigation docs to `main` `a429927` after the preview-policy
