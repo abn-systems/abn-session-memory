@@ -11,6 +11,45 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-21 — TRACKER-GDPR-POLICY-AND-EXECUTION-DISCOVERY-APPLY-1 (DOCS-ONLY, PR HELD)
+
+Synced the truth/navigation docs to `main` `a429927` after the preview-policy
+contract (PR #231, GDPR-POLICY-ENGINE-PREVIEW-CONTRACT-1) merged + post-merge
+confirmed, AND recorded the GDPR-ERASE-EXECUTION-DISCOVERY-1 (Phase A/B,
+read-only) blockers. Branch
+`docs/tracker-gdpr-policy-and-execution-discovery-apply-1`, base `a429927`
+(local == origin == live; tree clean; no open PR). Builds nothing; touches no
+source/test/runtime/model/migration/config/CI/CLAUDE.md; merges nothing.
+
+STEP 0 verified at source: PR #231 MERGED, merge == `a429927`, landed diff was
+exactly `erasure_planner.py` + `erasure_policy.py` +
+`test_gdpr_erasure_policy_preview_contract.py`; #1 still PARTIAL. The uncommitted
+discovery RED matrix `backend/tests/test_gdpr_erase_execution.py` (6
+RED-for-right-reason / 1 GREEN; neighborhood 45/0) was preserved in the stash
+`wip/gdpr-erase-execution-discovery-red-matrix` and is NOT in this docs PR.
+
+TRACKER (`CORE_RUNTIME_DISCOVERY_FINDINGS.md`): (a) #1's scope note += the
+1D-policy step (PR #231 — pure frozen `PolicyDecision`, closed set
+{delete,pseudonymize,retain}, per-store action DERIVED via
+`decide_erasure_action`, `legal_basis` = internal posture not a legal guarantee;
+ZERO deletion; `erase_tenant_data` never called from preview; #1 STAYS PARTIAL).
+(b) four P2 CANDIDATE rows #59-#62 (FUTURE-execution blockers, not active bugs —
+no executor exists): #59 GDPR-EXECUTOR-TENANT-STUB-MISMATCH-1, #60
+GDPR-EXECUTOR-ACCOUNT-FOOTPRINT-GAP-1 (must resolve before any real execution),
+#61 GDPR-EXECUTOR-NO-CASCADE-ATOMICITY-1, #62
+GDPR-EXECUTOR-TYPED-CONFIRMATION-GATE-1. Recount 58→62, both axes balance (status
+FIXED 23 + OPEN 11 + batch-named 16 + PARTIAL 1 + CANDIDATE 11 = 62; severity P0 0
++ P1 1 + P2 22 + P3 39 = 62; IDs 1-62 contiguous; #1 the only P1).
+
+ROADMAP (`ABN_MASTER_ROADMAP.md`): synced-SHA marker `c26a6c8` → `a429927`;
+"Current verified state" += 1D-policy #231 + the exec-discovery BLOCKED note (next
+GDPR runtime = coverage/gate/atomicity hardening, NOT deletion); §3 GDPR lane row
++= #231 + #59-#62. Navigation only — POINTS to the tracker, does not duplicate.
+Does NOT claim real erasure is built.
+
+#1 GDPR-ERASE-ENGINE-1 remains PARTIAL, not FIXED. No executor built; no deletion
+/ cascade / pseudonymization. PR HELD — DO NOT MERGE. No next batch started.
+
 ## 2026-06-20 — TRACKER-GDPR-ERASURE-PREVIEW-PARTIAL-APPLY-1 (DOCS-ONLY, PR HELD)
 
 Synced the three truth/navigation docs to `main` `c26a6c8` after the first
