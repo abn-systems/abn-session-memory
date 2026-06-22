@@ -11,6 +11,51 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-22 — TRACKER-GDPR-GATE-AND-ATOMICITY-BUNDLE-APPLY-1 (DOCS-ONLY, PR HELD)
+
+Synced the truth/navigation docs to live `main` `a5b91f7` — the post-#235 base
+`a3654dd` (PR #235 GDPR-EXECUTOR-TYPED-CONFIRMATION-GATE-1 merge) plus three
+BENIGN Dependabot dependency-bump merges (#236/#237/#238); the tracker + roadmap
+are byte-identical at `a3654dd` vs `a5b91f7`, so the docs base is unaffected.
+Branch `docs/tracker-gdpr-gate-and-atomicity-bundle-apply-1`, base `a5b91f7` (GO
+decision from Jacob: branch off live `a5b91f7`, not the literal `a3654dd`). The
+OneDrive canonical clone is absent on the machine → executed in the
+`Downloads/abn` clone against origin `abn-systems/ABN`.
+
+Decisions / what changed (docs-only — POINT, never duplicate):
+- **#62 GDPR-EXECUTOR-TYPED-CONFIRMATION-GATE-1 CANDIDATE→FIXED-scoped** (cite
+  PR #235): the typed gate is a PURE CONTRACT only (`erasure_confirmation.py`, a
+  pure value object) — NO route execution path, NO executor, NO deletion/cascade/
+  pseudonymization execution; does NOT fix #59/#61; does NOT make #1 FIXED.
+- **#1 note += the #235 typed-gate step; #1 STAYS PARTIAL** (P1 unchanged).
+- **Atomicity discovery recorded under #61 — #61 STAYS P2 CANDIDATE** (path
+  mapped, executor NOT built). SOURCE-VERIFIABLE ONLY: one engine + one
+  `SessionLocal` (`session.py`), Base + AuthBase both init on that one engine
+  (`init_db.py`), the live 1B write already commits/rolls-back across both
+  namespaces in one transaction (`gdpr.py:286-316`), `zero ondelete=` in source.
+  CAUTION (GO decision = "source-verifiable only"): a RED failing-before
+  atomicity matrix was reported in an earlier session on a SEPARATE clone but is
+  NOT verifiable here (the `fix/gdpr-erase-atomicity-discovery-1` branch + its
+  untracked `test_gdpr_erase_atomicity.py` are absent) → NO RED-matrix claim made.
+- **New row #63 GDPR-HARDCODED-LEGAL-REFS-1 (P3, CANDIDATE)**: "NIS2 Art. 23" /
+  "Bokföringslagen §7:2" are hardcoded string literals in `erasure_policy.py:122`
+  /`:129` — internal policy posture (docstring `:31`), NOT a legality claim, NOT
+  a defect; migrate to the versioned legal/policy engine when built.
+- **Recount (RAW rows, both axes PROVEN): 62→63** — FIXED 24→25, CANDIDATE 10
+  (−1 #62 +1 #63), OPEN 11, batch-named 16, PARTIAL 1 (status sum 63); P0 0 /
+  P1 1 / P2 22 / P3 39→40 (severity sum 63). IDs 1–63 contiguous, no dups, #1 the
+  only P1.
+- **Roadmap**: synced-SHA `3f6b79d`→`a5b91f7`; "Current verified state" + the §3
+  GDPR row += #235 / #61-atomicity-mapped / #63; CAUTIOUS next-runtime wording (a
+  likely atomic subject-executor INTENDED to address #59+#61, gated by #235 — no
+  closure guarantee).
+
+Guards held: docs-only (diff = exactly the 4 allowed docs/session files; no
+source/test/model/migration/config/CI/CLAUDE.md change). PR HELD — do not merge,
+no next batch started. Open dependabot PR #239 (pm4py) untouched. Post-commit
+deploy hook neutralized around the commit + restored. `b55b6e9` not verifiable in
+this clone (absent — non-interference).
+
 ## 2026-06-21 — TRACKER-GDPR-ACCOUNT-FOOTPRINT-COVERAGE-FIXED-APPLY-1 (DOCS-ONLY, PR HELD)
 
 Synced the truth/navigation docs to `main` `3f6b79d` after PR #233
