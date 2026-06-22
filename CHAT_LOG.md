@@ -11,6 +11,42 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-22 — TRACKER-GDPR-EXECUTOR-LANDED-APPLY-1 (DOCS-ONLY, PR HELD)
+
+Recorded the atomic subject-executor (PR #241, GDPR-ATOMIC-SUBJECT-EXECUTOR-1, merge
+`ae1f228`) in the truth/navigation docs and flipped #59 + #61 CANDIDATE→FIXED (closed IN
+CODE by the executor). Branch `docs/tracker-gdpr-executor-landed-apply-1`, base `ae1f228`.
+Docs/session only — no runtime/source/test/model/migration/config/CI/CLAUDE.md change.
+
+- **STEP 0 guard:** local `main` == origin == live == `ae1f228`, tree clean, no open PR.
+  PR #241 MERGED, true 2-parent [`1fdf02f`, `a013839`], reviewed head `a013839`; landed
+  EXACTLY `erasure_executor.py` + `test_gdpr_erase_atomicity.py` +
+  `test_gdpr_erase_execution.py` + `test_gdpr_erase_typed_confirmation_gate.py` — NO docs
+  in #241. Source-verified: the executor is subject-scoped, NEVER imports `gdpr.compliance`
+  / calls `erase_tenant_data`, runs ONE Base+AuthBase transaction (audit-first, explicit
+  delete order, users pseudonymized LAST preserving `user_id`, retain stores survive
+  rollback), and is NOT route-wired — `/erase` (`gdpr.py:346`) is preview-only and ZERO
+  production code imports the executor.
+- **Tracker (CORE_RUNTIME_DISCOVERY_FINDINGS.md):** #1's note += the 1D-executor step,
+  #1 **STAYS PARTIAL** (executor BUILT, NOT route-wired, no API deletion reachable). #59
+  GDPR-EXECUTOR-TENANT-STUB-MISMATCH-1 + #61 GDPR-EXECUTOR-NO-CASCADE-ATOMICITY-1
+  CANDIDATE→**FIXED "scoped to executor layer / fixed in code by PR #241"** (both stay P2).
+  #60/#62 stay FIXED-scoped; #63 stays P3 CANDIDATE.
+- **RAW-row recount PROVEN (both axes):** Total **63** · status FIXED 25→**27** + OPEN 11 +
+  batch-named 16 + PARTIAL 1 + CANDIDATE 10→**8** = 63 · severity P0 0 + P1 1 + P2 22 +
+  P3 40 = 63. IDs 1–63 contiguous, no dups; #1 the only P1 + PARTIAL; #59/#60/#61/#62
+  FIXED-scoped; #63 P3 CANDIDATE.
+- **Source-truth correction (VERIFICATION LAW):** the GO's "execution T1–T6 / atomicity
+  A1–A5 / A1–A6" labels are all slightly off — the actual test files carry execution
+  **T1–T7** and atomicity **A1–A7**; the docs use the source-accurate labels.
+- **Roadmap (ABN_MASTER_ROADMAP.md):** synced-SHA `a5b91f7`→`ae1f228`; new 1D-executor
+  pointer; the Erase-execution-discovery bullet, the SORT-1 #1 row, and the "what REMAINS"
+  bullet updated to: #59/#61 FIXED-in-code, executor BUILT, real erasure **NOT live** (NOT
+  route-wired, `/erase` preview-only); next GDPR runtime = route-wire (operator-gated),
+  which requires the §14 product decision (customer-facing / admin-only / disabled) FIRST.
+- **PR HELD — never auto-merge.** Both standing rules apply (stop-for-Jacob-go;
+  failing-before HARD STOP N/A docs-only). No next batch started.
+
 ## 2026-06-22 — TRACKER-GDPR-GATE-AND-ATOMICITY-BUNDLE-APPLY-1 (DOCS-ONLY, PR HELD)
 
 Synced the truth/navigation docs to live `main` `a5b91f7` — the post-#235 base
