@@ -11,6 +11,60 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-22 — TRACKER-GDPR-ROUTE-WIRE-LANDED-APPLY-1 (DOCS-ONLY, PR HELD)
+
+Recorded the operator-gated INTERNAL erase EXECUTION route (PR #243,
+GDPR-ROUTE-WIRE-OPERATOR-GATED-1, merge `ed1eb0a`) in the truth/navigation docs and
+RE-ASSESSED finding #1 — keeping it **PARTIAL** (NOT flipping to FIXED-scoped). Branch
+`docs/tracker-gdpr-route-wire-landed-apply-1`, base `ed1eb0a`. Docs/session only — no
+runtime/source/test/model/migration/config/CI/CLAUDE.md change. ONE logical change.
+
+- **STEP 0 guard:** local `main` == origin == live == `ed1eb0a`, tree clean (bar the 4
+  docs files), no open PR for the branch. PR #243 MERGED, true 2-parent [`6ab56bc`,
+  `f861a3b`], reviewed head `f861a3b`; landed EXACTLY `api/routes/gdpr.py` +
+  `auth/operator.py` + `core/config.py` + `tests/test_gdpr_route_wire_operator_gated.py`
+  — NO docs in #243.
+- **Source anchors (collected from live `ed1eb0a`, file:line — never from PR text/memory):**
+  route `POST /api/gdpr/erase/execute` `gdpr.py:409` (handler `:410`); NODE_ADMIN
+  `require_role(Role.NODE_ADMIN)` `:412`; tenant gate FIRST `_authorize_gdpr_tenant_or_404`
+  `:454`; operator allowlist gate `is_trusted_operator` `:461` (logic `auth/operator.py:80`,
+  fail-closed empty allowlist `:95-96`, default `gdpr_erase_operator_ids=""` `core/config.py:216`);
+  typed confirmation `gdpr.py:521-527`; audit-before-execution `erasure_executor.py:184-204`
+  (explicit order `:79-89`); executor call `gdpr.py:547`; NEVER `erase_tenant_data` (route
+  imports no compliance stub; `erase_tenant_data` in gdpr.py is only the preview handler
+  name `:257`; `erasure_executor.py:31`); preview `/erase` UNCHANGED + non-executing
+  `gdpr.py:256` (mode=preview `:373`, non-resolved → 501 `:393`); `art17_complete` ALWAYS
+  False `gdpr.py:561` / `erasure_executor.py:297`.
+- **Tracker (CORE_RUNTIME_DISCOVERY_FINDINGS.md):** #1's note += the 1D-route-wire step
+  (the executor IS now route-wired; corrected the prior STALE "executor NOT route-wired /
+  /erase preview-only `gdpr.py:346` / ZERO API deletion" note) + the line-57 Last-updated
+  prepend. **#1 STAYS PARTIAL (P1 unchanged) — RE-ASSESSED, not flipped FIXED-scoped**:
+  `export_tenant_data` + `enforce_retention` are STILL stubs (2 of the 3 functions #1
+  names; `/export` → 501); the route is DISABLED until a trusted operator id is set in
+  `gdpr_erase_operator_ids` (empty default = fail-closed); NOT Art.17-complete (external
+  stores unmodeled); NOT customer-facing. Flipping would overclaim. #59/#60/#61/#62/#63
+  statuses untouched; no new row.
+- **RAW-row recount PROVEN (both axes), BYTE-IDENTICAL (no status moved):** Total **63** ·
+  status FIXED 27 + OPEN 11 + batch-named 16 + PARTIAL 1 + CANDIDATE 8 = 63 · severity
+  P0 0 + P1 1 + P2 22 + P3 40 = 63. IDs 1–63 contiguous, no dups; #1 the only P1 + PARTIAL.
+- **Roadmap (ABN_MASTER_ROADMAP.md):** synced-SHA `ae1f228`→`ed1eb0a`; new 1D-route-wire
+  bullet + corrected the stale "executor NOT route-wired / `gdpr.py:346`" prose in the
+  1D-executor bullet, the erase-execution-discovery bullet, and the "what REMAINS" section.
+  Did NOT mark GDPR/Art.17 complete — the next decision is product/legal scope
+  (customer-facing? external-store coverage? email_hash/schema? backup/3rd-party). Not
+  started.
+- **Operational activation note (recorded in JACOB_SESSION ## JUST NU):** erase is BUILT
+  but DISABLED — to ACTIVATE, a trusted operator user_id (or email) must be added to
+  `gdpr_erase_operator_ids` in settings on the target environment; until then no NODE_ADMIN
+  can run `/erase/execute` (fail-closed empty allowlist).
+- **Follow-up flagged (NOT fixed here — Core Purity Gate, out of scope):** tracker rows
+  #59/#61 carry a now-stale "route NOT wired (`gdpr.py:346`)" sub-clause (a historical
+  #241-scope note) — its own future docs batch; the authoritative route-landing record
+  lives in #1 + the line-57 note + the roadmap.
+- **CLAIM RULE:** no "#1 FIXED / full Art.17 / customer-facing / self-service / broad real
+  deletion live" claim. The honest statement: the internal operator-gated erase engine PATH
+  exists + is proven, disabled-by-default on an empty allowlist. PR HELD — never auto-merged.
+
 ## 2026-06-22 — TRACKER-GDPR-EXECUTOR-LANDED-APPLY-1 (DOCS-ONLY, PR HELD)
 
 Recorded the atomic subject-executor (PR #241, GDPR-ATOMIC-SUBJECT-EXECUTOR-1, merge
