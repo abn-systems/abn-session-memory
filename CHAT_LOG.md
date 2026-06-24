@@ -11,6 +11,42 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-24 — SORT1-PLAN-LOCK-APPLY-1 (DOCS-ONLY, PR HELD)
+
+Roadmap/session sync ONLY — locked the source-verified SORT-1 hardening burn-down (from
+the read-only ABN-SORT1-DEBT-ENUMERATE-DISCOVERY-1, re-verified at source on `975d810`)
+into the masterkarta as a durable, risk-ordered plan, and recorded that the SORT-2 build
+plan is NOT yet written (awaits its own discovery). Branch `docs/sort1-plan-lock-apply-1`,
+base `975d810`. NO runtime/source/test/tracker-status/model/migration/config/CI/dependency/
+CLAUDE.md change.
+
+- **STEP 0 guard:** branch main; local == origin == live == `975d810`; tree clean; no open
+  PR; tracker = 63 rows, #1 PARTIAL; post-commit deploy hook present (neutralized around
+  the commit, restored after); `b55b6e9` NOT touched.
+- **Enumeration re-confirmed from the tracker on `975d810`** (not from chat): 11 OPEN + 8
+  CANDIDATE + 16 batch-named = **35 unresolved**, plus #1 PARTIAL. The two highest-risk P2s
+  re-verified at source: **#57 LOGIN-EMAIL-TENANT-SCOPE-1** (`auth.py:211-212` — login email
+  lookup with no tenant filter) and **#7 INQUIRE-LLM-STUB** (`inquiry_engine/engine.py:302,308`
+  — canned "Confidence: 82%" on the live `/inquire` path). Both STILL real → proceeded.
+- **§3 SORT-1 HARDENING BURN-DOWN (source-verified `975d810`)** written into the roadmap,
+  risk-ordered per the GO: (1) #57; (2) #7+#5; (3) #3+#4 (NON-CODE delete-vs-wire decision
+  FIRST, never wire as-is); (4) #47+#46; (5) #9+#48/#49/#56; (6) #6+#8; (7) #20/#21+#32/#41/
+  #17/#39/#31 (#21+#32 = one fix); (8) #35+#36 (migrations); (9) #10/#11/#12/#19/#27/#38/#18
+  (docs/dead-code, importer-sweep before delete); (10) PARKED #1/#34/#63/#58/#42/#40/#37.
+  Each item carries ID · severity · one-line problem · current file:line · desktop-V1/hosted/
+  pure-hardening/parked · CODE vs NON-CODE · failing-before-required. Stated plainly: SORT-1 =
+  harden what exists; each item its own small failing-before batch; nothing started.
+- **§4 SORT-2 — AWAITS DISCOVERY note** added: engines (Lager 4) partially built; compiler/
+  workspace (Lager 5) planned/signal, near-zero code; NO SORT-2 build plan; requires
+  AGENT-CREATION-CHAIN-DISCOVERY-1 + WORKSPACE-COMPILER-DISCOVERY-1 first (ref #17
+  genesis-prompt built-but-discarded + the capability-composition gap as discovery targets,
+  NOT ready-to-build). No build plan written.
+- **Synced-SHA bumped** `0372df7` → `975d810` (set by MAP-RECONCILE-APPLY-1 previously).
+- **Tracker is byte-unchanged** (63 rows, #1 PARTIAL; no status/severity/text/count/ID
+  change). Diff = ONLY the 3 allowed files (`backend/docs/ABN_MASTER_ROADMAP.md`,
+  `JACOB_SESSION.md`, `CHAT_LOG.md`). No overclaim — "V1 shipped" / "#1 FIXED" / "SORT-2
+  ready" appear nowhere. PR HELD — DO NOT MERGE, no next batch started.
+
 ## 2026-06-22 — TRACKER-GDPR-ROUTE-WIRE-LANDED-APPLY-1 (DOCS-ONLY, PR HELD)
 
 Recorded the operator-gated INTERNAL erase EXECUTION route (PR #243,
