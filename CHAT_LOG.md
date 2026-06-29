@@ -11,6 +11,258 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-29 — SORT1-48-FLIP-1 (DOCS-ONLY, PR HELD)
+
+Tracker + roadmap + session sync ONLY (no runtime/source/test/CLAUDE change).
+Flipped tracker row **#48 RESILIENCE-PROD-WIRING-1** P3 CANDIDATE→**FIXED
+(scoped)**, citing the runtime fix **PR #272 / merge `21030721` / reviewed head
+`a6ad40e`** (the 2-parent merge of pre-#272 main `b7948ae` + head `a6ad40e`).
+Re-confirmed at source on `21030721`: `@LLM_RESILIENCE` (the call-site
+`_LLM_PROVIDER_RESILIENCE` decorator) is wired on `LLMGateway._call_provider`
+**ONLY** (`gateway.py:538`, the provider hop); the public `call` is UNDECORATED
+(`:243` — the No-Data redact/tokenise/abstract pipeline runs in `call` before
+`_call_provider`, boundary intact); retry transient-only (`:198-215`, never
+auth/4xx/config/No-Data); #192 observation PRESERVED (`:463`/`:507`);
+FallbackCascade PRESERVED; breaker keyed to `_call_provider` qualname, surfaced
+by the #49 aggregation (source-tagged `core:…_call_provider`, process-local).
+**CONNECTOR → LAYER+DEFER, DB → DEFER per the ADR (CLAUDE.md ADR #48) — NOT
+wired.** `core/resilience.py` / `health_monitor.py` / `observer/circuit_breaker.py`
+/ `observer/cycle.py` BYTE-UNCHANGED vs `b7948ae`; the #272 diff = EXACTLY
+`gateway.py` (+83/−2) + `tests/test_resilience_llm_wiring.py` (new) — no
+migration, no other production code.
+
+Logged a NEW follow-up row **#64 RESILIENCE-ASYNC-HALFOPEN-RECOVERY** (P3
+CANDIDATE, recorded-only): the async `resilient()` wrapper (`resilience.py:182-208`)
+calls `_record_failure` on terminal failure but never `_record_success` (the
+sync wrapper does, `:228`/`:231`), so on the async path a successful probe after
+`recovery_timeout` stays HALF_OPEN and re-opens on the next failure instead of
+transitioning HALF_OPEN→CLOSED. Discovered during #48; source-proven; pinned by
+the recovery test (NOT faked). **DOES NOT INVALIDATE #48** — the breaker still
+trips and fail-fast works, #49 surfaces the process-local breaker; ONLY async
+auto-recovery is incomplete (a process restart / failure-then-reset clears it).
+PARKED P3, touches the currently-frozen `core/resilience.py`, awaits architect
+reprioritization — NOT the next SORT-1 pointer.
+
+Counts (raw-row recount handled row 33's embedded pipe; status anchored from
+the right): Total 63→**64**; STATUS CANDIDATE 3→3 (#48 −1, #64 +1) / FIXED
+37→**38**; SEVERITY P3 40→**41**; both axes balance at 64 (status 38+10+12+1+3;
+severity 0+2+21+41); IDs 1–64 contiguous. **#9 STAYS FIXED (P3); #49/#56 STAY
+FIXED (P3); #1 GDPR-ERASE-ENGINE-1 STAYS PARTIAL (P1); #47 STAYS FIXED (P1).**
+Roadmap §3 item 5 PARTIAL→**COMPLETE (#9 + #49 + #56 + #48 done, scoped)** + the
+cursor synced-SHA bumped `a231ba4` → `21030721` (the historical burn-down source
+`975d810` PRESERVED). **SORT-1 CONTINUES — next = item 6 (#6 + #8), NOT STARTED.**
+
+CLAIM SCOPED: LLM provider hop wired (only); CONNECTOR/DB deferred; NOT
+"production resilience fully wired" / NOT "all breakers live" / NOT "SORT-1
+finished". Runtime proof: local full backend suite **2606/0** on merge SHA
+`21030721`. CI noted SEPARATELY (not a substitute): GitHub required checks
+passed on PR #272 (Frontend / Landing / Shield / abn-security Go 45a /
+migrations-dual + Backend + gitleaks green; 'Build & push images' skipped,
+non-required). Diff = ONLY the 4 docs/session files. PR HELD — DO NOT MERGE.
+
+## 2026-06-27 — SORT1-49-56-FLIP-1 (DOCS-ONLY, PR HELD)
+
+Tracker + roadmap + session sync ONLY. Flipped tracker rows **#49 OBSERVER-BREAKER-HEALTH-INTEGRATION-1** +
+**#56 HEALTH-CIRCUIT-SELFHEAL-UNREACHABLE-1** P3 CANDIDATE → **FIXED (scoped)** — severity STAYS P3
+(observability honesty, no escalation) — citing the runtime fix **PR #269 / merge `a231ba4` / reviewed head
+`480b616`**. Re-confirmed at source on `main` (no chat trust): **#49** — `circuit_breakers_status`
+(`health_monitor.py:241-291`) AGGREGATES the observer `circuit_registry` + core `_BREAKERS` (does NOT replace
+— future #48 `_BREAKERS` breakers stay visible; source-tagged core/observer; OPEN→warn; #44 empty-both honesty
+preserved; `observer/*` not modified; the #3 route stays unmounted/unaffected). **#56** — the unreachable
+`circuit_breakers_status` self_heal branch is REMOVED (`health_monitor.py:390-401` documenting comment; falls
+through to the generic `return False`; generic self_heal intact; ok/warn banding + breaker trip/reset behavior
+UNCHANGED — #56 was reachability/honesty, NOT behavior). Both observability honesty ONLY — no
+connector/banding/behavior change.
+
+Counts rebalanced (STATUS axis only): CANDIDATE 5→**3** · FIXED 35→**37**; SEVERITY unchanged
+(P0 0 / P1 2 / P2 21 / P3 40). Both axes stay **63** (IDs 1–63 contiguous; raw-row recount handled row 33's
+embedded pipe — status anchored from the right). **#48 RESILIENCE-PROD-WIRING-1 UNCHANGED (still P3 CANDIDATE
+— item 5 batch 3 of 3); #9 STAYS FIXED (P3); #1 GDPR-ERASE-ENGINE-1 STAYS PARTIAL (P1); #47 STAYS FIXED (P1) —
+still TWO P1 rows.** SORT-1 item 5 is now PARTIAL (#9 + #49 + #56 done; #48 remaining). Roadmap synced-SHA
+bumped `0e4a2bd` → `a231ba4` (historical burn-down source-SHA `975d810` PRESERVED).
+
+**SHA DISCIPLINE:** the #49+#56 runtime fix = PR #269 / `a231ba4` / head `480b616`; this docs-sync gets its OWN
+later merge SHA (unknown until merged) — NOT the runtime fix SHA. **CI HONESTY:** PR #269 post-merge proof was
+LOCAL: targeted 10/10 + regression 86/86 on merge SHA `a231ba4`; full backend suite 2599 passed / 0 failed via
+FIVE DISJOINT FOREGROUND CHUNKS; merged main was byte-identical to reviewed head `480b616` where the full suite
+also passed in one process (background pytest hung that session). No "CI green" / "GitHub checks passed" claim.
+Diff = ONLY 4 docs/session files (tracker + roadmap + JACOB_SESSION + CHAT_LOG); no runtime/source/test/CLAUDE.md
+change. **Next SORT-1 target: item 5 batch 3 of 3 — #48 RESILIENCE-PROD-WIRING, Decision Record FIRST, NOT
+STARTED (this docs-sync does NOT authorize Phase B/C).** PR HELD — do not merge.
+
+## 2026-06-27 — SORT1-9-FLIP-1 (DOCS-ONLY, PR HELD)
+
+Tracker + roadmap + session sync ONLY. Flipped tracker row **#9 STATUS-OVERCLAIM-1**
+P3 OPEN → **FIXED (scoped)** — severity STAYS P3 (status/dashboard honesty, no escalation) — citing the
+runtime fix **PR #266 / merge `cae2c64` / reviewed head `1929d42`** (NOT `0e4a2bd`, which is PR #267, the
+#264-regression cleanup, test-only). Re-confirmed at source on `main` (no chat trust): `/api/status`
+(`main.py:447` handler / `:464-514` honest block) no longer hardcodes the module map — `database` reports the
+real `ABNHealthMonitor` SELECT-1 probe (ok/unavailable/unknown), dead-in-prod (`intelligence`) / test-only
+(`behavioral`) / unprobed (`agent_engine`/`report_gen`) report `unobserved` (never `ok`),
+`observer`/`observer_scheduler` unchanged; shape + module keys + `require_auth` preserved. **Stale cite
+`main.py:398-405` → `:447` / `:464-514` (REFRESHED).** **Status/dashboard honesty ONLY — no live behavior
+change** (`require_auth`-gated, NOT a k8s/docker/LB readiness probe; `health_monitor.py` read-only). Count
+rebalance (STATUS axis only; #9 was P3, stays P3): OPEN 11→**10** · FIXED 34→**35**; SEVERITY UNCHANGED
+(P1 2 / P2 21 / P3 40). Both axes **63** (IDs 1–63 contiguous, no dup, no row ID changed). **#48/#49/#56
+(CANDIDATE/P3) UNCHANGED; #1 STAYS PARTIAL (P1); #47 STAYS FIXED (P1) — two P1 rows.** Roadmap: §3 item 5 now
+**PARTIAL** (#9 done; #49/#56 + #48 remaining); next-pointer = item 5 batch 2 of 3 = #49 + #56
+(`health_monitor.py` observability honesty sub-group), NOT STARTED — build not authorized; then batch 3 of 3 =
+#48 RESILIENCE-PROD-WIRING (#48 last, Decision Record first). Roadmap cursor bumped `ead7c19` → `0e4a2bd`
+(historical burn-down source-SHA `975d810` PRESERVED; cursor = `0e4a2bd`, #9 fix = `cae2c64` — distinct).
+**CI HONESTY:** #266 had FOCUSED #9 proof (the 5/5 status-honesty test); the full suite was BLOCKED by the
+pre-existing #264 regression at the time (2586 passed / 7 failed) — no "#266 full suite green" / "CI green"
+claim; **#267 later cleared the #264 regression → main is now clean 2593 / 0.** Diff = ONLY 4 docs/session
+files (tracker + roadmap + JACOB_SESSION + CHAT_LOG); CLAUDE.md + all
+source/test/main.py/model/migration/config/CI/dependency UNTOUCHED; no runtime/source change (the #9 fix
+landed in PR #266). post-commit deploy hook neutralized-around-commit + restored; `b55b6e9` not touched.
+**PR HELD — DO NOT MERGE.**
+
+## 2026-06-26 — SORT1-46-FLIP-AND-ITEM4-COMPLETE-1 (DOCS-ONLY, PR HELD)
+
+Tracker + roadmap + session sync ONLY. Flipped tracker row **#46 MIGRATION-CONCURRENCY-LOCK-1**
+P2 CANDIDATE → **FIXED (scoped)** — severity STAYS P2 (availability-class, no escalation) — citing the
+runtime fix **PR #264 / merge `ead7c19` / reviewed head `47b0add`** (`1564689` = pre-#264 main, NOT this
+fix). Re-confirmed at source on `main` (no chat trust): `core/migration_lock.py` `with_migration_advisory_lock`
+wraps the `main.py:170` boot `command.upgrade(alembic_cfg, "head")` (`:176`) in a Postgres-only SESSION-level
+advisory lock (`pg_advisory_lock` on a DEDICATED connection, bounded `pg_try_advisory_lock` poll + fail-fast,
+released in `finally`) → serializes simultaneous multi-replica boot migrations → prevents the
+hosted-multi-replica boot race / double-apply / corrupt `alembic_version` / crash-all-replicas. **SQLite/desktop
+is a NO-OP** (single-node V1 unaffected). The **#13 secret-safe fail-fast** (`BootMigrationError ... from None`)
+is **byte-preserved** (`:199-202`). Count rebalance (STATUS axis only; #46 was P2, stays P2): CANDIDATE 6→**5**
+/ FIXED 33→**34**; SEVERITY unchanged (P1 2 / P2 21 / P3 40). Total stays **63** (34+11+12+1+5=63; 0+2+21+40=63).
+**SORT-1 item 4 now COMPLETE** — #47 (installer migration DSN leak sanitized in the install-verify response +
+escalated to P1, PR #262) + #46 (Postgres-only boot-migration session advisory lock, PR #264) **both done**.
+Roadmap §3 next-pointer → **item 5 (#9 `/api/status` overclaim + #48/#49/#56 resilience-wiring cluster) — NOT
+STARTED, discovery first.** Roadmap synced-SHA bumped `ea541b1` → `ead7c19`; historical full burn-down
+source-SHA `975d810` **PRESERVED**. **#47 UNCHANGED (P1 FIXED); #1 GDPR-ERASE-ENGINE-1 STAYS PARTIAL (P1) —
+still TWO P1 rows.** CI honesty: #264 had **LOCAL proof ONLY** — local pre-merge full backend 2588/0 (sqlite) +
+post-merge targeted 44/44; GitHub required checks did NOT run/report on the #264 merge (Vercel-only FAILURE =
+landing-preview noise, 0 landing files touched; migrations-dual unaffected by design) → **no "CI green" claim
+for #264**. This docs-batch: diff = ONLY 4 files (tracker + roadmap + JACOB_SESSION + CHAT_LOG); CLAUDE.md +
+all source/test/model/migration/config/CI/dependency/`main.py`/`migration_lock.py` UNTOUCHED; NO runtime fix
+(it landed in #264). "FIXED scoped" = the boot-migration race is guarded (Postgres session advisory lock,
+hosted-multi-replica scope); scoped to the boot-migration race on the hosted-multi-replica tier ONLY — not a
+broader migration- or boot-path safety guarantee. `b55b6e9` NOT touched. **PR HELD — DO NOT MERGE.**
+
+## 2026-06-26 — SORT1-47-FLIP-AND-ESCALATE-1 (DOCS-ONLY, PR HELD)
+
+Tracker + roadmap + session sync ONLY. Flipped tracker row **#47 INSTALLER-MIGRATION-STR-EXC-LEAK-1**
+P2 CANDIDATE → **FIXED (scoped)** AND recorded the architect-approved **severity escalation P2→P1**,
+citing the runtime fix **PR #262 / merge `ea541b1` / reviewed head `fb984af`** (`35a58a3` = pre-#262
+main, NOT this fix). Re-confirmed at source on `main` (no chat trust): `installer.py:99-117`
+`_safe_migration_error_message` builds the install-verify message from ONLY `type(exc).__name__`
+(never `str(exc)`/the exception object); the `_init_database` migration-failure path calls it at `:313`;
+`deployment.py:273` transmits `s.message` — so the shared infrastructure DB DSN/credential no longer
+reaches the NODE_ADMIN `POST /api/deployment/install/verify` response body. **HONEST FAILURE PRESERVED**
+— the migration step still reports FAILURE (`ok=False`); only the message was sanitized (not fake-safe).
+**Escalation rationale:** NODE_ADMIN-visible TRANSMITTED HTTP response-body sink + high-value
+shared-tier secret → NOT anonymous/public/unauthenticated; NOT "installer fully secured" (other
+pre-existing `{exc}` sites in unrelated installer steps — disk/node-id/connectors — remain, out of #47
+scope). Count rebalance (BOTH axes, from the source legend): STATUS CANDIDATE 7→**6** / FIXED 32→**33**;
+SEVERITY P2 22→**21** / P1 1→**2** (now TWO P1s: #1 GDPR PARTIAL + #47 FIXED). Total stays **63**
+(33+11+12+1+6=63; 0+2+21+40=63). **#46 MIGRATION-CONCURRENCY-LOCK-1 UNCHANGED (P2 CANDIDATE — item 4
+batch 2 of 2, NOT STARTED); #1 STAYS PARTIAL.** Roadmap §3 #47 marked DONE + **item 4 now PARTIAL**
+(#47 done, #46 remaining); next-pointer (discovery-only) → **#46, discovery first, NOT STARTED**; roadmap
+synced-SHA bumped `f776d6a`→`ea541b1` (historical burn-down source-SHA `975d810` PRESERVED). **CI honesty:**
+#262 runtime proof = local pre-merge full backend 2577/0 + post-merge targeted 22/22; GitHub Actions did
+NOT run/report on the merge — **no CI-green claim**. Diff = the 4 docs/session files ONLY; no
+runtime/source/test/model/migration/config/CI/dependency/CLAUDE change; the runtime fix landed in #262.
+PR HELD — not merged, no next batch.
+
+## 2026-06-26 — SORT1-3-FLIP-AND-ITEM3-COMPLETE-1 (DOCS-ONLY, PR HELD)
+
+Tracker + roadmap + session sync ONLY — the **fourth** SORT-1 hardening item recorded done, and
+**SORT-1 item 3 is now COMPLETE** (#4 done — PR #258 — + #3 done — PR #260). Flipped tracker row
+**#3 OBSERVER-WIRING-FOLLOWUP** (P2, batch-named → **FIXED scoped**) after re-confirming the runtime
+DELETE at source on `main` (no chat trust): `git show f776d6a:backend/api/routes/observer.py` →
+not-found; `main.py` has no `observer_router`/import/mount; `backend/api/routes/__init__.py` no longer
+imports the stub token; the real hardened `backend/observer/api_routes.py` (blob `d83951f…`, 6 routes,
+auth + tenant-scoped) is kept **BYTE-UNCHANGED + UNMOUNTED**. **NOT a feature change, NOT 'Observer API
+wired'.** The real hardened observer router remains unmounted; a manual Observer-trigger API /
+harden-then-wire stays a future Jacob-gated product decision. Runtime fix = **PR #260 / merge `f776d6a`
+/ reviewed head `4242530`** (`75218f9` = pre-#260 main, NOT this fix). **CI honesty:** runtime proof =
+pre-merge local full backend 2573/0 + post-merge local targeted 55/0; **GitHub Actions did NOT
+run/report on the #260 merge — no CI-green claim** (the merge-commit combined-status "success" was the
+vacuous zero-context default, not a CI pass). Count rebalance from the source legend: batch-named 13→12
+/ FIXED 31→32; both axes stay 63 (FIXED 32 + OPEN 11 + batch-named 12 + PARTIAL 1 + CANDIDATE 7; P0 0 /
+P1 1 / P2 22 / P3 40); IDs 1–63 contiguous, no row ID changed. **#4 UNCHANGED (already FIXED); #1 STAYS
+PARTIAL; #47/#46 UNCHANGED (CANDIDATE).** Roadmap synced-SHA bumped `48eb921` → `f776d6a` (historical
+burn-down source `975d810` PRESERVED); §3 item 3 marked COMPLETE; next SORT-1 target = item 4 (#47
+INSTALLER-MIGRATION-STR-EXC-LEAK-1 + #46 MIGRATION-CONCURRENCY-LOCK-1, P2) — **NOT STARTED, discovery
+first**. Docs/tracker/roadmap/session ONLY — no runtime/source/test/model/migration/config/CI/
+dependency/observer/main.py/CLAUDE change. Diff = 4 files. post-commit deploy hook neutralized around
+the commit + restored; b55b6e9 not touched. PR HELD — DO NOT MERGE.
+
+## 2026-06-25 — SORT1-4-FLIP-APPLY-1 (DOCS-ONLY, PR HELD)
+
+Tracker + roadmap + session sync ONLY — the **third** SORT-1 hardening item recorded done.
+Flipped tracker row **#4 PROCESS-GRAPH-ROUTES-DEAD** (P3, batch-named → **FIXED scoped**) after
+re-confirming the runtime DELETE at source on `main` (no chat trust): `git show
+48eb921:backend/process_graph/api_routes.py` → not-found, the dead unauthenticated cross-tenant
+process-graph REST scaffold is gone; the engine **`ProcessGraphRunner` is UNCHANGED** and still
+wired via orchestrator/connector/trigger (`core/orchestrator.py:131`, `api/routes/connectors.py:718`,
+`process_graph/trigger.py:90`); no `/api/graph` route mounted. This is a **LATENT-risk scaffold
+removal — it was NEVER mounted — NOT a live-vulnerability fix / NOT a live-exposure removal.**
+Runtime fix = **PR #258 / merge `48eb921` / reviewed head `7a8dc4e`** (the 2-parent merge of
+pre-#258 main `8fc17b6` + reviewed head `7a8dc4e`). **CI honesty:** runtime proof = pre-merge local
+full backend 2568/0 + post-merge local targeted 63/0; GitHub Actions did NOT run/report on the
+merge → no CI-green claim. Tracker counts rebalanced **batch-named 14→13 / FIXED 30→31**, OPEN 11 /
+PARTIAL 1 / CANDIDATE 7 / total **63** unchanged, severity unchanged (#4 stays P3, now FIXED); **#1
+GDPR-ERASE-ENGINE-1 stays PARTIAL; #3 OBSERVER-WIRING-FOLLOWUP UNCHANGED (still batch-named).**
+Roadmap §3 burn-down item 3 marked **PARTIAL (#4 done, #3 remaining)**; next-pointer = **#3
+OBSERVER-WIRING-FOLLOWUP** with the **LOCKED Jacob architecture decision**: #3a DELETE the mounted
+stub (`backend/api/routes/observer.py` + its `main.py` import/mount); #3b KEEP the real hardened
+`backend/observer/api_routes.py` UNMOUNTED (intended + hardened + tested — NOT deleted),
+harden-then-wire ONLY on a future explicit Jacob product GO — **NOT STARTED.** Roadmap synced-SHA
+bumped `c75c29e` → `48eb921` (historical burn-down source `975d810` PRESERVED). Diff = ONLY 4 files
+(tracker + roadmap + JACOB_SESSION + CHAT_LOG); no runtime/source/test/model/migration/config/CI/
+dependency/observer/main.py/CLAUDE.md change; no #3 row touched, no #3 implementation started.
+SORT-1 is NOT mostly done (3 of ~10 burn-down items). PR HELD — do not merge.
+
+## 2026-06-25 — SORT1-7-5-FLIP-APPLY-1 (DOCS-ONLY, PR HELD)
+
+Tracker + roadmap + session sync ONLY — the **second** SORT-1 hardening item recorded done.
+Flipped tracker rows **#7 INQUIRE-LLM-STUB** and **#5 INQUIRY-BUDGET-CLIENT-TRUSTED** (both P2,
+batch-named → **FIXED scoped**), each row carrying its own scoped truth, after re-confirming the
+runtime fix at source on `main` (no chat trust): **#7** — `engine._get_answer` returns `None` on
+the live `llm_client=None` path and the route renders `status:"unavailable"`/`answer:null`/
+`confidence:null` (the canned "Confidence: 82%" fabrication is gone); **#5** —
+`consume_inquiry_budget` does an atomic conditional UPDATE on a server-side metadata-only
+`InquiryBudget` counter with `UNIQUE(tenant_id,finding_id)` (migration `d4f7a1c9e2b5`,
+`no_payload_proof` MUST_BE_PAYLOAD_FREE), no longer trusting client `session_history`. Runtime fix
+= **PR #256 / merge `c75c29e` / fix commit `aae9f19`** (the 2-parent merge of pre-#256 main
+`d1de1c5` + reviewed head `aae9f19`). **CI honesty:** #256 post-merge had LOCAL proof only —
+targeted 49/0 + full backend 2564/0 on merged main; GitHub Actions did NOT run on the merge → no
+CI-green claim. Tracker counts rebalanced **batch-named 16→14 / FIXED 28→30**, OPEN 11 / PARTIAL 1
+/ CANDIDATE 7 / total **63** unchanged, severity P1 1 / P2 22 / P3 40 unchanged; **#1
+GDPR-ERASE-ENGINE-1 stays PARTIAL; #3 and #4 unchanged**. Roadmap §3 burn-down item 2 marked DONE,
+the "next" pointer set to **#3/#4 (delete-vs-harden-then-wire DECISION first — never wire as-is;
+#4 = unauthenticated cross-tenant trigger), NOT STARTED**, roadmap synced-SHA bumped
+`86c4928` → `c75c29e` (historical burn-down source `975d810` preserved). **NOT fixed (scoped):**
+the real-LLM / No-Data gateway answer path = a separate future batch. Branch
+`docs/sort1-7-5-flip-apply-1`, base `c75c29e`. Diff = exactly 4 docs/session files; NO
+runtime/source/test/model/migration/config/CI/dependency/CLAUDE.md change; b55b6e9 not touched.
+PR HELD — DO NOT MERGE.
+
+## 2026-06-25 — SORT1-57-FLIP-APPLY-1 (DOCS-ONLY, PR HELD)
+
+Tracker + roadmap + session sync ONLY — the first SORT-1 hardening item is recorded done.
+Flipped tracker row **#57 LOGIN-EMAIL-TENANT-SCOPE-1 P2 CANDIDATE → FIXED (scoped)** after
+re-confirming the fix at source on `main` (no chat trust): the login route's ambiguity
+guard (`.all()` lookup + `len(matches) > 1` → generic 401 BEFORE password verify / lockout /
+audit / session / token, constant-time dummy hash) lives in `backend/api/routes/auth.py`
+with test `backend/tests/test_login_email_tenant_scope.py` — **merge `86c4928` (PR #254) /
+fix commit `cf351f6`**, both resolved via `git log`. Scoped: the ambiguity hazard is closed;
+**NOT fixed** = hosted tenant-scoped login resolution via org selector / subdomain / tenant
+context (a separate future design batch). Tracker counts rebalanced **FIXED 27→28 /
+CANDIDATE 8→7**, OPEN 11 / batch-named 16 / PARTIAL 1 / total **63** unchanged, severity
+P1 1 / P2 22 / P3 40 unchanged; **#1 GDPR-ERASE-ENGINE-1 stays PARTIAL**. Roadmap §3
+burn-down item #57 marked DONE, the "next" pointer set to **#7 + #5 (INQUIRE-LLM-STUB +
+client-trusted budget), NOT STARTED**, roadmap synced-SHA bumped `975d810` → `86c4928`.
+Branch `docs/sort1-57-flip-apply-1`, base `86c4928`. Diff = exactly 4 docs/session files;
+NO runtime/source/test/model/migration/config/CI/dependency/CLAUDE.md change; b55b6e9 not
+touched. No next batch started. PR HELD — DO NOT MERGE.
+
 ## 2026-06-24 — SORT1-PLAN-LOCK-APPLY-1 (DOCS-ONLY, PR HELD)
 
 Roadmap/session sync ONLY — locked the source-verified SORT-1 hardening burn-down (from
