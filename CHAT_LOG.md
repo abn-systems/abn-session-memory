@@ -11,6 +11,48 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-06-30 — SORT1-ITEM6-FLIP-1 (DOCS-ONLY, PR HELD)
+
+Tracker + roadmap + session sync ONLY (no runtime/source/test/CLAUDE change).
+Flipped tracker rows **#6 ONBOARDING-PREFLIGHT-STUB** + **#8 REPORT-DELIVERY-STUB**
+batch-named→**FIXED (SCOPED TRUTH FIXES ONLY — they no longer LIE; real
+integrations DEFERRED)**, severity STAYS P3 for both.
+
+- **#6** cites the runtime fix **PR #278 / merge `2354330` / head `c815351`**
+  (runtime proof: full suite 2613/0 on the merge). Re-confirmed at source on
+  `29ce8c4`: `run_preflight` (`onboarding/wizard.py:331-450`) is HONEST — a
+  selected-but-unverified connector → `connector_status "unverified"` AND
+  `passed==False` (no false-ready / DNA-auto-start); docstring corrected
+  (local-config + shape only, connectivity NOT verified here); NO Nango/DB call.
+  DID NOT implement real connector verification — real Nango-verify WIRE deferred
+  to live connectors (org-nr-gated).
+- **#8** cites the runtime fix **PR #279 / merge `29ce8c4` / head `264e287`**
+  (runtime proof: full suite 2620/0 on the merge). Re-confirmed at source on
+  `29ce8c4`: `_phase_deliver` (`runner.py:1299-1336`) AWAITS `_deliver_reports`
+  (deterministic, no fire-and-forget); honest `delivery_status` in
+  `PhaseResult.data` (`generated_in_app_only` / `external_delivery_not_wired`);
+  fake "Delivering" log GONE; NO DeliveryRouter/deliverer call; generator.py
+  byte-unchanged. #8 evidence cite-drift refreshed `runner.py:1773-1783` →
+  `:1844-1891` (honest-status logic `:1869-1891`). DID NOT implement external
+  report delivery — real DeliveryRouter WIRE deferred to the channel decision +
+  live OAuth (org-nr-gated).
+
+Counts (recalculated from raw rows; row-33 embedded pipe handled): FIXED 38→40,
+batch-named 12→10, total 64; severity P1 2 / P2 21 / P3 41 unchanged.
+**#9/#49/#56/#48 STAY FIXED (P3); #64 STAYS CANDIDATE (P3, parked); #1 STAYS
+PARTIAL (P1); #47 STAYS FIXED (P1).** Roadmap §3 item 6 marked COMPLETE (#6 + #8);
+**SORT-1 CONTINUES — next = item 7 (#20/#21 + #32/#41/#17/#39/#31), NOT STARTED.**
+Roadmap cursor bumped `21030721` → `29ce8c4`; historical burn-down source-SHA
+`975d810` PRESERVED.
+
+SHA discipline: #6 runtime = `2354330` (PR #278), #8 runtime = `29ce8c4` (PR #279),
+roadmap cursor + main = `29ce8c4`; the docs-sync's OWN merge SHA (after `29ce8c4`,
+unknown until merged) is NOT a runtime fix SHA. Diff = ONLY the 4 docs/session
+files (tracker + roadmap + JACOB_SESSION + CHAT_LOG); no runtime/source/test/
+CLAUDE/CI/migration change. CLAIM SCOPED — preflight honest + deliver phase honest
+only; NOT "onboarding verified" / NOT "external delivery works" / NOT "Nango live"
+/ NOT "OAuth live"; SORT-1 is NOT complete — only item 6 is. PR HELD — DO NOT MERGE.
+
 ## 2026-06-29 — SORT1-48-FLIP-1 (DOCS-ONLY, PR HELD)
 
 Tracker + roadmap + session sync ONLY (no runtime/source/test/CLAUDE change).
