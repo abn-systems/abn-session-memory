@@ -11,6 +11,55 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-07-02 — ITEM8-DOCS-FLIP (DOCS-ONLY, PR HELD)
+
+Tracker + roadmap + session sync — no runtime/source/test change, ZERO .py,
+CLAUDE.md untouched (synonym sweep found zero stale hits). Flipped TWO tracker
+rows across the two item-8 batches to **FIXED**, each citing its merged PR +
+merge SHA (source-verified via gh + git, both two-parent merges, re-verified at
+source on main `965d761`):
+
+- **#36** ← PR #288 / merge `efa899c` — actor_id attribution on
+  `abn_activity_log`: 4 HTTP write funnels thread the authenticated user_id,
+  worker writes carry `SYSTEM_ACTOR_ID='__system__'`, legacy rows NULL (no
+  backfill); **FAIL-SILENT AUDIT POSTURE UNCHANGED** (documented design — this
+  did NOT make audit fail-closed); readers additively extended. Migration
+  `e5a2c8f1b9d4` ×2 both directions proven; full suite 2696/0 on `efa899c`.
+- **#35** ← PR #289 / merge `965d761` — tenant_id+agent_id+run_id added to
+  `abn_attestations`, threaded from honest in-scope values (OPERA
+  triple+consistency gate BEFORE the persist-try; observer agent_id=NULL, never
+  derived); legacy rows NULL (the AgentRun join remains their proof); verified
+  made HONEST going forward (hardcoded True removed, both writers False — NO
+  verification act exists; column write-only); cycle_id overload remains
+  documented legacy; compound check (2c-1) preserved. Migration `f6d2a8c1b4e7`
+  ×2 proven; full suite 2707/0 on `965d761` (new standing baseline).
+
+Plus the discovery-mandated correction: **#35's stale finding-sentence** ("the
+`verified` flag defaults False and nothing flips it") corrected to the proven
+truth — pre-#289 OPERA hardcoded True at insert while the observer defaulted
+False; nothing ever read/updated the column. Evidence cites refreshed to lines
+existing at `965d761` (#36: models.py:544-562 · #35: models.py:601-633 +
+attestation_report.py:195-226 + observer/cycle.py:406-443 + agents.py:1830-1848).
+
+**🔴 OPS (in the ledger, both rows + header + roadmap):** runtime live in prod
+ONLY after Hetzner `alembic upgrade head` — applies BOTH pending migrations in
+chain order (`e5a2c8f1b9d4` from #288, then `f6d2a8c1b4e7` from #289) —
+**PENDING** (Jacob has not confirmed it run).
+
+Tracker machine-recounted FROM RAW ROWS before AND after (row-33 embedded pipe
+handled): total 66 unchanged, FIXED 47→49, OPEN 7, batch-named 6→4, PARTIAL 1
+(#1 GDPR stays PARTIAL), CANDIDATE 5; severity P1 2 / P2 21 / P3 43 unchanged.
+Mechanical SHA check: `efa899c` in exactly #36's row, `965d761` in exactly
+#35's row. Roadmap synced-SHA bumped `28284c2` → `965d761` (historical
+burn-down source `975d810` PRESERVED); §3 item 8 COMPLETE (upon merge).
+**SORT-1 item 8 COMPLETE upon this PR's merge; NEXT = item 9
+(#10/#11/#12/#19/#27/#38/#18) — the LAST SORT-1 item, NOT STARTED.**
+ANTI-OVERCLAIM held: NOT "SORT-1 complete", NOT "attestations fully isolated",
+NOT "audit fail-closed", NOT "prod live", NOT "item 9 started". Diff = ONLY 4
+files (tracker + roadmap + JACOB_SESSION + CHAT_LOG). Deploy hook neutralized
+around commit, restored; b55b6e9/dependabot untouched. PR HELD — never
+auto-merged.
+
 ## 2026-07-02 — ITEM7-DOCS-FLIP (DOCS-ONLY, PR HELD)
 
 Tracker + roadmap + CLAUDE.md (stale lines only) + session sync — no runtime/source/test
