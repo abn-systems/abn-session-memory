@@ -11,6 +11,57 @@ Has zero impact on any ABN code, tests, or deployment.
 # ABN — Chat History (Jacob + Claude)
 This file is updated when Jacob asks Claude to update it.
 
+## 2026-07-02 — ITEM7-DOCS-FLIP (DOCS-ONLY, PR HELD)
+
+Tracker + roadmap + CLAUDE.md (stale lines only) + session sync — no runtime/source/test
+change, ZERO .py. Flipped SEVEN tracker rows across the SIX item-7 batches to **FIXED**,
+each citing its merged PR + merge SHA (source-verified via gh + git, all six two-parent
+merges, on main `28284c2`):
+
+- **#20** ← PR #281 / merge `d773b56` — ROI provenance from the SIGNED blueprint
+  (`pattern_id` + nested `.goal.roi_formula`, None-safe, persisted-row proven).
+- **#21 + #32** ← PR #282 / merge `8359574` — ONE runtime pair (#32 root-caused #21,
+  same writer): the transparency writer records the run's real OBSERVED
+  abstract-characterization labels + tokens sent/received SPLIT (received ≠ total).
+- **#41** ← PR #283 / merge `038f294` — aware input UTC-converted BEFORE tzinfo drop;
+  naive-UTC storage contract preserved.
+- **#39** ← PR #284 / merge `6e4fe76` — numeric narrative claims validated against
+  verified structured references, fail-closed per section; NON-NUMERIC SEMANTIC TRUTH
+  OUT OF SCOPE; DGE stack NOT live; production does not import DGE.
+- **#17** ← PR #285 / merge `f80b972` — DOCS-CORRECTION: the runtime was already
+  deterministic and live; CLAUDE.md current-vs-deferred claim corrected; NO runtime
+  changed (never a code bug).
+- **#31** ← PR #286 / merge `28284c2` — three double-dead legacy HTTP callers REMOVED
+  (not consolidated, not migrated); deterministic behavior preserved (golden
+  byte-proof); flag left; NO /v1/call migration; proxy/live gateway untouched.
+
+Evidence cites refreshed to lines existing at `28284c2` (#17's cite verified
+unchanged). TWO new CANDIDATEs logged (recorded ONLY, not fixed): **#65
+OBSERVER-TRIGGER-RATELIMIT-TEST-ISOLATION-1** (P3 — full-suite-ordering test flake,
+the process-global `_TRIGGER_LAST_CALL` shared across two test files; seen once,
+2635/1 post-#282; zero customer-runtime impact) + **#66
+LANDING-AGP-PHASEB-CONFLATION-1** (P3 WITH DEFENSE — AGP "Genesis prompt" title over
+an LLM-Phase-B body at `landing/app/autonomous-engine/page.tsx:204-212`; the No-Data
+SAFETY claim in the body is TRUE — the mislabel is WHICH component, not the guarantee;
+human-gated Charter §9; landing/ untouched by this batch).
+
+Counts MACHINE-RECOUNTED from raw rows (row-33 embedded pipe handled), before/after
+reconciled: total 64→66, FIXED 40→47 (+7 exactly), OPEN 10→7 (−#17/#20/#21),
+batch-named 10→6 (−#31/#32/#39/#41), PARTIAL 1 unchanged (#1 GDPR stays PARTIAL),
+CANDIDATE 3→5 (+#65/#66); severity P1 2 / P2 21 / P3 41→43. Mechanical SHA check:
+each of the six merge SHAs appears in exactly its intended row(s). CLAUDE.md: ONLY the
+stale Batch-31/39 present-tense caller lines corrected to the post-#286 truth (three
+clusters — the Batch-39 rule-#6 bullet, the Batch-31 "Other LLM call sites" paragraph,
+the Batch-31 "What's next" migrate bullet); the #285 AGP section byte-unchanged;
+landing/ untouched. Roadmap §3 item 7 COMPLETE (upon this PR's merge); cursor bumped
+`29ce8c4` → `28284c2`; historical burn-down source-SHA `975d810` PRESERVED.
+
+**SORT-1 CONTINUES — next = item 8 (#35 ATTESTATION-TENANT-COLUMN-1 + #36
+AUDIT-ACTOR-COLUMN-1), NOT STARTED.** Diff = 5 docs/session files; ZERO .py.
+post-commit hook neutralized-for-commit-and-restored; b55b6e9 untouched (absent
+here). PR HELD — never auto-merged. Item 7 is complete AFTER this PR merges, not
+before.
+
 ## 2026-06-30 — SORT1-ITEM6-FLIP-1 (DOCS-ONLY, PR HELD)
 
 Tracker + roadmap + session sync ONLY (no runtime/source/test/CLAUDE change).
@@ -4474,7 +4525,8 @@ Jacob slept; ran with explicit overnight autonomy. Per his instruction: only fix
 - Observer API:
   · POST /api/observer/trigger — ny alias av /run (samma body, samma validering, samma dispatch via shared _execute_manual_run helper — rule #1 ingen duplikat).
   · _check_trigger_rate_limit(tenant_id, connector_type) — process-local in-memory dict _TRIGGER_LAST_CALL med 60 s window. Raises 429.
-  · equire_role(Role.NODE_ADMIN) dependency på /run, /trigger och /circuit-breakers. /status, /watermarks, /activity förblir öppna (read-only).
+  · 
+equire_role(Role.NODE_ADMIN) dependency på /run, /trigger och /circuit-breakers. /status, /watermarks, /activity förblir öppna (read-only).
 - Task 5 cleanup: services/abn-security;C (Windows-skapad stray-katalog, otrackad och tom) — Remove-Item -Recurse -Force. Klar.
 - Task 7 cleanup: ej tillämpligt. Inga andra stray-filer.
 - Tests (14 nya i tests/test_observer_batch32.py — INTE i existerande test_observer.py för att undvika kolliderande fixture-namn):
